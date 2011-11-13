@@ -5,6 +5,8 @@
 #include "stdafx.h"
 #include "launcher.h"
 #include "launcherDlg.h"
+#include <gdiplus.h>
+#include "AlphaGUI.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -67,25 +69,32 @@ BOOL ClauncherApp::InitInstance()
 	// such as the name of your company or organization
 	SetRegistryKey(_T("Local AppWizard-Generated Applications"));
 
-	ClauncherDlg dlg;
-	m_pMainWnd = &dlg;
-	INT_PTR nResponse = dlg.DoModal();
-	if (nResponse == IDOK)
-	{
-		// TODO: Place code here to handle when the dialog is
-		//  dismissed with OK
-	}
-	else if (nResponse == IDCANCEL)
-	{
-		// TODO: Place code here to handle when the dialog is
-		//  dismissed with Cancel
-	}
+    ULONG_PTR gdiplusToken;
+    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
+    AlphaGUI gui;
+
+    MSG msg;
+    while(GetMessage(&msg, NULL, 0, 0) > 0)
+    {
+        if (msg.hwnd == gui.m_dlg.GetSafeHwnd() ||
+           ::IsChild(gui.m_dlg.GetSafeHwnd(), msg.hwnd)) {
+               gui.OnKeyboardMessage(msg.message, msg.wParam, msg.lParam);
+        }
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+    
 	// Delete the shell manager created above.
 	if (pShellManager != NULL)
 	{
 		delete pShellManager;
 	}
+    
+    UnregisterClass(L"GUI",0);
+    Gdiplus::GdiplusShutdown(gdiplusToken);
 
 	// Since the dialog has been closed, return FALSE so that we exit the
 	//  application, rather than start the application's message pump.

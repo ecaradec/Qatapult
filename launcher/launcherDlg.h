@@ -87,12 +87,18 @@ struct RuleResult {
     int     id;
 };
 
+struct KeyHook {
+    virtual ~KeyHook() = 0 {}
+    virtual LRESULT OnKeyboardMessage(UINT msg, WPARAM wparam, LPARAM lparam) = 0;
+    virtual void OnSelChange(RuleResult *r) = 0;
+};
+
 // ClauncherDlg dialog
 class ClauncherDlg : public CDialogEx
 {
 // Construction
 public:
-	ClauncherDlg(CWnd* pParent = NULL);	// standard constructor
+	ClauncherDlg(KeyHook *ph, CWnd* pParent = NULL);	// standard constructor
 
 // Dialog Data
 	enum { IDD = IDD_LAUNCHER_DIALOG };
@@ -109,29 +115,26 @@ protected:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
+    afx_msg void OnHotKey(UINT nHotkey, UINT key1, UINT key2);
+    afx_msg void OnShowWindow(BOOL b, UINT nStatus);
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
-    CEdit m_queryWnd;
-    CMyListBox m_resultsWnd;
-    afx_msg void OnEnChangeEdit1();
+    afx_msg void OnLbnSelChange();
 
     BOOL PreTranslateMessage(MSG* pMsg);
 
-    int                  m_mode;
-    
-    // object mode
-    std::vector<RuleResult> m_results;
+    RuleResult *GetSelectedItem();
 
-
-    CString             m_lastquery;
-
-    CString                 m_lastverbquery;
-
-    IContextMenu           *m_pContextMenu;
-
-
-
-    Rule *m_pCurRule;
-    std::vector<Rule*> m_rules;
+    KeyHook                    *m_pKH;
+    ULONG_PTR                   m_gdiplusToken;
+    CEdit                       m_queryWnd;
+    CMyListBox                  m_resultsWnd;
+    int                         m_mode;
+    std::vector<RuleResult>     m_results;
+    CString                     m_lastquery;
+    CString                     m_lastverbquery;
+    IContextMenu               *m_pContextMenu;
+    Rule                       *m_pCurRule;
+    std::vector<Rule*>          m_rules;
 };
