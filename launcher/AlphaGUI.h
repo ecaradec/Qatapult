@@ -1,6 +1,8 @@
 #include "launcherdlg.h"
 #include "Rule.h"
 
+using namespace Gdiplus;
+
 struct IWindowlessGUI {
     virtual ~IWindowlessGUI() {}
     virtual void Invalidate() = 0;
@@ -12,11 +14,11 @@ struct WindowlessInput {
         m_text=L"";
     }
     void Draw(HDC hdc) {
-        Gdiplus::Graphics g(hdc);
+        Graphics g(hdc);
         Gdiplus::Font f(L"Arial", 10.0f);
-        Gdiplus::StringFormat sf;
-        sf.SetAlignment(Gdiplus::StringAlignmentCenter);
-        g.DrawString(m_text, m_text.GetLength(), &f, Gdiplus::RectF(10,176, 350, 20), &sf, &Gdiplus::SolidBrush(Gdiplus::Color(0xFFFFFFFF)));
+        StringFormat sf;
+        sf.SetAlignment(StringAlignmentCenter);
+        g.DrawString(m_text, m_text.GetLength(), &f, RectF(10,176, 350, 20), &sf, &SolidBrush(Color(0xFFFFFFFF)));
         // g.DrawDriverString((UINT16*)CStringW(txt).GetBuffer(),txt.GetLength(),&m_gdipFont,&b,pos,DriverStringOptionsCmapLookup,&m);
     }
     void OnWindowMessage(UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -42,6 +44,28 @@ struct WindowlessInput {
     CString          m_text;
 };
 
+// handle all context menu action
+// split in *sources* and *rules*
+/*struct Sources {
+    collect(TCHAR *q);
+};
+
+struct ContextMenuRule {
+    bool collect(TCHAR *query);
+};
+struct EmailToRule {
+    bool collect(TCHAR *query);
+};
+struct EmailTextRule {
+    bool collect(TCHAR *query);
+};
+
+for(r in rules)
+    if(r.collect(q))
+        saverule(r);
+
+*/
+
 // SHGetImageList
 struct AlphaGUI : IWindowlessGUI, KeyHook {
     AlphaGUI():m_input(this),m_dlg(this) {
@@ -52,7 +76,7 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         //wnd.lpszClassName=L"GUI";            
         //ATOM clss=RegisterClass(&wnd);
         m_dlg.m_pKH=this;
-        icon=0;
+        objecticon=0;
         actionicon=0;
         m_dlg.Create(ClauncherDlg::IDD);
         m_dlg.ShowWindow(SW_HIDE);
@@ -60,8 +84,8 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         ::SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG)_WndProc);
         ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);
 
-        m_img.Load(L"..\\background.png");
-        PremultAlpha(m_img);
+        m_background.Load(L"..\\background.png");
+        PremultAlpha(m_background);
 
         m_focus.Load(L"..\\focus.png");
         PremultAlpha(m_focus);
@@ -71,6 +95,8 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         SetWindowPos(m_dlg.GetSafeHwnd(), 0, 0, 200, 0, 0, SWP_NOSIZE);
 
         RegisterHotKey(m_hwnd, 1, MOD_SHIFT, VK_SPACE);
+
+        m_ruleresults.push_back(RuleResult());
 
         //SetWindowPos(m_hwnd, 0, 0, 0, 0, 0, SWP_NOSIZE);
     }
@@ -91,66 +117,18 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         }
     }
     void OnSelChange(RuleResult *r) {
-        // should we detect the change from the focus or from the rules ????
+        // TODO : should we detect the change from the focus or from the rules ????
+        // TODO : should we exchange the current ruleresult on the top of the stack and validate it on the validation step ?
+        // TODO : comment anticiper l'action ???
+
         if(r->expandStr==lastResultExpandStr)
             return;
         lastResultExpandStr=r->expandStr;
-        Gdiplus::Bitmap *bmp=r->rule->getIcon(r);
-        if(m_dlg.m_rules.size()==1) {
-            objecttext=r->display;
-            if(bmp) {
-                delete icon;
-                icon=bmp;
-                PremultAlpha(*icon);
-            }
-
-        } if(m_dlg.m_rules.size()==2) {
-            actiontext=r->display;
-            if(bmp) {                
-                delete actionicon;
-                actionicon=bmp;
-                PremultAlpha(*actionicon);
-            }
-        }        
-    }
-    void PremultAlpha(CImage &img) {
-        for(int y=0;y<img.GetHeight(); y++) 
-            for(int x=0;x<img.GetWidth(); x++) {
-                DWORD c=*(DWORD*)img.GetPixelAddress(x,y);            
-                DWORD r=((c&0xFF));
-                DWORD g=((c&0xFF00)>>8);
-                DWORD b=((c&0xFF0000)>>16);
-                DWORD a=((c&0xFF000000)>>24);
-            
-                DWORD R=int(r*a)>>8;
-                DWORD G=int(g*a)>>8;
-                DWORD B=int(b*a)>>8;
-                DWORD A=int(a);
-
-                DWORD cm=R + (G<<8) + (B<<16) + (A<<24);
-                *(DWORD*)img.GetPixelAddress(x,y) = cm;
-            }
-    }
-    void PremultAlpha(Gdiplus::Bitmap &img) {
-        for(int y=0;y<img.GetHeight(); y++) 
-            for(int x=0;x<img.GetWidth(); x++) {
-                DWORD c;
-                img.GetPixel(x,y,(Gdiplus::Color*)&c);
-                
-                DWORD r=((c&0xFF));
-                DWORD g=((c&0xFF00)>>8);
-                DWORD b=((c&0xFF0000)>>16);
-                DWORD a=((c&0xFF000000)>>24);
-            
-                DWORD R=int(r*a)>>8;
-                DWORD G=int(g*a)>>8;
-                DWORD B=int(b*a)>>8;
-                DWORD A=int(a);
-
-                DWORD cm=R + (G<<8) + (B<<16) + (A<<24);
-                img.SetPixel(x,y,Gdiplus::Color(cm));
-                //*(DWORD*)img.GetPixelAddress(x,y) = cm;
-            }
+        r->icon=r->rule->getIcon(r);
+        PremultAlpha(*r->icon);
+        //if(m_ruleresults.size()==0)
+        //    m_ruleresults.push_back(RuleResult());
+        m_ruleresults.back()=*r;
     }
     RuleResult *GetSelectedItem() {        
         int sel=m_dlg.m_resultsWnd.GetCaretIndex();
@@ -165,47 +143,48 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
     }
     void Update() {
         CImage premult;
-        premult.Create(m_img.GetWidth(), m_img.GetHeight(), 32, CImage::createAlphaChannel);
+        premult.Create(m_background.GetWidth(), m_background.GetHeight(), 32, CImage::createAlphaChannel);
 
         HDC hdc=premult.GetDC();
 
-        Gdiplus::Graphics g(hdc);
-        g.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
-        g.SetCompositingQuality(Gdiplus::CompositingQualityHighQuality);
+        Graphics g(hdc);
+        g.SetInterpolationMode(InterpolationModeHighQualityBicubic);
+        g.SetCompositingQuality(CompositingQualityHighQuality);
 
-        Gdiplus::StringFormat sfcenter;
-        sfcenter.SetAlignment(Gdiplus::StringAlignmentCenter);    
-        sfcenter.SetTrimming(Gdiplus::StringTrimmingEllipsisCharacter);
+        StringFormat sfcenter;
+        sfcenter.SetAlignment(StringAlignmentCenter);    
+        sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
 
         Gdiplus::Font f(L"Arial", 8.0f);
 
-        m_img.AlphaBlend(hdc, 0, 0);
+        m_background.AlphaBlend(hdc, 0, 0);
         m_input.Draw(hdc);
         
         // draw icon on screen
-        m_focus.AlphaBlend(hdc, 22, 22);
-        if(icon)
-            g.DrawImage(icon, Gdiplus::RectF(33,28,128,128));
+        if(m_ruleresults.size()>=1) {
+            m_focus.AlphaBlend(hdc, 22, 22);
+            if(m_ruleresults[0].icon)
+                g.DrawImage(m_ruleresults[0].icon, RectF(33,28,128,128));
            
-        g.DrawString(objecttext, objecttext.GetLength(), &f, Gdiplus::RectF(22, 154, 150, 20), &sfcenter, &Gdiplus::SolidBrush(Gdiplus::Color(0xFFFFFFFF)));
+            g.DrawString(m_ruleresults[0].display, m_ruleresults[0].display.GetLength(), &f, RectF(22, 154, 150, 20), &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
+        }
 
         // draw action icon on screen        
-        m_focus.AlphaBlend(hdc, 179, 22);
-        if(actionicon)
-            g.DrawImage(actionicon, Gdiplus::RectF(179+11,28,128,128));
+        if(m_ruleresults.size()>=2) {
+            m_focus.AlphaBlend(hdc, 179, 22);
+            if(m_ruleresults[1].icon)
+                g.DrawImage(m_ruleresults[1].icon, RectF(179+11,28,128,128));
 
-        g.DrawString(actiontext, actiontext.GetLength(), &f, Gdiplus::RectF(179, 154, 150, 20), &sfcenter, &Gdiplus::SolidBrush(Gdiplus::Color(0xFFFFFFFF)));
+            g.DrawString(m_ruleresults[1].display, m_ruleresults[1].display.GetLength(), &f, RectF(179, 154, 150, 20), &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
+        }
 
-        premult.ReleaseDC();
-
-        hdc=premult.GetDC();
 
         POINT p1={1680/2-350/2,200};
         POINT p2={0};
-        SIZE s={m_img.GetWidth(), m_img.GetHeight()};
+        SIZE s={m_background.GetWidth(), m_background.GetHeight()};
         BLENDFUNCTION bf={AC_SRC_OVER, 0, 255, AC_SRC_ALPHA};
         BOOL b=::UpdateLayeredWindow(m_hwnd, 0, &p1, &s, hdc, &p2, 0, &bf, ULW_ALPHA);
-        //g.ReleaseHDC(hdc);
+        
         premult.ReleaseDC();
     }
     LRESULT OnKeyboardMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -218,9 +197,16 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
                 
                 while(m_dlg.m_rules.size()>1) { // keep the root rule
                     delete m_dlg.m_rules.back();
-                    m_dlg.m_rules.pop_back();
+                    m_dlg.m_rules.pop_back();                    
                     //return FALSE;
                 }
+                while(m_ruleresults.size()>1) { // keep the root rule
+                    delete m_ruleresults.back().icon;
+                    m_ruleresults.pop_back();                    
+                    //return FALSE;
+                }
+                delete m_ruleresults[0].icon;
+                m_ruleresults[0]=RuleResult();
 
                 m_input.SetText(L"");
 
@@ -228,15 +214,20 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
             }
 
             m_dlg.m_rules.push_back(r);
+            m_ruleresults.push_back(RuleResult());
             m_input.SetText(r->defaultQuery);
             
             return FALSE;
         }	
         else if(msg == WM_KEYDOWN && wParam == VK_ESCAPE)
         {
-            if(m_dlg.m_rules.size()>1) { // keep the root rule
+            if(m_dlg.IsWindowVisible()) {
+                m_dlg.ShowWindow(SW_HIDE);
+                return FALSE;
+            } else if(m_dlg.m_rules.size()>1) { // keep the root rule
                 delete m_dlg.m_rules.back();
                 m_dlg.m_rules.pop_back();
+                m_ruleresults.pop_back();
                 actiontext=L"";
                 delete actionicon;
                 actionicon=0;
@@ -289,21 +280,61 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         return ((AlphaGUI*)GetWindowLongPtr(hwnd, GWLP_USERDATA))->WndProc(hwnd,msg,wParam,lParam);
     }
 
+
+    void PremultAlpha(CImage &img) {
+        for(int y=0;y<img.GetHeight(); y++) 
+            for(int x=0;x<img.GetWidth(); x++) {
+                DWORD c=*(DWORD*)img.GetPixelAddress(x,y);            
+                DWORD r=((c&0xFF));
+                DWORD g=((c&0xFF00)>>8);
+                DWORD b=((c&0xFF0000)>>16);
+                DWORD a=((c&0xFF000000)>>24);
+            
+                DWORD R=int(r*a)>>8;
+                DWORD G=int(g*a)>>8;
+                DWORD B=int(b*a)>>8;
+                DWORD A=int(a);
+
+                DWORD cm=R + (G<<8) + (B<<16) + (A<<24);
+                *(DWORD*)img.GetPixelAddress(x,y) = cm;
+            }
+    }
+    void PremultAlpha(Bitmap &img) {
+        for(int y=0;y<img.GetHeight(); y++) 
+            for(int x=0;x<img.GetWidth(); x++) {
+                DWORD c;
+                img.GetPixel(x,y,(Color*)&c);
+                
+                DWORD r=((c&0xFF));
+                DWORD g=((c&0xFF00)>>8);
+                DWORD b=((c&0xFF0000)>>16);
+                DWORD a=((c&0xFF000000)>>24);
+            
+                DWORD R=int(r*a)>>8;
+                DWORD G=int(g*a)>>8;
+                DWORD B=int(b*a)>>8;
+                DWORD A=int(a);
+
+                DWORD cm=R + (G<<8) + (B<<16) + (A<<24);
+                img.SetPixel(x,y,Color(cm));
+                //*(DWORD*)img.GetPixelAddress(x,y) = cm;
+            }
+    }
+
     WindowlessInput    m_input;
     HWND               m_hwnd;
-    CImage             m_img;
+    CImage             m_background;
     CImage             m_focus;
-    CImage             m_runicon;
 
     CString            lastResultExpandStr;
 
-    Gdiplus::Bitmap   *actionicon;
+    Bitmap   *actionicon;
     CString            actiontext;
 
-    Gdiplus::Bitmap   *icon;
+    Bitmap   *objecticon;
     CString            objecttext;
 
-    HICON              hicon;
+    std::vector<RuleResult> m_ruleresults;
 
     ClauncherDlg       m_dlg;
 };

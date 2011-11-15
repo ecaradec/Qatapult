@@ -81,10 +81,14 @@ struct CMyListBox : CListBox {
 struct Rule;
 
 struct RuleResult {
+    RuleResult() { icon=0;}
     CString expandStr;
     CString display;
     Rule   *rule;
     int     id;
+    
+    // should move to launchdlg subclass
+    Gdiplus::Bitmap *icon; 
 };
 
 struct KeyHook {
