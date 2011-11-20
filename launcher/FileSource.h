@@ -1,6 +1,6 @@
 #pragma once
 #include "geticon.h"
-#include "FileVerbRule.h"
+#include "FileVerbSource.h"
 
 struct FileSource : Source {
     FileSource() {

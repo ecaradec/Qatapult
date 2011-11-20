@@ -88,23 +88,11 @@ struct FileVerbSource : Source {
                 //m.TrackPopupMenu(0, 0, 0, this, 0);
             }
              
-            // add some homemade rules
-            /*sources.push_back(L"Open");
-            sources.push_back(L"Edit");
-            sources.push_back(L"Properties");
-            sources.push_back(L"Sendto");*/
         }
-
 
         for(std::list<Command>::iterator it=m_commands.begin();it!=m_commands.end();it++) {
             if(CString(it->display).MakeUpper().Find(CString(query).MakeUpper())!=-1) {
-                SourceResult r;
-                r.display=it->display;
-                r.expandStr=it->expandStr;
-                r.id=it->id;
-                r.source=this;
-                r.data=m_pContextMenu;
-                results.push_back(r);
+                results.push_back(SourceResult(it->display, it->expandStr, this, it->id, m_pContextMenu));
             }
         }
     }

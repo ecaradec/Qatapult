@@ -7,12 +7,11 @@
 #include "launcherDlg.h"
 #include "afxdialogex.h"
 #include "FindFileRecursively.h"
-#include "Rule.h"
-#include "FileVerbRule.h"
-#include "FileRule.h"
-#include "HistoryRule.h"
-#include "StartMenuRule.h"
-#include "SourcesRule.h"
+#include "Source.h"
+#include "FileVerbSource.h"
+#include "FileSource.h"
+#include "HistorySource.h"
+#include "StartMenuSource.h"
 #include <gdiplus.h>
 #include <atlimage.h>
 

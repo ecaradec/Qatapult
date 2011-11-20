@@ -42,22 +42,7 @@
     <ClInclude Include="AlphaGUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SourcesRule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StartMenuRule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="HistoryRule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FindFileRecursively.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FileRule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FileVerbRule.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Rule.h">
@@ -67,6 +52,24 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="geticon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IWindowlessGUI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowlessInput.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileVerbSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HistorySource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StartMenuSource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

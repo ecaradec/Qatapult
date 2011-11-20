@@ -100,20 +100,21 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AlphaGUI.h" />
-    <ClInclude Include="FileRule.h" />
-    <ClInclude Include="FileVerbRule.h" />
+    <ClInclude Include="FileSource.h" />
+    <ClInclude Include="FileVerbSource.h" />
     <ClInclude Include="FindFileRecursively.h" />
     <ClInclude Include="geticon.h" />
-    <ClInclude Include="HistoryRule.h" />
+    <ClInclude Include="HistorySource.h" />
+    <ClInclude Include="IWindowlessGUI.h" />
     <ClInclude Include="launcher.h" />
     <ClInclude Include="launcherDlg.h" />
     <ClInclude Include="LevhensteinDistance.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Rule.h" />
-    <ClInclude Include="SourcesRule.h" />
-    <ClInclude Include="StartMenuRule.h" />
+    <ClInclude Include="StartMenuSource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="WindowlessInput.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="launcher.cpp" />

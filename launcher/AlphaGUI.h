@@ -1,13 +1,11 @@
 #include "launcherdlg.h"
-#include "Rule.h"
-#include "FileRule.h"
-#include "StartMenuRule.h"
-#include "FileVerbRule.h"
+#include "Source.h"
+#include "FileSource.h"
+#include "StartMenuSource.h"
+#include "FileVerbSource.h"
 #include "IWindowlessGUI.h"
 #include "WindowlessInput.h"
 #include <map>
-
-using namespace Gdiplus;
 
 struct Rule {
     Rule(const CString &arg1type, const CString &verbtype) {

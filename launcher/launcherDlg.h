@@ -82,6 +82,14 @@ struct Source;
 
 struct SourceResult {
     SourceResult() { icon=0; source=0; data=0; }
+    SourceResult(const CString &_display, const CString &_expand, Source *_s, int _id, void *_data) { 
+        icon=0;
+        display=_display;
+        expandStr=_expand;
+        source=_s;
+        id=_id;
+        data=_data;
+    }
     CString  expandStr;
     CString  display;
     Source  *source;
