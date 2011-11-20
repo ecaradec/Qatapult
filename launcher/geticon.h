@@ -1,6 +1,7 @@
+#pragma once
 #include <CommonControls.h>
 
-Gdiplus::Bitmap *getIcon(const CString &path) {
+inline Gdiplus::Bitmap *getIcon(const CString &path) {
     // get hicon
     SHFILEINFO sh;
     //SHGetFileInfo(L"C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\Common7\\IDE\\devenv.exe", FILE_ATTRIBUTE_NORMAL, &sh, sizeof(sh), SHGFI_SYSICONINDEX);                                

@@ -126,7 +126,7 @@ BOOL ClauncherDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
-    m_rules.push_back(new SourcesRule(this));
+    //m_sources.push_back(new SourcesRule(this));
 
     m_mode=0;
 
@@ -148,11 +148,11 @@ void ClauncherDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	}
 }
 
-RuleResult *ClauncherDlg::GetSelectedItem()
+SourceResult *ClauncherDlg::GetSelectedItem()
 {
     int sel=m_resultsWnd.GetCaretIndex();
     m_resultsWnd.GetSelItems(1, &sel);
-    return (RuleResult*)m_resultsWnd.GetItemDataPtr(sel);
+    return (SourceResult*)m_resultsWnd.GetItemDataPtr(sel);
 }
 
 // If you add a minimize button to your dialog, you will need the code below
@@ -209,12 +209,12 @@ void ClauncherDlg::OnHotKey(UINT nHotkey, UINT key1, UINT key2)
 void ClauncherDlg::OnShowWindow(BOOL b, UINT nStatus)
 {
    /* if(b) {
-        for(int i=0;i<m_rules.size()!=0; i++) {
-            delete m_rules[i];
+        for(int i=0;i<m_sources.size()!=0; i++) {
+            delete m_sources[i];
         }
-        m_rules.clear();
+        m_sources.clear();
 
-        m_rules.push_back(new SourcesRule(this));
+        m_sources.push_back(new SourcesRule(this));
 
         m_queryWnd.SetWindowText(L"");
         m_queryWnd.SetFocus();
@@ -224,7 +224,7 @@ void ClauncherDlg::OnShowWindow(BOOL b, UINT nStatus)
 void ClauncherDlg::OnLbnSelChange()
 {
     int sel=m_resultsWnd.GetCaretIndex();
-    RuleResult *r=(RuleResult*)m_resultsWnd.GetItemDataPtr(sel);
+    SourceResult *r=(SourceResult*)m_resultsWnd.GetItemDataPtr(sel);
 
     m_pKH->OnSelChange(r);
 }

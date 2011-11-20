@@ -1,10 +1,12 @@
+#pragma once
 #include "geticon.h"
+#include "FileVerbRule.h"
 
-struct FileRule : Rule {
-    FileRule(ClauncherDlg *pLB):m_pUI(pLB)  {
-        defaultQuery=L"c:\\";
+struct FileSource : Source {
+    FileSource() {
+        type=L"FILE";
     }
-    void collect(const TCHAR *query, std::vector<RuleResult> &results) {
+    void collect(const TCHAR *query, std::vector<SourceResult> &args, std::vector<SourceResult> &results, int flags) {
         CString q(query);
         if(q.Find(L":\\")!=1 && q.Find(L"\\\\")==-1)
             return;
@@ -25,10 +27,10 @@ struct FileRule : Rule {
                 CString noslash=q.Left(q.ReverseFind(L'\\'));
                 CString foldername=noslash.Mid(noslash.ReverseFind(L'\\')+1);
 
-                RuleResult r;
+                SourceResult r;
                 r.display=L"[D]"+foldername;
                 r.expandStr=noslash+L"\\";
-                r.rule=this;
+                r.source=this;
                 results.push_back(r);
             } else if(CString(w32fd.cFileName)==L"..") {
             } else {
@@ -38,24 +40,20 @@ struct FileRule : Rule {
                 else
                     expandStr = CString(d+L"\\"+w32fd.cFileName);
 
-                RuleResult r;
+                SourceResult r;
                 r.display=CString(isdirectory?L"[D]":L"[F]")+w32fd.cFileName;
                 r.expandStr=expandStr;
-                r.rule=this;
+                r.source=this;
                 results.push_back(r);
             }
             b=FindNextFile(h, &w32fd);
         }
         FindClose(h);
     }
-    Rule *validate() {
-        RuleResult *r=m_pUI->GetSelectedItem();
-        return new FileVerbRule(r->expandStr, m_pUI); 
-    }
-    Gdiplus::Bitmap *getIcon(RuleResult *r) {
+    Gdiplus::Bitmap *getIcon(SourceResult *r) {
         return ::getIcon(r->expandStr);
     }
 
 
-    ClauncherDlg            *m_pUI;
+    //ClauncherDlg            *m_pUI;
 };

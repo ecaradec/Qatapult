@@ -7,7 +7,7 @@
 #include <vector>
 #include <list>
 
-struct Rule;
+struct Source;
 
 struct CMyListBox : CListBox {
     // CMyListBox is my owner-drawn list box derived from CListBox. This 
@@ -78,14 +78,15 @@ struct CMyListBox : CListBox {
     }
 };
 
-struct Rule;
+struct Source;
 
-struct RuleResult {
-    RuleResult() { icon=0;}
-    CString expandStr;
-    CString display;
-    Rule   *rule;
-    int     id;
+struct SourceResult {
+    SourceResult() { icon=0; source=0; data=0; }
+    CString  expandStr;
+    CString  display;
+    Source  *source;
+    int      id;
+    void    *data;
     
     // should move to launchdlg subclass
     Gdiplus::Bitmap *icon; 
@@ -94,7 +95,7 @@ struct RuleResult {
 struct KeyHook {
     virtual ~KeyHook() = 0 {}
     virtual LRESULT OnKeyboardMessage(UINT msg, WPARAM wparam, LPARAM lparam) = 0;
-    virtual void OnSelChange(RuleResult *r) = 0;
+    virtual void OnSelChange(SourceResult *r) = 0;
 };
 
 // ClauncherDlg dialog
@@ -128,17 +129,17 @@ public:
 
     BOOL PreTranslateMessage(MSG* pMsg);
 
-    RuleResult *GetSelectedItem();
+    SourceResult *GetSelectedItem();
 
     KeyHook                    *m_pKH;
     ULONG_PTR                   m_gdiplusToken;
     CEdit                       m_queryWnd;
     CMyListBox                  m_resultsWnd;
     int                         m_mode;
-    std::vector<RuleResult>     m_results;
+    std::vector<SourceResult>     m_results;
     CString                     m_lastquery;
     CString                     m_lastverbquery;
     IContextMenu               *m_pContextMenu;
-    Rule                       *m_pCurRule;
-    std::vector<Rule*>          m_rules;
+    Source                       *m_pCurRule;
+    std::vector<Source*>          m_sources;
 };

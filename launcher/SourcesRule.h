@@ -1,24 +1,24 @@
-
-struct SourcesRule : Rule {
+#pragma once
+/*struct SourcesRule : Source {
     SourcesRule(ClauncherDlg *pLB):m_pUI(pLB) {
-        m_rules.push_back(new HistoryRule(m_pUI));
-        m_rules.push_back(new StartMenuRule(m_pUI));
-        m_rules.push_back(new FileRule(m_pUI));        
+        m_sources.push_back(new HistorySource(m_pUI));
+        m_sources.push_back(new StartMenuSource(m_pUI));
+        m_sources.push_back(new FileSource(m_pUI));        
     }
     ~SourcesRule() {
-        for(int i=0;i<m_rules.size(); i++) {
-            delete m_rules[i];
+        for(int i=0;i<m_sources.size(); i++) {
+            delete m_sources[i];
         }
     }
-    void collect(const TCHAR *query, std::vector<RuleResult> &results) {
-        for(int i=0;i<m_rules.size(); i++) {
-            m_rules[i]->collect(query, results);
+    void collect(const TCHAR *query, std::vector<SourceResult> &results) {
+        for(int i=0;i<m_sources.size(); i++) {
+            m_sources[i]->collect(query, results);
         }
     }
-    Rule *validate() {
-        RuleResult *r=m_pUI->GetSelectedItem();
-        return r->rule->validate();
+    Source *validate() {
+        SourceResult *r=m_pUI->GetSelectedItem();
+        return r->source->validate();
     }
     ClauncherDlg           *m_pUI;
-    std::vector<Rule*>      m_rules;
-};
+    std::vector<Source*>      m_sources;
+};*/

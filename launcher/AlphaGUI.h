@@ -1,70 +1,69 @@
 #include "launcherdlg.h"
 #include "Rule.h"
+#include "FileRule.h"
+#include "StartMenuRule.h"
+#include "FileVerbRule.h"
+#include "IWindowlessGUI.h"
+#include "WindowlessInput.h"
+#include <map>
 
 using namespace Gdiplus;
 
-struct IWindowlessGUI {
-    virtual ~IWindowlessGUI() {}
-    virtual void Invalidate() = 0;
-    virtual void OnQueryChange(const CString &text) = 0;    
+struct Rule {
+    Rule(const CString &arg1type, const CString &verbtype) {
+        m_types.push_back(arg1type);
+        m_types.push_back(verbtype);
+    }
+    Rule(const CString &arg1type, const CString &verbtype, const CString &arg2type) {
+        m_types.push_back(arg1type);
+        m_types.push_back(verbtype);
+        m_types.push_back(arg2type);
+    }
+    bool match(std::vector<SourceResult> &args, int l) {
+        if(args.size()>m_types.size())
+            return false;
+        for(int i=0;i<min(l, args.size());i++)
+            if(args[i].source && args[i].source->type!=m_types[i])
+                return false;
+        return true;
+    }
+    virtual bool execute(std::vector<SourceResult> &args) { return true; }
+
+    std::vector<CString> m_types;
 };
 
-struct WindowlessInput {
-    WindowlessInput(IWindowlessGUI *p):m_pParent(p) {
-        m_text=L"";
+struct FileVerbRule : Rule {
+    FileVerbRule() : Rule(L"FILE",L"FILEVERB") {}
+    bool execute(std::vector<SourceResult> &args) {
+        ProcessCMCommand((IContextMenu*)args[1].data, args[1].id);        
+        return true;
     }
-    void Draw(HDC hdc) {
-        Graphics g(hdc);
-        Gdiplus::Font f(L"Arial", 10.0f);
-        StringFormat sf;
-        sf.SetAlignment(StringAlignmentCenter);
-        g.DrawString(m_text, m_text.GetLength(), &f, RectF(10,176, 350, 20), &sf, &SolidBrush(Color(0xFFFFFFFF)));
-        // g.DrawDriverString((UINT16*)CStringW(txt).GetBuffer(),txt.GetLength(),&m_gdipFont,&b,pos,DriverStringOptionsCmapLookup,&m);
-    }
-    void OnWindowMessage(UINT msg, WPARAM wparam, LPARAM lparam) {
-        if(msg==WM_CHAR) {            
-            if(wparam==8)
-                m_text=m_text.Left(m_text.GetLength() -1 );
-            else if(wparam<VK_SPACE)
-                return;
-            else
-                m_text.AppendChar(wparam);
+    HRESULT ProcessCMCommand(LPCONTEXTMENU pCM, UINT idCmdOffset) {
+       CMINVOKECOMMANDINFO ici;
+       ZeroMemory(&ici, sizeof(ici));
+       ici.cbSize = sizeof(CMINVOKECOMMANDINFO);
+       ici.lpVerb = (LPCSTR)MAKEINTRESOURCE(idCmdOffset);
+       ici.nShow = SW_SHOWNORMAL;
 
-            m_pParent->OnQueryChange(m_text);
+       return pCM->InvokeCommand(&ici);
+    }
+};
+
+struct TextSource : Source {
+    TextSource() {
+        type=L"TEXT";
+    }
+    void collect(const TCHAR *query, std::vector<SourceResult> &args, std::vector<SourceResult> &r, int def) {
+        if(CString(query).Find(L'\'')==0) {
+            r.push_back(SourceResult());
+            r.back().expandStr=CString(query).Mid(1,99);
+            r.back().display=CString(query).Mid(1,99);
+            r.back().source=this;
         }
-
-        m_pParent->Invalidate();
     }
-    void SetText(const CString &txt) {
-        m_text=txt;
-        m_pParent->OnQueryChange(m_text);
-        m_pParent->Invalidate();
-    }
-    IWindowlessGUI  *m_pParent;
-    CString          m_text;
 };
 
-// handle all context menu action
-// split in *sources* and *rules*
-/*struct Sources {
-    collect(TCHAR *q);
-};
-
-struct ContextMenuRule {
-    bool collect(TCHAR *query);
-};
-struct EmailToRule {
-    bool collect(TCHAR *query);
-};
-struct EmailTextRule {
-    bool collect(TCHAR *query);
-};
-
-for(r in rules)
-    if(r.collect(q))
-        saverule(r);
-
-*/
+std::map<CString, std::vector<SourceResult> > g_history;
 
 // SHGetImageList
 struct AlphaGUI : IWindowlessGUI, KeyHook {
@@ -75,11 +74,12 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         //wnd.lpfnWndProc=(WNDPROC)AlphaGUI::_WndProc;
         //wnd.lpszClassName=L"GUI";            
         //ATOM clss=RegisterClass(&wnd);
+        m_pane=0;
+
         m_dlg.m_pKH=this;
-        objecticon=0;
-        actionicon=0;
         m_dlg.Create(ClauncherDlg::IDD);
         m_dlg.ShowWindow(SW_HIDE);
+
         m_hwnd=CreateWindowEx(WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_CHILD, 0, 0, 0, 0, m_dlg.GetSafeHwnd(), 0, 0, 0);
         ::SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG)_WndProc);
         ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);
@@ -90,66 +90,142 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         m_focus.Load(L"..\\focus.png");
         PremultAlpha(m_focus);
 
+        premult.Create(m_background.GetWidth(), m_background.GetHeight(), 32, CImage::createAlphaChannel);
+
         Update();        
 
-        SetWindowPos(m_dlg.GetSafeHwnd(), 0, 0, 200, 0, 0, SWP_NOSIZE);
+        //CRect r;
+        //GetWindowRect(m_hwnd, &r);
+        //m_dlg.SetWindowPos(0, r.left, r.bottom, 0, 0, SWP_NOSIZE);
 
         RegisterHotKey(m_hwnd, 1, MOD_SHIFT, VK_SPACE);
 
-        m_ruleresults.push_back(RuleResult());
+        // sources        
+        m_sources[L"FILE"].push_back(new FileSource);
+        m_sources[L"FILE"].push_back(new StartMenuSource);
+        m_sources[L"FILEVERB"].push_back(new FileVerbSource);        
+        m_sources[L"TEXT"].push_back(new TextSource);
+        
+        // rules
+        m_rules.push_back(new Rule(L"TEXT", L"EMAILVERB"));
+        m_rules.push_back(new FileVerbRule);        
+        
+
+        OnQueryChange(L"");
+        
+        // verb sources
+        //m_sources[L"FILEVERB"]=new FileVerbSource;
+        //m_sources[L"HISTORY"]=new HistorySource;
 
         //SetWindowPos(m_hwnd, 0, 0, 0, 0, 0, SWP_NOSIZE);
     }
     void Invalidate() {
         Update();
     }
-    void OnQueryChange(const CString &q) {            
-        m_dlg.m_resultsWnd.ResetContent();
-        m_dlg.m_results.clear();
-        m_dlg.m_rules.back()->collect(q, m_dlg.m_results);
-        for(int i=0;i<m_dlg.m_results.size();i++) {
-            int id=m_dlg.m_resultsWnd.AddString(m_dlg.m_results[i].display);
-            m_dlg.m_resultsWnd.SetItemDataPtr(id, &m_dlg.m_results[i]); // ok if we don't add anything to results later
-        }
-        
-        if(m_dlg.m_results.size()>0) {
-            OnSelChange(&m_dlg.m_results.front());
-        }
-    }
-    void OnSelChange(RuleResult *r) {
-        // TODO : should we detect the change from the focus or from the rules ????
-        // TODO : should we exchange the current ruleresult on the top of the stack and validate it on the validation step ?
-        // TODO : comment anticiper l'action ???
+    void CollectItems(const CString &q, const int pane, std::vector<SourceResult> &args, std::vector<SourceResult> &results, int def) {
+        // collect all active rules (match could have an args that tell how much to match )
+        // i should probably ignore the current pane for the match or just match until pane-1 ?
+        std::vector<Rule *> activerules;
+        for(int i=0;i<m_rules.size();i++)
+            if(m_rules[i]->match(args, pane))
+               activerules.push_back(m_rules[i]); 
 
-        if(r->expandStr==lastResultExpandStr)
-            return;
-        lastResultExpandStr=r->expandStr;
-        r->icon=r->rule->getIcon(r);
-        PremultAlpha(*r->icon);
-        //if(m_ruleresults.size()==0)
-        //    m_ruleresults.push_back(RuleResult());
-        m_ruleresults.back()=*r;
+        // collect all active sources at this level
+        std::map<CString,bool> activesources;
+        for(int i=0;i<activerules.size();i++)
+            if(activerules[i]->m_types.size()>pane)
+                activesources[activerules[i]->m_types[pane]]=true;
+
+        // collect displayable items
+        results.clear();        
+        for(std::map<CString,bool>::iterator it=activesources.begin(); it!=activesources.end(); it++)
+            for(int i=0;i<m_sources[it->first].size();i++)
+                m_sources[it->first][i]->collect(q, args, results, def);    
     }
-    RuleResult *GetSelectedItem() {        
-        int sel=m_dlg.m_resultsWnd.GetCaretIndex();
+    void OnQueryChange(const CString &q) {
+        m_dlg.m_resultsWnd.ResetContent();
+        CollectItems(q, m_pane, m_args, m_results, 0);        
+        for(int i=0;i<m_results.size();i++) {
+            int id=m_dlg.m_resultsWnd.AddString(m_results[i].display);
+            m_dlg.m_resultsWnd.SetItemDataPtr(id, &m_results[i]); // ok if we don't add anything to results later
+        }
+
+        if(m_results.size()>0) {
+            OnSelChange(&m_results.front());
+        }
+
+        ShowNextArg();
+    }
+    void ShowNextArg() {
+        // check if there is extra args     
+        if(m_args.size()>0) {
+            std::vector<SourceResult> results;
+            CollectItems(L"", m_pane+1, m_args, results, 1);
+            if(results.size()!=0) {
+                if(m_pane+1==m_args.size())
+                    m_args.push_back(results.front());
+                else
+                    SetArg(m_pane+1,results.front()); 
+            }
+            
+            if(results.size()==0) {
+                while(m_args.size()>m_pane+1)
+                    m_args.pop_back();
+            }
+        }
+    }
+    void SetArg(int pane, SourceResult &r) {
+        if(m_args.size() < pane && m_args[pane].icon!=0) {
+            delete m_args[pane].icon;
+            m_args[pane].icon=0;
+        }
+        m_args[pane]=r;
+    }
+    void OnSelChange(SourceResult *r) {        
+        if(m_args.size()==0)
+            m_args.push_back(SourceResult());
+        
+        // a copy is not enough if there is deep data because the results are cleaned after the query
+        SetArg(m_pane, *r);
+
+        ShowNextArg();
+
+        // history is nice but add too much complexity right now
+        /*std::map<CString, std::vector<SourceResult> >::iterator itH=g_history.find(r->expandStr);
+        if(itH!=g_history.end())
+            m_args=itH->second;*/
+    }
+    SourceResult *GetSelectedItem() {        
+        /*int sel=m_dlg.m_resultsWnd.GetCaretIndex();
         if(sel!=-1)
-            return (RuleResult*)m_dlg.m_resultsWnd.GetItemDataPtr(sel);
+            return (SourceResult*)m_dlg.m_resultsWnd.GetItemDataPtr(sel);
 
         if(m_dlg.m_results.size()!=0) {            
             return &m_dlg.m_results.front();
-        }
+        }*/
         
         return 0;
     }
-    void Update() {
-        CImage premult;
-        premult.Create(m_background.GetWidth(), m_background.GetHeight(), 32, CImage::createAlphaChannel);
+    void Update() {        
+        // load icons if they aren't 
+        // that means that the only element that may have an icon are in m_args
+        for(int i=0;i<m_args.size();i++) {
+            SourceResult *r=&m_args[i];
+            if(r->icon==0 && r->source) {
+                r->icon=r->source->getIcon(r);
+                if(r->icon)
+                    PremultAlpha(*r->icon);
+            }
+        }
 
+        // get a buffer
         HDC hdc=premult.GetDC();
 
         Graphics g(hdc);
         g.SetInterpolationMode(InterpolationModeHighQualityBicubic);
         g.SetCompositingQuality(CompositingQualityHighQuality);
+
+        g.Clear(Gdiplus::Color(0,0,0,0));
 
         StringFormat sfcenter;
         sfcenter.SetAlignment(StringAlignmentCenter);    
@@ -160,24 +236,22 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         m_background.AlphaBlend(hdc, 0, 0);
         m_input.Draw(hdc);
         
-        // draw icon on screen
-        if(m_ruleresults.size()>=1) {
-            m_focus.AlphaBlend(hdc, 22, 22);
-            if(m_ruleresults[0].icon)
-                g.DrawImage(m_ruleresults[0].icon, RectF(33,28,128,128));
+        // draw icon on screen        
+        m_focus.AlphaBlend(hdc, 22+157*0, 22);
+
+        m_focus.AlphaBlend(hdc, 22+157*1, 22);
+
+        m_focus.AlphaBlend(hdc, 22+157*m_pane, 22);
+
+        for(int i=0;i<m_args.size(); i++) {            
+            if(m_args[0].icon)
+                g.DrawImage(m_args[i].icon, RectF(33+157*i,28,128,128));
            
-            g.DrawString(m_ruleresults[0].display, m_ruleresults[0].display.GetLength(), &f, RectF(22, 154, 150, 20), &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
+            Gdiplus::PointF positions[256];
+            Gdiplus::Matrix m;
+            Gdiplus::RectF bbox;
+            g.DrawString(m_args[i].display, m_args[i].display.GetLength(), &f, RectF(22+157*i, 154, 150, 20), &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
         }
-
-        // draw action icon on screen        
-        if(m_ruleresults.size()>=2) {
-            m_focus.AlphaBlend(hdc, 179, 22);
-            if(m_ruleresults[1].icon)
-                g.DrawImage(m_ruleresults[1].icon, RectF(179+11,28,128,128));
-
-            g.DrawString(m_ruleresults[1].display, m_ruleresults[1].display.GetLength(), &f, RectF(179, 154, 150, 20), &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
-        }
-
 
         POINT p1={1680/2-350/2,200};
         POINT p2={0};
@@ -186,63 +260,99 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         BOOL b=::UpdateLayeredWindow(m_hwnd, 0, &p1, &s, hdc, &p2, 0, &bf, ULW_ALPHA);
         
         premult.ReleaseDC();
+
+
+        /*CRect r;
+        GetWindowRect(m_hwnd, &r);
+        m_dlg.ShowWindow(SW_SHOW);
+        m_dlg.SetWindowPos(0, r.left+22+157*m_pane, r.bottom, 0, 0, SWP_NOSIZE);*/
     }
     LRESULT OnKeyboardMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         if(msg == WM_KEYDOWN && wParam == VK_RETURN)
-        {	
-            Rule *r=m_dlg.m_rules.back()->validate();
-            if(r==0) {
-                ShowWindow(m_hwnd, SW_HIDE);
-                m_dlg.ShowWindow(SW_HIDE);                
-                
-                while(m_dlg.m_rules.size()>1) { // keep the root rule
-                    delete m_dlg.m_rules.back();
-                    m_dlg.m_rules.pop_back();                    
-                    //return FALSE;
-                }
-                while(m_ruleresults.size()>1) { // keep the root rule
-                    delete m_ruleresults.back().icon;
-                    m_ruleresults.pop_back();                    
-                    //return FALSE;
-                }
-                delete m_ruleresults[0].icon;
-                m_ruleresults[0]=RuleResult();
+        {
+            SourceResult *r=m_dlg.GetSelectedItem();
+            SetArg(m_pane, *r);
 
-                m_input.SetText(L"");
+            // collect all active rules
+            // might need to disambiguate here ?
+            for(int i=0;i<m_rules.size();i++)
+                if(m_args.size()==m_rules[i]->m_types.size() && m_rules[i]->match(m_args, m_args.size()))
+                    if(m_rules[i]->execute(m_args)) {
+                        g_history[m_args.front().expandStr]=m_args;
 
-                return FALSE;
-            }
+                        // found one rule
+                        ShowWindow(m_hwnd, SW_HIDE);
+                        m_dlg.ShowWindow(SW_HIDE);
 
-            m_dlg.m_rules.push_back(r);
-            m_ruleresults.push_back(RuleResult());
-            m_input.SetText(r->defaultQuery);
-            
+                        // there is a contextmenu leak here
+                        // ask the sources to clean up their items here
+                        /*while(m_results.size()>1) { // keep the root rule
+                            delete m_results.back().icon;
+                            m_results.pop_back();                    
+                            //return FALSE;
+                        }*/
+                        m_results.clear();
+                        m_args.clear();
+                        m_pane=0;
+                        m_input.SetText(L"");
+                        m_queries.clear();
+                        return FALSE;
+                    }
+
+            m_args.push_back(SourceResult());
+            m_queries.push_back(m_input.m_text);
+            if(m_pane<m_args.size())
+                m_pane++;
+
+            m_input.SetText(L"");
             return FALSE;
         }	
         else if(msg == WM_KEYDOWN && wParam == VK_ESCAPE)
-        {
-            if(m_dlg.IsWindowVisible()) {
-                m_dlg.ShowWindow(SW_HIDE);
-                return FALSE;
-            } else if(m_dlg.m_rules.size()>1) { // keep the root rule
-                delete m_dlg.m_rules.back();
-                m_dlg.m_rules.pop_back();
-                m_ruleresults.pop_back();
-                actiontext=L"";
-                delete actionicon;
-                actionicon=0;
-                //return FALSE;
+        {                 
+            if(m_pane>0) {                                
+                m_input.SetText(m_queries.size()==0?L"":m_queries.back());
+                m_pane--;
+                m_args.pop_back();       
+                m_queries.pop_back();
+
+                ShowNextArg();
             }
-        
-            Rule *r=m_dlg.m_rules.back();
-            m_input.SetText(r->defaultQuery);
+            
             return FALSE;
         }
         else if(msg == WM_KEYDOWN && wParam == VK_TAB)
         {        
-            RuleResult *r=m_dlg.GetSelectedItem();
-            m_input.SetText(r->expandStr);
+            SourceResult *r=m_dlg.GetSelectedItem();
+            m_input.SetText(r->expandStr);            
+            
+            return FALSE;
+        }
+        else if(msg == WM_KEYDOWN && wParam == VK_RIGHT)
+        {        
+            if(m_args.size()==0)
+                return FALSE;
 
+            if(m_pane<m_args.size()-1)
+                m_pane++;
+            if(m_pane<m_args.size()) {
+                m_queries.push_back(m_input.m_text);
+                m_input.SetText(L"");
+            } else {
+                m_queries.push_back(L"");
+                m_input.SetText(L"");
+            }
+            
+            return FALSE;
+        }
+        else if(msg == WM_KEYDOWN && wParam == VK_LEFT)
+        {        
+            if(m_args.size()==0)
+                return FALSE;
+
+            if(m_pane>0)
+                m_pane--;
+            m_input.SetText(m_queries[m_pane]);
+            
             return FALSE;
         }
         else if(msg == WM_KEYDOWN && wParam == VK_DOWN)
@@ -269,6 +379,7 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
                 m_dlg.ShowWindow(SW_HIDE);
             } else {
                 ShowWindow(m_hwnd, SW_SHOW);
+                SetFocus(m_hwnd);
                 //m_dlg.ShowWindow(SW_SHOW);
             }
         }
@@ -320,7 +431,7 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
                 //*(DWORD*)img.GetPixelAddress(x,y) = cm;
             }
     }
-
+    // old behavior
     WindowlessInput    m_input;
     HWND               m_hwnd;
     CImage             m_background;
@@ -328,13 +439,14 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
 
     CString            lastResultExpandStr;
 
-    Bitmap   *actionicon;
-    CString            actiontext;
-
-    Bitmap   *objecticon;
-    CString            objecttext;
-
-    std::vector<RuleResult> m_ruleresults;
+    // new behavior
+    CImage                     premult;
+    int                        m_pane;
+    std::map<CString, std::vector<Source*> > m_sources;
+    std::vector<Rule*>         m_rules;
+    std::vector<SourceResult>  m_args;     // validated results
+    std::vector<SourceResult>  m_results;  // currently displayed results
+    std::vector<CString>       m_queries;
 
     ClauncherDlg       m_dlg;
 };

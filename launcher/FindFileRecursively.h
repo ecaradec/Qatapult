@@ -1,4 +1,6 @@
-void FindFilesRecursively(LPCTSTR lpFolder, LPCTSTR lpFilePattern, std::vector<CString> &files)
+#pragma once
+
+inline void FindFilesRecursively(LPCTSTR lpFolder, LPCTSTR lpFilePattern, std::vector<CString> &files)
 {
     TCHAR szFullPattern[MAX_PATH];
     WIN32_FIND_DATA FindFileData;
