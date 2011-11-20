@@ -13,10 +13,6 @@ struct HistorySource : Source {
                 results.push_back(g_history[i]);
             }
     }
-    Source *validate() {
-        SourceResult *r=m_pUI->GetSelectedItem();
-        return r->source;
-    }
     ClauncherDlg            *m_pUI;
 };
 

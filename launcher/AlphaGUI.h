@@ -3,6 +3,7 @@
 #include "FileSource.h"
 #include "StartMenuSource.h"
 #include "FileVerbSource.h"
+#include "EmailVerbSource.h"
 #include "IWindowlessGUI.h"
 #include "WindowlessInput.h"
 #include <map>
@@ -52,12 +53,19 @@ struct TextSource : Source {
         type=L"TEXT";
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &args, std::vector<SourceResult> &r, int def) {
-        if(CString(query).Find(L'\'')==0) {
-            r.push_back(SourceResult());
-            r.back().expandStr=CString(query).Mid(1,99);
-            r.back().display=CString(query).Mid(1,99);
-            r.back().source=this;
+        if(CString(query).Find(L'\'')==0 || args.size()!=0) {
+            r.push_back(SourceResult(CString(query).Mid(1), CString(query).Mid(1), this, 0, 0));
+        } else if(args.size()!=0) {
+            r.push_back(SourceResult(query, query, this, 0, 0));
         }
+    }
+};
+
+
+struct EmailVerbRule : Rule {
+    EmailVerbRule() : Rule(L"TEXT", L"EMAILVERB",L"TEXT") {}
+    virtual bool execute(std::vector<SourceResult> &args) { 
+        return true;
     }
 };
 
@@ -103,9 +111,10 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         m_sources[L"FILE"].push_back(new StartMenuSource);
         m_sources[L"FILEVERB"].push_back(new FileVerbSource);        
         m_sources[L"TEXT"].push_back(new TextSource);
+        m_sources[L"EMAILVERB"].push_back(new EmailVerbSource);
         
         // rules
-        m_rules.push_back(new Rule(L"TEXT", L"EMAILVERB"));
+        m_rules.push_back(new EmailVerbRule);
         m_rules.push_back(new FileVerbRule);        
         
 
@@ -157,18 +166,14 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
     void ShowNextArg() {
         // check if there is extra args     
         if(m_args.size()>0) {
+            // remove all args beyond current pane
+            while(m_pane+1<m_args.size())
+                m_args.pop_back();
+
             std::vector<SourceResult> results;
             CollectItems(L"", m_pane+1, m_args, results, 1);
             if(results.size()!=0) {
-                if(m_pane+1==m_args.size())
-                    m_args.push_back(results.front());
-                else
-                    SetArg(m_pane+1,results.front()); 
-            }
-            
-            if(results.size()==0) {
-                while(m_args.size()>m_pane+1)
-                    m_args.pop_back();
+                SetArg(m_pane+1,results.front()); 
             }
         }
     }
@@ -177,7 +182,10 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
             delete m_args[pane].icon;
             m_args[pane].icon=0;
         }
-        m_args[pane]=r;
+        if(pane==m_args.size())
+            m_args.push_back(r);
+        else
+            m_args[pane]=r;
     }
     void OnSelChange(SourceResult *r) {        
         if(m_args.size()==0)
@@ -276,19 +284,12 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
             for(int i=0;i<m_rules.size();i++)
                 if(m_args.size()==m_rules[i]->m_types.size() && m_rules[i]->match(m_args, m_args.size()))
                     if(m_rules[i]->execute(m_args)) {
-                        g_history[m_args.front().expandStr]=m_args;
+                        //g_history[m_args.front().expandStr]=m_args;
 
                         // found one rule
                         ShowWindow(m_hwnd, SW_HIDE);
                         m_dlg.ShowWindow(SW_HIDE);
 
-                        // there is a contextmenu leak here
-                        // ask the sources to clean up their items here
-                        /*while(m_results.size()>1) { // keep the root rule
-                            delete m_results.back().icon;
-                            m_results.pop_back();                    
-                            //return FALSE;
-                        }*/
                         m_results.clear();
                         m_args.clear();
                         m_pane=0;
@@ -297,12 +298,16 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
                         return FALSE;
                     }
 
+            /*
+            // return is the way to run commands
+            // left and right are the way to navigate command
+            ShowNextArg();
             m_args.push_back(SourceResult());
             m_queries.push_back(m_input.m_text);
             if(m_pane<m_args.size())
                 m_pane++;
 
-            m_input.SetText(L"");
+            m_input.SetText(L"");*/
             return FALSE;
         }	
         else if(msg == WM_KEYDOWN && wParam == VK_ESCAPE)
@@ -330,7 +335,7 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
             if(m_args.size()==0)
                 return FALSE;
 
-            if(m_pane<m_args.size()-1)
+            if(m_pane<m_args.size())
                 m_pane++;
             if(m_pane<m_args.size()) {
                 m_queries.push_back(m_input.m_text);
