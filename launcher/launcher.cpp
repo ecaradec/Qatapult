@@ -78,9 +78,15 @@ BOOL ClauncherApp::InitInstance()
     MSG msg;
     while(GetMessage(&msg, NULL, 0, 0) > 0)
     {
-        if (msg.hwnd == gui.m_dlg.GetSafeHwnd() ||
-           ::IsChild(gui.m_dlg.GetSafeHwnd(), msg.hwnd)) {
-               gui.OnKeyboardMessage(msg.message, msg.wParam, msg.lParam);
+        bool translate=true;
+        if (msg.hwnd == gui.m_dlg.GetSafeHwnd() ||::IsChild(gui.m_dlg.GetSafeHwnd(), msg.hwnd)) {
+            if(msg.message==WM_KEYDOWN && (msg.wParam==VK_LEFT || msg.wParam==VK_RIGHT)) {
+                translate=false;
+            }
+
+            gui.OnKeyboardMessage(msg.message, msg.wParam, msg.lParam);
+            if(!translate)
+                continue;
         }
         TranslateMessage(&msg);
         DispatchMessage(&msg);

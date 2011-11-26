@@ -1,18 +1,16 @@
 #pragma once
 #include <CommonControls.h>
 
-inline Gdiplus::Bitmap *getIcon(const CString &path) {
-    // get hicon
-    SHFILEINFO sh;
-    //SHGetFileInfo(L"C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\Common7\\IDE\\devenv.exe", FILE_ATTRIBUTE_NORMAL, &sh, sizeof(sh), SHGFI_SYSICONINDEX);                                
-    HICON hicon;
-
-    SHGetFileInfo(path, FILE_ATTRIBUTE_NORMAL, &sh, sizeof(sh), SHGFI_SYSICONINDEX);        
+inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh) {      
     IImageList *pil=0;
     CLSID clsid;
     CLSIDFromString(L"{46EB5926-582E-4017-9FDF-E8998DAA0950}", &clsid);
     SHGetImageList(SHIL_JUMBO, clsid, (void**)&pil);
-    HRESULT hr=pil->GetIcon(sh.iIcon, ILD_TRANSPARENT|ILD_PRESERVEALPHA, &hicon);
+    HICON hicon;
+    HRESULT hr=pil->GetIcon(sh.iIcon, ILD_ASYNC|ILD_TRANSPARENT|ILD_PRESERVEALPHA, &hicon);
+    
+    IMAGEINFO im;
+    pil->GetImageInfo(sh.iIcon, &im);
     int cx, cy;
     pil->GetIconSize(&cx,&cy);
 
@@ -41,4 +39,18 @@ inline Gdiplus::Bitmap *getIcon(const CString &path) {
     pil->Release();
 
     return icon;
+}
+
+inline Gdiplus::Bitmap *getIcon(const CString &path) {
+    // get hicon
+    SHFILEINFO sh;
+    SHGetFileInfo(path, FILE_ATTRIBUTE_NORMAL, &sh, sizeof(sh), SHGFI_SYSICONINDEX);        
+    return getIcon(sh);
+}
+
+inline Gdiplus::Bitmap *getIcon(ITEMIDLIST *pidl) {
+    // get hicon
+    SHFILEINFO sh;
+    SHGetFileInfo((LPCWSTR)pidl, FILE_ATTRIBUTE_NORMAL, &sh, sizeof(sh), SHGFI_PIDL|SHGFI_SYSICONINDEX);        
+    return getIcon(sh);
 }

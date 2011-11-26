@@ -45,9 +45,6 @@
     <ClInclude Include="FindFileRecursively.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Rule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="LevhensteinDistance.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -73,6 +70,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="EmailVerbSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

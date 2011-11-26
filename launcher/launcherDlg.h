@@ -78,18 +78,29 @@ struct CMyListBox : CListBox {
     }
 };
 
+inline CString ItoS(int i) {
+    CString tmp; tmp.Format(L"%d",i);
+    return tmp;
+}
 struct Source;
 
 struct SourceResult {
-    SourceResult() { icon=0; source=0; data=0; }
-    SourceResult(const CString &_display, const CString &_expand, Source *_s, int _id, void *_data) { 
+    SourceResult() { rank=0; bonus=0; icon=0; source=0; data=0; }
+    SourceResult(const CString &_key, const CString &_display, const CString &_expand, Source *_s, int _id, void *_data) { 
+        key=_key;
+        rank=0;
+        bonus=0;
         icon=0;
         display=_display;
         expandStr=_expand;
         source=_s;
         id=_id;
-        data=_data;
+        data=_data;        
     }
+    
+    CString  key;
+    int      rank;
+    int      bonus;
     CString  expandStr;
     CString  display;
     Source  *source;

@@ -59,3 +59,10 @@
 #endif
 
 using namespace Gdiplus;
+
+#include <map>
+#include <vector>
+#include <algorithm>
+
+
+typedef unsigned int uint;

@@ -1,8 +1,8 @@
 #pragma once
 
 struct FileVerbSource : Source {
-    FileVerbSource(): m_def(-1), m_pContextMenu(0) {        
-        type=L"FILEVERB";
+    FileVerbSource() : Source(L"FileVerb", L"FILEVERB"), m_def(-1), m_pContextMenu(0) {
+        load();
     }
     ~FileVerbSource() {
         if(m_pContextMenu)
@@ -22,6 +22,7 @@ struct FileVerbSource : Source {
             CComPtr<IShellFolder> psfDesktop, psfWinFiles;
             PIDLIST_RELATIVE pidlFolder, pidlItem;
             DWORD eaten;
+            // this could be annoying for commands with more than 1 fileverb source but it's very improbable
             if(m_pContextMenu!=0)
                 m_pContextMenu->Release();
             m_pContextMenu=0;
@@ -66,7 +67,7 @@ struct FileVerbSource : Source {
                     mii.dwTypeData=(LPWSTR)&buff;
                     mii.cch=sizeof(buff);
                     mii.fMask=MIIM_STRING|MIIM_SUBMENU|MIIM_ID;
-                    bool b=m.GetMenuItemInfo(i, &mii,TRUE);
+                    bool b=!!m.GetMenuItemInfo(i, &mii,TRUE);
 
                     int c=m.GetMenuString(i, s, MF_BYPOSITION);
                     s.Replace(L"&&",L"__EAMP__");
@@ -92,9 +93,25 @@ struct FileVerbSource : Source {
 
         for(std::list<Command>::iterator it=m_commands.begin();it!=m_commands.end();it++) {
             if(CString(it->display).MakeUpper().Find(CString(query).MakeUpper())!=-1) {
-                results.push_back(SourceResult(it->display, it->expandStr, this, it->id, m_pContextMenu));
+                results.push_back(SourceResult(ItoS(it->id), it->display, it->expandStr, this, it->id, m_pContextMenu));
             }
         }
+        
+        // opencontaining, runas, taskbarpin, taskbarunpin
+        // startpin, startunpin, link, delete, properties
+        /*std::vector<CString> verbs;
+        verbs.push_back(L"Open");
+        verbs.push_back(L"Edit");
+        verbs.push_back(L"Explore");
+        verbs.push_back(L"Print");
+        verbs.push_back(L"Copy");
+        verbs.push_back(L"Cut");
+        verbs.push_back(L"Paste");
+        verbs.push_back(L"Properties");
+
+        for(int i=0;i<verbs.size();i++) {
+            results.push_back(SourceResult(verbs[i],  verbs[i], this, i, 0));
+        }*/
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r) {
         WCHAR buff[256];
