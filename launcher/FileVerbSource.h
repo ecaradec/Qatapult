@@ -1,7 +1,7 @@
 #pragma once
 
 struct FileVerbSource : Source {
-    FileVerbSource() : Source(L"FileVerb", L"FILEVERB"), m_def(-1), m_pContextMenu(0) {
+    FileVerbSource() : Source(L"FILEVERB"), m_def(-1), m_pContextMenu(0) {
         load();
     }
     ~FileVerbSource() {
