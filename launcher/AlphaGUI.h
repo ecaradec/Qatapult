@@ -411,7 +411,13 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
             return FALSE;
         }	
         else if(msg == WM_KEYDOWN && wParam == VK_ESCAPE)
-        {                 
+        {
+            if(m_dlg.IsWindowVisible()) {
+                CRect r;
+                GetWindowRect(m_hwnd, &r);
+                m_dlg.ShowWindow(SW_HIDE);
+            }
+
             if(m_pane>0) {                                
                 m_input.SetText(m_queries.size()==0?L"":m_queries.back());
                 m_pane--;
