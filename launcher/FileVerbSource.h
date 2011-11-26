@@ -51,9 +51,10 @@ struct FileVerbSource : Source {
             if(m_pContextMenu) {
                 CMenu m;
                 m.CreatePopupMenu();
-                if(def==0)
-                    m_pContextMenu->QueryContextMenu(m.GetSafeHmenu(), 0, 0, 0xFFFF, CMF_NORMAL);
-                else
+                // only get the fast results
+                //if(def==0)
+                //    m_pContextMenu->QueryContextMenu(m.GetSafeHmenu(), 0, 0, 0xFFFF, CMF_NORMAL);
+                //else
                     m_pContextMenu->QueryContextMenu(m.GetSafeHmenu(), 0, 0, 0xFFFF, CMF_DEFAULTONLY);
 
                 int i=0;
