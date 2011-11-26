@@ -12,6 +12,7 @@ struct FileSource : Source {
         if(q.Find(L":\\")!=1 && q.Find(L"\\\\")==-1)
             return;
         CString Q(q); Q.MakeUpper();
+
         // network works for \\FREEBOX\Disque dur\ but not for \\FREEBOX\
         // need a way to enumerate servers and shares
         
@@ -29,7 +30,7 @@ struct FileSource : Source {
                 CString noslash=q.Left(q.ReverseFind(L'\\'));
                 CString foldername=noslash.Mid(noslash.ReverseFind(L'\\')+1);
 
-                if(CString(foldername).MakeUpper().Find(Q)!=-1) {
+                if(CString(foldername).MakeUpper().Find(f)!=-1) {
                     SourceResult r;
                     r.display=L"[D]"+foldername;
                     r.expandStr=noslash+L"\\";
@@ -45,7 +46,7 @@ struct FileSource : Source {
                 else
                     expandStr = CString(d+L"\\"+w32fd.cFileName);
 
-                if(CString(w32fd.cFileName).MakeUpper().Find(Q)!=-1) {
+                if(CString(w32fd.cFileName).MakeUpper().Find(f)!=-1) {
                     SourceResult r;
                     r.display=CString(isdirectory?L"[D]":L"[F]")+w32fd.cFileName;
                     r.expandStr=expandStr;
