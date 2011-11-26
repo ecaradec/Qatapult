@@ -2,12 +2,26 @@
 #include "FindFileRecursively.h"
 #include "sqlite3/sqlite3.h"
 
+inline CString GetSpecialFolder(int csidl) {
+    CString tmp;
+    SHGetFolderPath(0, csidl, 0, SHGFP_TYPE_CURRENT, tmp.GetBufferSetLength(MAX_PATH)); tmp.ReleaseBuffer();
+    return tmp;
+}
+
 // might be useful
 // http://stackoverflow.com/questions/1744902/how-might-i-obtain-the-icontextmenu-that-is-displayed-in-an-ishellview-context-m
 struct StartMenuSource : Source {
     StartMenuSource() : Source(L"FILE", L"STARTMENU") {
         std::vector<CString> lnks;
-        FindFilesRecursively(L"C:\\ProgramData\\Microsoft\\Windows\\Start Menu", L"*.lnk", lnks);
+                
+        FindFilesRecursively(GetSpecialFolder(CSIDL_COMMON_STARTMENU), L"*.lnk", lnks);
+        FindFilesRecursively(GetSpecialFolder(CSIDL_STARTMENU), L"*.lnk", lnks);
+
+        // all files from the desktop
+        //FindFilesRecursively(GetSpecialFolder(CSIDL_COMMON_DESKTOPDIRECTORY), L"*.*", lnks);
+        //FindFilesRecursively(GetSpecialFolder(CSIDL_DESKTOPDIRECTORY), L"*.*", lnks);
+        
+        
         for(uint i=0;i<lnks.size();i++) {
             CString str(lnks[i]);
             PathRemoveExtension(str.GetBuffer()); str.ReleaseBuffer();
