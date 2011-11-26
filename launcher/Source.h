@@ -45,10 +45,12 @@ struct Source {
         int i=0;
         CString nb;
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
-            nb.Format(L"%d",i);
-            WritePrivateProfileString(m_name,nb+"_key",it->second.key, dir+L"\\db.ini"); // I should add a 'key' member : a string probably
-            WritePrivateProfileString(m_name,nb+"_bonus",ItoS(it->second.bonus), dir+L"\\db.ini");
-            i++;
+            if(it->second.bonus != 0) { // there is no need to write items with a 0 bonus
+                nb.Format(L"%d",i);
+                WritePrivateProfileString(m_name,nb+"_key",it->second.key, dir+L"\\db.ini"); // I should add a 'key' member : a string probably
+                WritePrivateProfileString(m_name,nb+"_bonus",ItoS(it->second.bonus), dir+L"\\db.ini");
+                i++;
+            }            
         }
     }
     virtual void load() {
