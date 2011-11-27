@@ -71,6 +71,7 @@ struct FileVerbRule : Rule {
 struct TextSource : Source {
     TextSource() : Source(L"TEXT") {
         load();
+        m_ignoreemptyquery=true;
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &args, std::vector<SourceResult> &r, int def) {
         if(CString(query).Find(L'\'')==0) {
@@ -138,7 +139,7 @@ struct QuitVerbSource : Source {
     QuitVerbSource() : Source(L"QUITVERB") {
         m_index[L"Quit (QSLL )"]=SourceResult(L"Quit (QSLL )", L"Quit (QSLL )", L"Quit (QSLL )", this, 0, 0);
         load();
-        m_noemptyquery=true;
+        m_ignoreemptyquery=true;
     }
 };
 
@@ -263,7 +264,10 @@ struct AlphaGUI : IWindowlessGUI {
         results.clear();        
         for(std::map<CString,bool>::iterator it=activesources.begin(); it!=activesources.end(); it++)
             for(uint i=0;i<m_sources[it->first].size();i++)
-                m_sources[it->first][i]->collect(q, args, results, def);
+                if(m_sources[it->first][i]->m_ignoreemptyquery == true && q==L"")
+                    ;
+                else
+                    m_sources[it->first][i]->collect(q, args, results, def);
 
         CString Q(q); Q.MakeUpper();
         for(uint i=0;i<results.size();i++) {
@@ -337,11 +341,6 @@ struct AlphaGUI : IWindowlessGUI {
         ShowNextArg();
 
         Invalidate();
-
-        // history is nice but add too much complexity right now
-        /*std::map<CString, std::vector<SourceResult> >::iterator itH=g_history.find(r->expandStr);
-        if(itH!=g_history.end())
-            m_args=itH->second;*/
     }
     void Update() {        
         // load icons if they aren't 
@@ -414,6 +413,9 @@ struct AlphaGUI : IWindowlessGUI {
     LRESULT OnKeyboardMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         if(msg == WM_KEYDOWN && wParam == VK_RETURN)
         {
+            // return is the way to run commands
+            // left and right are the way to navigate command
+
             SourceResult *r=GetSelectedItem();
             SetArg(m_pane, *r);
 
@@ -439,17 +441,6 @@ struct AlphaGUI : IWindowlessGUI {
                         return FALSE;
                     }
                 }
-
-            /*
-            // return is the way to run commands
-            // left and right are the way to navigate command
-            ShowNextArg();
-            m_args.push_back(SourceResult());
-            m_queries.push_back(m_input.m_text);
-            if(m_pane<m_args.size())
-                m_pane++;
-
-            m_input.SetText(L"");*/
             return FALSE;
         }	
         else if(msg == WM_KEYDOWN && wParam == VK_ESCAPE)
@@ -482,19 +473,6 @@ struct AlphaGUI : IWindowlessGUI {
         }
         else if(msg == WM_KEYDOWN && wParam == VK_RIGHT)
         {
-            /*if(m_args.size()==0)
-                return FALSE;*/
-
-            /*std::vector<SourceResult> results;
-            CollectItems(L"", m_pane+1, m_args, results, 1);
-            if(results.size()!=0) {
-                m_pane++;
-                m_queries.push_back(m_input.m_text);
-                m_input.SetText(L"");
-                return FALSE;
-            }*/
-
-
             uint p=m_pane;
             if(p+1<m_args.size())
                 m_pane++;
@@ -610,7 +588,6 @@ struct AlphaGUI : IWindowlessGUI {
 
                 DWORD cm=R + (G<<8) + (B<<16) + (A<<24);
                 img.SetPixel(x,y,Color(cm));
-                //*(DWORD*)img.GetPixelAddress(x,y) = cm;
             }
     }
     // old behavior

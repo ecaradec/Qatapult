@@ -3,12 +3,12 @@ struct Source {
     Source(const CString& t) {
         m_name=t;
         type=t;
-        m_noemptyquery=false;
+        m_ignoreemptyquery=false;
     }
     Source(const CString& t, const CString &n) {
         m_name=n;
         type=t;
-        m_noemptyquery=false;
+        m_ignoreemptyquery=false;
     }
 
     virtual ~Source() =0 {}
@@ -29,8 +29,6 @@ struct Source {
     // get results
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &args, std::vector<SourceResult> &r, int def) {        
         CString q(query); q.MakeUpper();
-        if(m_noemptyquery && q==L"")
-            return;
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
             if(CString(it->second.display).MakeUpper().Find(q)!=-1) {
                 r.push_back(it->second);
@@ -78,7 +76,7 @@ struct Source {
     virtual void release(SourceResult *r) {}
     virtual void rate(SourceResult *r) {}
 
-    bool                            m_noemptyquery;
+    bool                            m_ignoreemptyquery;
     CString                         m_name;
     CString                         type;
     CString                         defaultQuery;
