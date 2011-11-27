@@ -1,6 +1,6 @@
 #pragma once
 #include "FindFileRecursively.h"
-#include "sqlite3/sqlite3.h"
+//#include "sqlite3/sqlite3.h"
 
 inline CString GetSpecialFolder(int csidl) {
     CString tmp;
@@ -86,5 +86,4 @@ struct StartMenuSource : Source {
             return;
         Source::collect(query,args,results,flags);
     }
-    ClauncherDlg                    *m_pUI;
 };

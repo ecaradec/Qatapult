@@ -24,12 +24,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="launcher.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="launcherDlg.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -75,12 +69,12 @@
     <ClInclude Include="Source.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SourceResult.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="launcher.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="launcherDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">

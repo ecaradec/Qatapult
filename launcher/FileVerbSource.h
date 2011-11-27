@@ -49,17 +49,15 @@ struct FileVerbSource : Source {
                     return;
             }
             if(m_pContextMenu) {
-                CMenu m;
-                m.CreatePopupMenu();
+                HMENU hmenu=CreatePopupMenu();
                 // only get the fast results
                 //if(def==0)
                 //    m_pContextMenu->QueryContextMenu(m.GetSafeHmenu(), 0, 0, 0xFFFF, CMF_NORMAL);
                 //else
-                    m_pContextMenu->QueryContextMenu(m.GetSafeHmenu(), 0, 0, 0xFFFF, CMF_DEFAULTONLY);
-
+                m_pContextMenu->QueryContextMenu(hmenu, 0, 0, 0xFFFF, CMF_DEFAULTONLY);
                 int i=0;
                 CString s;
-                for(int i=0;i<m.GetMenuItemCount();i++) {
+                for(int i=0;i<::GetMenuItemCount(hmenu);i++) {
             
                     MENUITEMINFO mii;
                     memset(&mii, 0, sizeof(mii));
@@ -68,9 +66,9 @@ struct FileVerbSource : Source {
                     mii.dwTypeData=(LPWSTR)&buff;
                     mii.cch=sizeof(buff);
                     mii.fMask=MIIM_STRING|MIIM_SUBMENU|MIIM_ID;
-                    bool b=!!m.GetMenuItemInfo(i, &mii,TRUE);
+                    bool b=!!::GetMenuItemInfo(hmenu, i, TRUE, &mii);
 
-                    int c=m.GetMenuString(i, s, MF_BYPOSITION);
+                    int c=::GetMenuString(hmenu, i, s.GetBufferSetLength(256), 256, MF_BYPOSITION); s.ReleaseBuffer();
                     s.Replace(L"&&",L"__EAMP__");
                     s.Replace(L"&",L"");
                     s.Replace(L"__EAMP__",L"&");
@@ -128,7 +126,6 @@ struct FileVerbSource : Source {
     int                  m_def;
     CString              m_curItem;
     IContextMenu        *m_pContextMenu;
-    ClauncherDlg        *m_pUI;
     struct Command {
         CString expandStr;
         CString display;

@@ -3,9 +3,6 @@
 //
 
 #include "stdafx.h"
-#include "launcher.h"
-#include "launcherDlg.h"
-#include <gdiplus.h>
 #include "AlphaGUI.h"
 
 #ifdef _DEBUG
@@ -13,8 +10,39 @@
 #endif
 
 
-// ClauncherApp
+int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
 
+    ULONG_PTR gdiplusToken;
+    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+
+    AlphaGUI gui;
+
+    MSG msg;
+    while(GetMessage(&msg, NULL, 0, 0) > 0)
+    {
+        bool translate=true;
+        if (/*msg.hwnd == gui.m_hwnd ||*/::IsChild(gui.m_listhosthwnd, msg.hwnd)) {
+            if(msg.message==WM_KEYDOWN && (msg.wParam==VK_LEFT || msg.wParam==VK_RIGHT)) {
+                translate=false;
+            }
+
+            gui.OnKeyboardMessage(msg.message, msg.wParam, msg.lParam);
+            if(!translate)
+                continue;
+        }
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+    
+    UnregisterClass(L"GUI",0);
+    Gdiplus::GdiplusShutdown(gdiplusToken);
+    return 0;
+}
+
+// ClauncherApp
+/*
 BEGIN_MESSAGE_MAP(ClauncherApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
@@ -79,7 +107,8 @@ BOOL ClauncherApp::InitInstance()
     while(GetMessage(&msg, NULL, 0, 0) > 0)
     {
         bool translate=true;
-        if (msg.hwnd == gui.m_dlg.GetSafeHwnd() ||::IsChild(gui.m_dlg.GetSafeHwnd(), msg.hwnd)) {
+        if (//msg.hwnd == gui.m_hwnd ||
+            ::IsChild(gui.m_listhosthwnd, msg.hwnd)) {
             if(msg.message==WM_KEYDOWN && (msg.wParam==VK_LEFT || msg.wParam==VK_RIGHT)) {
                 translate=false;
             }
@@ -107,3 +136,4 @@ BOOL ClauncherApp::InitInstance()
 	return FALSE;
 }
 
+*/

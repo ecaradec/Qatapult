@@ -14,20 +14,21 @@
     <ProjectGuid>{E8DF9869-E289-41BB-B930-3FE959E704E8}</ProjectGuid>
     <RootNamespace>launcher</RootNamespace>
     <Keyword>MFCProj</Keyword>
+    <ProjectName>QSLL</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
-    <UseOfMfc>Dynamic</UseOfMfc>
+    <UseOfMfc>false</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <UseOfMfc>Dynamic</UseOfMfc>
+    <UseOfMfc>false</UseOfMfc>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -108,11 +109,10 @@
     <ClInclude Include="geticon.h" />
     <ClInclude Include="HistorySource.h" />
     <ClInclude Include="IWindowlessGUI.h" />
-    <ClInclude Include="launcher.h" />
-    <ClInclude Include="launcherDlg.h" />
     <ClInclude Include="LevhensteinDistance.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Source.h" />
+    <ClInclude Include="SourceResult.h" />
     <ClInclude Include="StartMenuSource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -120,7 +120,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="launcher.cpp" />
-    <ClCompile Include="launcherDlg.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

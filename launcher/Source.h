@@ -3,10 +3,12 @@ struct Source {
     Source(const CString& t) {
         m_name=t;
         type=t;
+        m_noemptyquery=false;
     }
     Source(const CString& t, const CString &n) {
         m_name=n;
         type=t;
+        m_noemptyquery=false;
     }
 
     virtual ~Source() =0 {}
@@ -25,8 +27,10 @@ struct Source {
         g.DrawString(sr->display, sr->display.GetLength(), &f, RectF(r.X, r.Y+r.Height-15, r.Width, 20), &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
     }
     // get results
-    virtual void collect(const TCHAR *query, std::vector<SourceResult> &args, std::vector<SourceResult> &r, int def) {
+    virtual void collect(const TCHAR *query, std::vector<SourceResult> &args, std::vector<SourceResult> &r, int def) {        
         CString q(query); q.MakeUpper();
+        if(m_noemptyquery && q==L"")
+            return;
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
             if(CString(it->second.display).MakeUpper().Find(q)!=-1) {
                 r.push_back(it->second);
@@ -47,8 +51,8 @@ struct Source {
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
             if(it->second.bonus != 0) { // there is no need to write items with a 0 bonus
                 nb.Format(L"%d",i);
-                WritePrivateProfileString(m_name,nb+"_key",it->second.key, dir+L"\\db.ini"); // I should add a 'key' member : a string probably
-                WritePrivateProfileString(m_name,nb+"_bonus",ItoS(it->second.bonus), dir+L"\\db.ini");
+                WritePrivateProfileString(m_name,nb+L"_key",it->second.key, dir+L"\\db.ini"); // I should add a 'key' member : a string probably
+                WritePrivateProfileString(m_name,nb+L"_bonus",ItoS(it->second.bonus), dir+L"\\db.ini");
                 i++;
             }            
         }
@@ -74,6 +78,7 @@ struct Source {
     virtual void release(SourceResult *r) {}
     virtual void rate(SourceResult *r) {}
 
+    bool                            m_noemptyquery;
     CString                         m_name;
     CString                         type;
     CString                         defaultQuery;

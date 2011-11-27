@@ -1,4 +1,4 @@
-#include "launcherdlg.h"
+#include "SourceResult.h"
 #include "Source.h"
 #include "FileSource.h"
 #include "StartMenuSource.h"
@@ -16,6 +16,9 @@
 // [_] SourceResult should contains an map to store it's data probably, would solve most problems
 
 struct Rule {
+    Rule(const CString &arg1type) {
+        m_types.push_back(arg1type);
+    }
     Rule(const CString &arg1type, const CString &verbtype) {
         m_types.push_back(arg1type);
         m_types.push_back(verbtype);
@@ -131,6 +134,23 @@ struct ContactSource : Source {
     }
 };
 
+struct QuitVerbSource : Source {
+    QuitVerbSource() : Source(L"QUITVERB") {
+        m_index[L"Quit (QSLL )"]=SourceResult(L"Quit (QSLL )", L"Quit (QSLL )", L"Quit (QSLL )", this, 0, 0);
+        load();
+        m_noemptyquery=true;
+    }
+};
+
+struct QuitRule : Rule {
+    QuitRule() : Rule(L"QUITVERB") {}
+    virtual bool execute(std::vector<SourceResult> &args) {
+        PostQuitMessage(0);
+        return true;
+    }    
+};
+
+
 struct WebSearchRule : Rule {
     WebSearchRule() : Rule(L"TEXT", L"SEARCHWITHVERB", L"WEBSITE") {}
     virtual bool execute(std::vector<SourceResult> &args) {
@@ -148,24 +168,36 @@ struct WebSearchRule : Rule {
 
 std::map<CString, std::vector<SourceResult> > g_history;
 
+
 // SHGetImageList
-struct AlphaGUI : IWindowlessGUI, KeyHook {
-    AlphaGUI():m_input(this),m_dlg(this) {
+struct AlphaGUI : IWindowlessGUI {
+    AlphaGUI():m_input(this) {
         //WNDCLASS wnd={0};
         //wnd.style=0;
         //wnd.lpfnWndProc=::DefWindowProc;
         //wnd.lpfnWndProc=(WNDPROC)AlphaGUI::_WndProc;
         //wnd.lpszClassName=L"GUI";            
         //ATOM clss=RegisterClass(&wnd);
-        m_pane=0;
+        m_pane=0;    
 
-        m_dlg.m_pKH=this;
-        m_dlg.Create(ClauncherDlg::IDD);
-        m_dlg.ShowWindow(SW_HIDE);
-
-        m_hwnd=CreateWindowEx(WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_CHILD, 0, 0, 0, 0, m_dlg.GetSafeHwnd(), 0, 0, 0);
+        m_hwnd=CreateWindowEx(WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
         ::SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG)_WndProc);
-        ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);
+        ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);        
+
+        
+        m_listhosthwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_THICKFRAME, 0, 0, 250, 400, 0, 0, 0, 0); // fix parent
+        CRect rc;
+        GetClientRect(m_listhosthwnd,&rc);
+        m_listhwnd=CreateWindow(L"ListBox", L"", WS_VISIBLE|WS_CHILD|LBS_NOTIFY|LBS_HASSTRINGS|WS_VSCROLL, 0, 0, rc.Width(), rc.Height(), m_listhosthwnd, 0, 0, 0); // fix parent
+        ::SetWindowLongPtr(m_listhosthwnd, GWLP_WNDPROC, (LONG)_ListBoxWndProc);
+        ::SetWindowLongPtr(m_listhosthwnd, GWLP_USERDATA, (LONG)this);
+
+        // this is not the correct way to get gui font : 
+        // http://fox-toolkit.2306850.n4.nabble.com/getSystemFont-call-to-SystemParametersInfo-fails-when-WINVER-gt-0x0600-td4011173.html
+        // http://blogs.msdn.com/b/oldnewthing/archive/2005/07/07/436435.aspx
+        // but this is so easy .... 
+        WPARAM w=(WPARAM)GetStockObject(DEFAULT_GUI_FONT);
+        SendMessage(m_listhwnd, WM_SETFONT, w, TRUE);
 
         m_background.Load(L"..\\background.png");
         PremultAlpha(m_background);
@@ -179,10 +211,6 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         premult.Create(m_background3.GetWidth(), m_background.GetHeight(), 32, CImage::createAlphaChannel);
 
         Invalidate();        
-
-        //CRect r;
-        //GetWindowRect(m_hwnd, &r);
-        //m_dlg.SetWindowPos(0, r.left, r.bottom, 0, 0, SWP_NOSIZE);
 
         RegisterHotKey(m_hwnd, 1, MOD_SHIFT, VK_SPACE);
 
@@ -203,6 +231,8 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         m_sources[L"SEARCHWITHVERB"].push_back(new SearchWithVerbSource);        
         m_rules.push_back(new WebSearchRule);
         
+        m_sources[L"QUITVERB"].push_back(new QuitVerbSource);        
+        m_rules.push_back(new QuitRule);
 
         OnQueryChange(L"");
         
@@ -247,16 +277,24 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         return r1.rank > r2.rank;
     }
     void OnQueryChange(const CString &q) {
-        m_dlg.m_resultsWnd.ResetContent();
+        ::SendMessage(m_listhwnd, LB_RESETCONTENT, 0, 0); // TOFIX
         CollectItems(q, m_pane, m_args, m_results, 0);        
                 
         std::sort(m_results.begin(), m_results.end(), ResultSourceCmp);
 
         for(uint i=0;i<m_results.size();i++) {
             CString s; s.Format(L"%d %s", m_results[i].rank, m_results[i].display);
-            int id=m_dlg.m_resultsWnd.AddString(s);
-            m_dlg.m_resultsWnd.SetItemDataPtr(id, &m_results[i]); // ok if we don't add anything to results later
+            int id=::SendMessage(m_listhwnd, LB_ADDSTRING, 0, (LPARAM)s.GetString()); // TOFIX
+            ::SendMessage(m_listhwnd, LB_SETITEMDATA, id, (LPARAM)&m_results[i]);
         }
+
+        SourceResult *r=0;
+        //if(m_results.size()) {
+        //    int id=::SendMessage(m_listhwnd, LB_ADDSTRING, 0, (LPARAM)L"TEST"); // TOFIX
+        //    ::SendMessage(m_listhwnd, LB_SETITEMDATA, id, 1);
+        //    int j=SendMessage(m_listhwnd, LB_GETITEMDATA, id, 0);
+        //}
+
 
         if(m_results.size()>0) {
             OnSelChange(&m_results.front());
@@ -366,13 +404,17 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
 
         CRect r;
         GetWindowRect(m_hwnd, &r);
-        /*m_dlg.ShowWindow(SW_SHOW);*/
-        m_dlg.SetWindowPos(0, r.left+22+157*m_pane, r.bottom, 0, 0, SWP_NOSIZE);
+        SetWindowPos(m_listhosthwnd, 0, r.left+22+157*m_pane, r.bottom, 0, 0, SWP_NOSIZE|SWP_NOACTIVATE);
     }
-    LRESULT OnKeyboardMessage(UINT msg, WPARAM wParam, LPARAM lParam) {        
+    SourceResult *GetSelectedItem() {
+        int sel=::SendMessage(m_listhwnd, LB_GETCARETINDEX, 0, 0);
+        //::SendMessage(m_listhwnd, LB_GETSELITEMS, 1, (LPARAM)&sel);
+        return (SourceResult*)::SendMessage(m_listhwnd, LB_GETITEMDATA, sel, 0);
+    }
+    LRESULT OnKeyboardMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         if(msg == WM_KEYDOWN && wParam == VK_RETURN)
         {
-            SourceResult *r=m_dlg.GetSelectedItem();
+            SourceResult *r=GetSelectedItem();
             SetArg(m_pane, *r);
 
             // collect all active rules
@@ -387,7 +429,6 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
                     if(m_rules[i]->execute(m_args)) {                        
                         // found one rule
                         ShowWindow(m_hwnd, SW_HIDE);
-                        m_dlg.ShowWindow(SW_HIDE);
 
                         m_results.clear();
                         m_args.clear();
@@ -412,10 +453,10 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         }	
         else if(msg == WM_KEYDOWN && wParam == VK_ESCAPE)
         {
-            if(m_dlg.IsWindowVisible()) {
+            if(IsWindowVisible(m_listhosthwnd)) {
                 CRect r;
                 GetWindowRect(m_hwnd, &r);
-                m_dlg.ShowWindow(SW_HIDE);
+                ShowWindow(m_listhosthwnd, SW_HIDE);
             }
 
             if(m_pane>0) {                                
@@ -431,7 +472,7 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         }
         else if(msg == WM_KEYDOWN && wParam == VK_TAB)
         {        
-            SourceResult *r=m_dlg.GetSelectedItem();
+            SourceResult *r=GetSelectedItem();
             m_input.SetText(r->expandStr);            
             
             return FALSE;
@@ -481,9 +522,9 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
         {	
             CRect r;
             GetWindowRect(m_hwnd, &r);
-            m_dlg.ShowWindow(SW_SHOW);
-            //m_dlg.SetWindowPos(0, r.left, r.bottom, 0, 0, SWP_NOSIZE);
-            //m_dlg.SetFocus();
+            ::ShowWindow(m_listhosthwnd, SW_SHOW);
+            ::SetActiveWindow(m_listhosthwnd);
+            ::SetFocus(m_listhwnd);
             
             return FALSE;
         }
@@ -504,22 +545,31 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
             
             if(IsWindowVisible(m_hwnd)) {
                 ShowWindow(m_hwnd, SW_HIDE);
-                m_dlg.ShowWindow(SW_HIDE);
             } else {
                 ShowWindow(m_hwnd, SW_SHOW);
                 h1=SetActiveWindow(m_hwnd);
                 h2=SetFocus(m_hwnd);
-                //m_dlg.ShowWindow(SW_SHOW);
             }
         }
         return ::DefWindowProc(hwnd, msg, wParam, lParam);
     }
-    
-    static LRESULT _WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-       
-        return ((AlphaGUI*)GetWindowLongPtr(hwnd, GWLP_USERDATA))->WndProc(hwnd,msg,wParam,lParam);
+    LRESULT ListBoxWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {           
+        if(msg==WM_COMMAND && HIWORD(wParam)==LBN_SELCHANGE)
+            OnSelChange(GetSelectedItem());
+
+        if(msg == WM_CHAR)
+            m_input.OnWindowMessage(msg,wParam,lParam);
+
+        return ::DefWindowProc(hwnd, msg, wParam, lParam);
     }
 
+    static LRESULT _WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+        return ((AlphaGUI*)GetWindowLongPtr(hwnd, GWLP_USERDATA))->WndProc(hwnd,msg,wParam,lParam);
+    }
+    static LRESULT _ListBoxWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+       
+        return ((AlphaGUI*)GetWindowLongPtr(hwnd, GWLP_USERDATA))->ListBoxWndProc(hwnd,msg,wParam,lParam);
+    }
 
     void PremultAlpha(CImage &img) {
         for(int y=0;y<img.GetHeight(); y++) 
@@ -569,7 +619,8 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
 
     CString            lastResultExpandStr;
 
-    // new behavior
+    // new behavior    
+
     CImage                     premult;
     uint                       m_pane;
     std::map<CString, std::vector<Source*> > m_sources;
@@ -578,5 +629,6 @@ struct AlphaGUI : IWindowlessGUI, KeyHook {
     std::vector<SourceResult>  m_results;  // currently displayed results
     std::vector<CString>       m_queries;
 
-    ClauncherDlg       m_dlg;
+    HWND                       m_listhwnd;
+    HWND                       m_listhosthwnd;
 };
