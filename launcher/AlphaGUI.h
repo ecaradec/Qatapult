@@ -129,7 +129,7 @@ struct SearchWithVerbSource : Source {
 struct ContactSource : Source {
     ContactSource() : Source(L"CONTACT") {
         m_index[L"Emmanuel Caradec"]=SourceResult(L"Emmanuel Caradec", L"Emmanuel Caradec", L"Emmanuel Caradec", this, 0, 0);
-        m_index[L"Iris Bourret"]=SourceResult(L"Iris Bourret", L"Iris Bourret", L"Iris Bourret", this, 1, 0);
+        //m_index[L"Iris Bourret"]=SourceResult(L"Iris Bourret", L"Iris Bourret", L"Iris Bourret", this, 1, 0);
         load();
     }
 };
@@ -185,7 +185,7 @@ struct AlphaGUI : IWindowlessGUI {
         ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);        
 
         
-        m_listhosthwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_THICKFRAME, 0, 0, 250, 400, 0, 0, 0, 0); // fix parent
+        m_listhosthwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_TOPMOST, L"STATIC", L"", WS_POPUP|WS_THICKFRAME, 0, 0, 250, 400, 0, 0, 0, 0); // fix parent
         CRect rc;
         GetClientRect(m_listhosthwnd,&rc);
         m_listhwnd=CreateWindow(L"ListBox", L"", WS_VISIBLE|WS_CHILD|LBS_NOTIFY|LBS_HASSTRINGS|WS_VSCROLL, 0, 0, rc.Width(), rc.Height(), m_listhosthwnd, 0, 0, 0); // fix parent
@@ -429,6 +429,7 @@ struct AlphaGUI : IWindowlessGUI {
                     if(m_rules[i]->execute(m_args)) {                        
                         // found one rule
                         ShowWindow(m_hwnd, SW_HIDE);
+                        ShowWindow(m_listhosthwnd, SW_HIDE);
 
                         m_results.clear();
                         m_args.clear();
@@ -457,6 +458,7 @@ struct AlphaGUI : IWindowlessGUI {
                 CRect r;
                 GetWindowRect(m_hwnd, &r);
                 ShowWindow(m_listhosthwnd, SW_HIDE);
+                return FALSE;
             }
 
             if(m_pane>0) {                                
@@ -466,6 +468,7 @@ struct AlphaGUI : IWindowlessGUI {
                 m_queries.pop_back();
 
                 ShowNextArg();
+                Invalidate();
             }
             
             return FALSE;
