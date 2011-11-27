@@ -302,6 +302,9 @@ struct AlphaGUI : IWindowlessGUI {
 
         if(m_results.size()>0) {
             OnSelChange(&m_results.front());
+        } else {
+            while(m_pane<m_args.size())
+                m_args.pop_back();
         }
 
         ShowNextArg();
