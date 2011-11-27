@@ -391,14 +391,17 @@ struct AlphaGUI : IWindowlessGUI {
         for(uint i=0;i<m_args.size(); i++) {
             m_args[i].source->drawItem(g, &m_args[i], RectF(22+157*REAL(i), 22, 150, 154));
         }
+        
+        CRect workarea;
+        ::SystemParametersInfo(SPI_GETWORKAREA, 0, &workarea, 0);
 
-        POINT p1={1680/2-w/2,200};
+        POINT p1={(workarea.left+workarea.right)/2-w/2,200};
         POINT p2={0};
         SIZE s={w, m_background.GetHeight()};
         BLENDFUNCTION bf={AC_SRC_OVER, 0, 255, AC_SRC_ALPHA};
         BOOL b=::UpdateLayeredWindow(m_hwnd, 0, &p1, &s, hdc, &p2, 0, &bf, ULW_ALPHA);
         
-        premult.ReleaseDC();
+        premult.ReleaseDC(); 
 
 
         CRect r;
