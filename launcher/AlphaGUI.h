@@ -537,8 +537,8 @@ struct AlphaGUI : IWindowlessGUI {
                 h2=SetFocus(m_hwnd);
             }
         } else if(msg==WM_USER) {
-            ((std::map<CString,SourceResult> *)wParam)->begin()->second.source->updateIndex(((std::map<CString,SourceResult> *)wParam));
-            ((std::map<CString,SourceResult> *)wParam)->begin()->second.source->save();
+            //((std::map<CString,SourceResult> *)wParam)->begin()->second.source->updateIndex(((std::map<CString,SourceResult> *)wParam));
+            //((std::map<CString,SourceResult> *)wParam)->begin()->second.source->save();
             OutputDebugString(L"crawling complete\n");
         }
         return ::DefWindowProc(hwnd, msg, wParam, lParam);

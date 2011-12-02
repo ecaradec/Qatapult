@@ -110,9 +110,9 @@ struct Source {
 
     // unused yet
     // get named data of various types
-    virtual bool getSubResults(const TCHAR *itemkey, std::vector<SourceResult> &results) { return false; }
-    virtual bool getString(const TCHAR *itemkey, CString &str) { return false; }
-    virtual bool getInt(const TCHAR *itemkey, int &i) { return false; }
+    virtual bool getSubResults(const TCHAR *itemkey, const TCHAR *name, std::vector<SourceResult> &results) { return false; }
+    virtual CString getString(const TCHAR *itemkey, const TCHAR *name) { return L""; }
+    virtual int getInt(const TCHAR *itemkey, const TCHAR *name) { return false; }
 
     virtual bool getData(const TCHAR *itemkey, const TCHAR *name, char *buff, int len) { return false; }
     virtual void release(SourceResult *r) {}

@@ -7,24 +7,23 @@ inline CString GetSpecialFolder(int csidl) {
     SHGetFolderPath(0, csidl, 0, SHGFP_TYPE_CURRENT, tmp.GetBufferSetLength(MAX_PATH)); tmp.ReleaseBuffer();
     return tmp;
 }
-
-struct Info {
-    Source                    *source;
-    std::vector<SourceResult> *results;
-};
-
- static int callback(void *NotUsed, int argc, char **argv, char **azColName) {
+ static int getResultsCB(void *NotUsed, int argc, char **argv, char **azColName) {
      Info *pinfo=(Info*)NotUsed;
-     pinfo->results->push_back(SourceResult(argv[0],  //key
-                                            argv[2],        //display
-                                            argv[3],        //expand
-                                            pinfo->source,  //source
-                                            atoi(argv[4]),  // bonus
-                                            0,
-                                            atoi(argv[5]))); // id
+     pinfo->results->push_back(SourceResult(argv[0],         // key
+                                            argv[1],         // display
+                                            argv[2],         // expand
+                                            pinfo->source,   // source
+                                            0,               // id
+                                            0,               // data
+                                            (int)argv[3])); // bonus
     return 0;
 }
-  
+
+
+static int getStringCB(void *NotUsed, int argc, char **argv, char **azColName) {
+     *((CString*)NotUsed)=argv[0];
+    return 0;
+}
 
 // might be useful
 // http://stackoverflow.com/questions/1744902/how-might-i-obtain-the-icontextmenu-that-is-displayed-in-an-ishellview-context-m
@@ -33,83 +32,25 @@ struct StartMenuSource : Source {
     StartMenuSource(HWND hwnd) : Source(L"FILE", L"STARTMENU"), m_hwnd(hwnd) {        
         m_ignoreemptyquery=true;
 
-
         int rc = sqlite3_open("startmenu.db", &db);
-        /*
+        
         char *zErrMsg = 0;
-        sqlite3_exec(db, "CREATE TABLE startmenu(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, bonus INTEGER, id INTEGER)", callback, 0, &zErrMsg);        
-        */
-        // this would be an easy way to collect result, just select and push to result // ?
-        //std::vector<SourceResult> results;
-        //
 
-
-        //crawl(&m_index);
-        load();
+        sqlite3_exec(db, "CREATE TABLE startmenu(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, bonus INTEGER)", 0, 0, &zErrMsg);        
+        sqlite3_exec(db, "CREATE TABLE startmenu_verbs(key TEXT PRIMARY KEY ASC, startmenu_key TEXT SECONDARY KEY, label TEXT, icon TEXT, id INTEGER, bonus INTEGER)", 0, 0, &zErrMsg);        
     }
     ~StartMenuSource() {
         //sqlite3_close(db);
     }
-
-    struct X {
-        std::vector<Command> m_commands;
-        CString              m_path;
-    };
-
-    virtual bool loadItem(int i) {
-        if(!Source::loadItem(i))
-            return false;
-        CString key;
-        GetPrivateProfileString(m_name, ItoS(i)+L"_key", L"", key.GetBufferSetLength(4096), 4096, m_db); key.ReleaseBuffer();
-        X *x=new X;
-        
-        GetPrivateProfileString(m_name, ItoS(i)+L"_path", L"", x->m_path.GetBufferSetLength(4096), 4096, m_db); x->m_path.ReleaseBuffer();
-
-        m_index[key].data=x;
-        for(int c=0;; c++) {
-            CString nb; nb.Format(L"%d_%d",i,c);
-            
-            Command cmd;
-            GetPrivateProfileString(m_name, nb+L"_verbName", L"", cmd.display.GetBufferSetLength(256), 256, m_db); cmd.display.ReleaseBuffer();            
-            if(cmd.display==L"")
-                break;
-            GetPrivateProfileString(m_name, nb+L"_verbCan", L"", cmd.verb.GetBufferSetLength(256), 256, m_db); cmd.verb.ReleaseBuffer();
-            cmd.id=GetPrivateProfileInt(m_name, nb+L"_verbId", 0, m_db);
-            x->m_commands.push_back(cmd);
-        }
-        return true;
-    }
-    bool saveItem(int i, SourceResult *r) {
-        if(!Source::saveItem(i,r))
-            return false;        
-
-        X *x=(X*)m_index[r->key].data;
-        
-        CString nb; nb.Format(L"%d",i);
-        WritePrivateProfileString(m_name,nb+L"_path",x->m_path, m_db);
-
-        for(int c=0;c<x->m_commands.size(); c++) {
-            CString nb; nb.Format(L"%d_%d",i,c);
-            WritePrivateProfileString(m_name,nb+L"_verbName",x->m_commands[c].display, m_db);
-            WritePrivateProfileString(m_name,nb+L"_verbCan",x->m_commands[c].verb, m_db);
-            WritePrivateProfileString(m_name,nb+L"_verbId",ItoS(x->m_commands[c].id), m_db);
-        }
-        return true;
-    }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
         // could probably be done in subclass as well as the callback since sourceresult will not change 
-        /*Info info;
+        Info info;
         info.results=&results;
         info.source=this;
         char *zErrMsg = 0;
-        sqlite3_exec(db, "SELECT * FROM startmenu", callback, &info, &zErrMsg);*/
-
-        CString q(query); q.MakeUpper();
-        for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
-            if(CString(it->second.display).MakeUpper().Find(q)!=-1) {
-                results.push_back(it->second);
-            }
-        }
+        WCHAR buff[4096];
+        wsprintf(buff, L"SELECT key, display, expand, bonus FROM startmenu WHERE display LIKE \"%%%s%%\";", query);
+        sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
     }
     void crawl(std::map<CString,SourceResult> *index) {
         std::vector<CString> lnks;
@@ -121,7 +62,9 @@ struct StartMenuSource : Source {
         // all files from the desktop
         //FindFilesRecursively(GetSpecialFolder(CSIDL_COMMON_DESKTOPDIRECTORY), L"*.*", lnks);
         //FindFilesRecursively(GetSpecialFolder(CSIDL_DESKTOPDIRECTORY), L"*.*", lnks);        
-        CStringA q;
+        CStringA q; // 82 bug
+        q+="BEGIN;\n";
+        WCHAR buff[0xFFFF];
         for(uint i=0;i<lnks.size();i++) {
             CString str(lnks[i]);
             PathRemoveExtension(str.GetBuffer()); str.ReleaseBuffer();
@@ -134,52 +77,54 @@ struct StartMenuSource : Source {
             x->m_path=lnks[i];
             getItemVerbs(d, f, x->m_commands);
                         
-            (*index)[lnks[i]] = SourceResult(lnks[i], str, str, this, i, x, 0);
-
-            // this is enough for inserting once in the table, improve it later
-            /*WCHAR buff[4096];
-            wsprintf(buff, L"INSERT INTO startmenu VALUES ('%s', '%s', '%s', '%s', %d, %d);", lnks[i], m_name, str, str, 0, i);
+            // this is enough for inserting once in the table, improve it later            
+            wsprintf(buff, L"INSERT OR REPLACE INTO startmenu(key,display,expand,path) VALUES(\"%s\", \"%s\", \"%s\", \"%s\");\n", lnks[i], str, str, lnks[i]);
             q+=buff;
-
+            for(int j=0;j<x->m_commands.size();j++) {
+                wsprintf(buff, L"INSERT OR REPLACE INTO startmenu_verbs(key, startmenu_key, label, icon, id) VALUES(\"%d_%s\",    \"%s\",    \"%s\",                     \"%s\",                  %d);\n",
+                                                                                                                    j, lnks[i], lnks[i], x->m_commands[j].display, x->m_commands[j].verb, x->m_commands[j].id);
+                q+=buff;
+            }
             CString progress;
             progress.Format(L"%d/%d\n", i, lnks.size());
-            OutputDebugString(progress);*/
+            OutputDebugString(progress);
         }
-
-        //char *zErrMsg = 0;
-        //int z=sqlite3_exec(db, q, callback, 0, &zErrMsg);                
+        q+="END;";
+             
+        char *zErrMsg = 0;
+        int z=sqlite3_exec(db, q, 0, 0, &zErrMsg);      
+        if(z!=0) {
+            DebugBreak();
+        }
+        q="";
+//        OutputDebugStringA(q);        
     }
     // getvalue name, buff, bufflen
     Gdiplus::Bitmap *getIcon(SourceResult *r) {
-        CString path;
-        (*m_pArgs)[0].source->getData(r->key, L"PATH", (char*)path.GetBufferSetLength(MAX_PATH), MAX_PATH); path.ReleaseBuffer();
-
-        return ::getIcon(path);
+        return ::getIcon(getString(r->key, L"path"));
     }
-    virtual bool getData(const TCHAR *itemkey, const TCHAR *name, char *buff, int len) {
-
-        /*Info info;
-        info.results=&results;
-        info.source=this;
-        char *zErrMsg = 0;
-        sqlite3_exec(db, "SELECT * FROM startmenu_verbs", callback, &info, &zErrMsg);*/
-
-
-        X *x=(X*)m_index[itemkey].data;
+    virtual bool getSubResults(const TCHAR *itemkey, const TCHAR *name, std::vector<SourceResult> &results) {
         if(CString(name)==L"VERBS") {
-             *((std::vector<Command>**)buff)=&((X*)m_index[itemkey].data)->m_commands;
-        }else if(CString(name)==L"PATH") {
-            wcscpy((TCHAR*)buff, ((X*)m_index[itemkey].data)->m_path.GetString());
+            Info info;
+            info.results=&results;
+            info.source=this;
+            char *zErrMsg = 0;
+            WCHAR buff[4096];            
+            wsprintf(buff, L"SELECT key, label, label, bonus FROM startmenu_verbs WHERE startmenu_key = \"%s\";", itemkey);
+            sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
+            int test=0;
         }
         return false; 
     }
-    virtual bool getSubResults(const TCHAR *itemkey, std::vector<SourceResult> &results) {        
-        return false; 
+    virtual CString getString(const TCHAR *itemkey, const TCHAR *name) {
+        WCHAR buff[4096];
+        char *zErrMsg = 0;
+        CString str;
+        wsprintf(buff, L"SELECT %s FROM startmenu WHERE key = \"%s\";", name, itemkey);
+        sqlite3_exec(db, CStringA(buff), getStringCB, &str, &zErrMsg);
+        return str; 
     }
-    virtual bool getString(const TCHAR *itemkey, CString &str) { 
-        return false; 
-    }
-    virtual bool getInt(const TCHAR *itemkey, int &i) { 
+    virtual int getInt(const TCHAR *itemkey, const TCHAR *name) { 
         return false; 
     }
 
