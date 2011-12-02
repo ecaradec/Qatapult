@@ -53,10 +53,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies); </AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -77,6 +79,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -107,10 +110,12 @@
     <ClInclude Include="FileVerbSource.h" />
     <ClInclude Include="FindFileRecursively.h" />
     <ClInclude Include="geticon.h" />
+    <ClInclude Include="getItemVerbs.h" />
     <ClInclude Include="HistorySource.h" />
     <ClInclude Include="IWindowlessGUI.h" />
     <ClInclude Include="LevhensteinDistance.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="Rule.h" />
     <ClInclude Include="Source.h" />
     <ClInclude Include="SourceResult.h" />
     <ClInclude Include="StartMenuSource.h" />
@@ -119,6 +124,10 @@
     <ClInclude Include="WindowlessInput.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\external_lib\sqlite3\sqlite3.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="launcher.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

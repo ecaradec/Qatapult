@@ -6,6 +6,7 @@
 #include "EmailVerbSource.h"
 #include "IWindowlessGUI.h"
 #include "WindowlessInput.h"
+#include "Rule.h"
 
 // TODO
 // [_] filtering outside of commands (not sure this is a good thing, doesn't work nicely for files
@@ -15,46 +16,23 @@
 // [_] add usage info in the index for ranking purpose
 // [_] SourceResult should contains an map to store it's data probably, would solve most problems
 
-struct Rule {
-    Rule(const CString &arg1type) {
-        m_types.push_back(arg1type);
-    }
-    Rule(const CString &arg1type, const CString &verbtype) {
-        m_types.push_back(arg1type);
-        m_types.push_back(verbtype);
-    }
-    Rule(const CString &arg1type, const CString &verbtype, const CString &arg2type) {
-        m_types.push_back(arg1type);
-        m_types.push_back(verbtype);
-        m_types.push_back(arg2type);
-    }
-    int match(std::vector<SourceResult> &args, int l) {
-        uint i; 
-        for(i=0;i<args.size();i++) {
-            if(args[i].source && args[i].source->type!=m_types[i])
-                break;
-        }
-
-        // if the command match everything in the buffer or more : perfect match
-        // => if l is large enough a perfect match is the only possibility
-        if(i>=m_types.size())
-            return 2;
-
-        // if the command match at least as much as the required length : partial match
-        if(i>=l)
-            return 1;
-
-        return 0;
-    }
-    virtual bool execute(std::vector<SourceResult> &args) { return true; }
-
-    std::vector<CString> m_types;
-};
-
 struct FileVerbRule : Rule {
     FileVerbRule() : Rule(L"FILE",L"FILEVERB") {}
     bool execute(std::vector<SourceResult> &args) {
-        ProcessCMCommand((IContextMenu*)args[1].data, args[1].id);        
+        CString path;
+        (*m_pArgs)[0].source->getData(args[0].key, L"PATH", (char*)path.GetBufferSetLength(MAX_PATH), MAX_PATH); path.ReleaseBuffer();
+
+        CString fp(path); fp.TrimRight(L"\\");
+        CString d=fp.Left(fp.ReverseFind(L'\\'));
+        CString f=fp.Mid(fp.ReverseFind(L'\\')+1);
+
+        CComPtr<IContextMenu> pCM;
+        getContextMenu(d, f, &pCM);
+
+        HMENU hmenu=CreatePopupMenu();
+        pCM->QueryContextMenu(hmenu, 0, 0, 0xFFFF, CMF_DEFAULTONLY);
+
+        ProcessCMCommand(pCM, args[1].id);        
         return true;
     }
     HRESULT ProcessCMCommand(LPCONTEXTMENU pCM, UINT idCmdOffset) {
@@ -73,11 +51,11 @@ struct TextSource : Source {
         load();
         m_ignoreemptyquery=true;
     }
-    void collect(const TCHAR *query, std::vector<SourceResult> &args, std::vector<SourceResult> &r, int def) {
+    void collect(const TCHAR *query, std::vector<SourceResult> &r, int def) {
         if(CString(query).Find(L'\'')==0) {
-            r.push_back(SourceResult(L"", CString(query).Mid(1), CString(query).Mid(1), this, 1, 0));            
-        } else if(args.size()!=0) {
-            r.push_back(SourceResult(L"", query, query, this, 0, 0));
+            r.push_back(SourceResult(L"", CString(query).Mid(1), CString(query).Mid(1), this, 1, 0, 0));            
+        } else if(m_pArgs->size()!=0) {
+            r.push_back(SourceResult(L"", query, query, this, 0, 0, 0));
         }
     }
     void rate(SourceResult *r) {
@@ -95,7 +73,7 @@ struct TextSource : Source {
         StringFormat sfcenter;
         sfcenter.SetAlignment(StringAlignmentNear);    
         sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
-        Gdiplus::Font f(L"Arial", 12.0f);
+        Gdiplus::Font f(L"Arial", 12.0f); 
 
         g.DrawString(sr->display, sr->display.GetLength(), &f, r1, &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
     }
@@ -108,11 +86,13 @@ struct EmailVerbRule : Rule {
     }
 };
 
+// those kind of sources could have a simplified load and save ?
 struct WebsiteSource : Source {
     WebsiteSource() : Source(L"WEBSITE") {
-        m_index[L"Google"]=SourceResult(L"Google", L"Google", L"Google", this, 0, 0);
-        m_index[L"Amazon"]=SourceResult(L"Amazon", L"Amazon", L"Amazon", this, 1, 0);
+        // fixing something here will be overwritten by the load from the index below
         load();
+        m_index[L"Google"]=SourceResult(L"Google", L"Google", L"Google", this, 0, 0, m_index[L"Google"].bonus);
+        m_index[L"Amazon"]=SourceResult(L"Amazon", L"Amazon", L"Amazon", this, 1, 0, m_index[L"Amazon"].bonus);
     }    
     // get icon
     virtual Gdiplus::Bitmap *getIcon(SourceResult *r) { 
@@ -121,24 +101,24 @@ struct WebsiteSource : Source {
 };
 
 struct SearchWithVerbSource : Source {
-    SearchWithVerbSource() : Source(L"SEARCHWITHVERB") {
-        m_index[L"Search With"]=SourceResult(L"Search With", L"Search With", L"Search With", this, 0, 0);
+    SearchWithVerbSource() : Source(L"SEARCHWITHVERB") {        
         load();
+        m_index[L"Search With"]=SourceResult(L"Search With", L"Search With", L"Search With", this, 0, 0, m_index[L"Search With"].bonus);
     }
 };
 
 struct ContactSource : Source {
-    ContactSource() : Source(L"CONTACT") {
-        m_index[L"Emmanuel Caradec"]=SourceResult(L"Emmanuel Caradec", L"Emmanuel Caradec", L"Emmanuel Caradec", this, 0, 0);
+    ContactSource() : Source(L"CONTACT") {        
         //m_index[L"Iris Bourret"]=SourceResult(L"Iris Bourret", L"Iris Bourret", L"Iris Bourret", this, 1, 0);
         load();
+        m_index[L"Emmanuel Caradec"]=SourceResult(L"Emmanuel Caradec", L"Emmanuel Caradec", L"Emmanuel Caradec", this, 0, 0, m_index[L"Emmanuel Caradec"].bonus);
     }
 };
 
 struct QuitVerbSource : Source {
-    QuitVerbSource() : Source(L"QUITVERB") {
-        m_index[L"Quit (QSLL )"]=SourceResult(L"Quit (QSLL )", L"Quit (QSLL )", L"Quit (QSLL )", this, 0, 0);
+    QuitVerbSource() : Source(L"QUITVERB") {        
         load();
+        m_index[L"Quit (QSLL )"]=SourceResult(L"Quit (QSLL )", L"Quit (QSLL )", L"Quit (QSLL )", this, 0, 0, m_index[L"Quit (QSLL )"].bonus);
         m_ignoreemptyquery=true;
     }
 };
@@ -184,7 +164,6 @@ struct AlphaGUI : IWindowlessGUI {
         m_hwnd=CreateWindowEx(WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
         ::SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG)_WndProc);
         ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);        
-
         
         m_listhosthwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_TOPMOST, L"STATIC", L"", WS_POPUP|WS_THICKFRAME, 0, 0, 250, 400, 0, 0, 0, 0); // fix parent
         CRect rc;
@@ -202,7 +181,7 @@ struct AlphaGUI : IWindowlessGUI {
 
         m_background.Load(L"..\\background.png");
         PremultAlpha(m_background);
-
+        
         m_background3.Load(L"..\\background3.png");
         PremultAlpha(m_background3);
 
@@ -217,7 +196,7 @@ struct AlphaGUI : IWindowlessGUI {
 
         // sources        
         m_sources[L"FILE"].push_back(new FileSource);
-        m_sources[L"FILE"].push_back(new StartMenuSource);
+        m_sources[L"FILE"].push_back(new StartMenuSource(m_hwnd));
         m_sources[L"TEXT"].push_back(new TextSource);
         m_sources[L"CONTACT"].push_back(new ContactSource);
         
@@ -235,13 +214,33 @@ struct AlphaGUI : IWindowlessGUI {
         m_sources[L"QUITVERB"].push_back(new QuitVerbSource);        
         m_rules.push_back(new QuitRule);
 
+        for(std::map<CString, std::vector<Source*> >::iterator it=m_sources.begin(); it!=m_sources.end(); it++)
+            for(int i=0;i<it->second.size();i++)
+                it->second[i]->m_pArgs=&m_args;
+
+        for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++)
+            (*it)->m_pArgs=&m_args;
+
         OnQueryChange(L"");
         
+
+
+        // we shouldn't create a thread for each source, this is inefficient
+        // crawl should be called with an empty index for each source
+        HANDLE h=CreateThread(0, 0, (LPTHREAD_START_ROUTINE)crawlProc, this, 0, 0);
+
         // verb sources
         //m_sources[L"FILEVERB"]=new FileVerbSource;
         //m_sources[L"HISTORY"]=new HistorySource;
 
         //SetWindowPos(m_hwnd, 0, 0, 0, 0, 0, SWP_NOSIZE);
+    }
+    static DWORD __stdcall crawlProc(AlphaGUI *thiz) {
+        //Sleep(10*1000);
+        std::map<CString,SourceResult> *index=new std::map<CString,SourceResult>;
+        thiz->m_sources[L"FILE"][1]->crawl(index);
+        PostMessage(thiz->m_hwnd, WM_USER, (WPARAM)index, 0);
+        return TRUE;
     }
     void Invalidate() {
         Update();
@@ -267,7 +266,7 @@ struct AlphaGUI : IWindowlessGUI {
                 if(m_sources[it->first][i]->m_ignoreemptyquery == true && q==L"")
                     ;
                 else
-                    m_sources[it->first][i]->collect(q, args, results, def);
+                    m_sources[it->first][i]->collect(q, results, def);
 
         CString Q(q); Q.MakeUpper();
         for(uint i=0;i<results.size();i++) {
@@ -406,7 +405,6 @@ struct AlphaGUI : IWindowlessGUI {
         
         premult.ReleaseDC(); 
 
-
         CRect r;
         GetWindowRect(m_hwnd, &r);
         SetWindowPos(m_listhosthwnd, 0, r.left+22+157*m_pane, r.bottom, 0, 0, SWP_NOSIZE|SWP_NOACTIVATE);
@@ -430,10 +428,6 @@ struct AlphaGUI : IWindowlessGUI {
             for(uint i=0;i<m_rules.size();i++)
                 if(m_rules[i]->match(m_args, m_args.size())>1) {
 
-                    for(uint a=0;a<m_args.size(); a++) {
-                        m_args[a].source->validate(&m_args[a]);
-                    }
-
                     if(m_rules[i]->execute(m_args)) {                        
                         // found one rule
                         ShowWindow(m_hwnd, SW_HIDE);
@@ -444,6 +438,10 @@ struct AlphaGUI : IWindowlessGUI {
                         m_pane=0;
                         m_input.SetText(L"");
                         m_queries.clear();
+
+                        for(uint a=0;a<m_args.size(); a++) {
+                            m_args[a].source->validate(&m_args[a]);
+                        }
                         return FALSE;
                     }
                 }
@@ -473,7 +471,7 @@ struct AlphaGUI : IWindowlessGUI {
         else if(msg == WM_KEYDOWN && wParam == VK_TAB)
         {        
             SourceResult *r=GetSelectedItem();
-            m_input.SetText(r->expandStr);            
+            m_input.SetText(r->expand);            
             
             return FALSE;
         }
@@ -532,11 +530,16 @@ struct AlphaGUI : IWindowlessGUI {
             
             if(IsWindowVisible(m_hwnd)) {
                 ShowWindow(m_hwnd, SW_HIDE);
+                ShowWindow(m_listhosthwnd, SW_HIDE);
             } else {
                 ShowWindow(m_hwnd, SW_SHOW);
                 h1=SetActiveWindow(m_hwnd);
                 h2=SetFocus(m_hwnd);
             }
+        } else if(msg==WM_USER) {
+            ((std::map<CString,SourceResult> *)wParam)->begin()->second.source->updateIndex(((std::map<CString,SourceResult> *)wParam));
+            ((std::map<CString,SourceResult> *)wParam)->begin()->second.source->save();
+            OutputDebugString(L"crawling complete\n");
         }
         return ::DefWindowProc(hwnd, msg, wParam, lParam);
     }
@@ -603,7 +606,7 @@ struct AlphaGUI : IWindowlessGUI {
     CImage             m_background3;
     CImage             m_focus;
 
-    CString            lastResultExpandStr;
+    CString            lastResultExpand;
 
     // new behavior    
 

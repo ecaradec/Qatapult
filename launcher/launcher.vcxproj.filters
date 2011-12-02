@@ -72,12 +72,21 @@
     <ClInclude Include="SourceResult.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Rule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="getItemVerbs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="launcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\external_lib\sqlite3\sqlite3.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
