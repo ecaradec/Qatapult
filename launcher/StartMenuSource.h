@@ -38,7 +38,8 @@ struct StartMenuSource : Source {
         char *zErrMsg = 0;
 
         sqlite3_exec(db, "CREATE TABLE startmenu(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, verb TEXT, bonus INTEGER)", 0, 0, &zErrMsg);        
-        //sqlite3_exec(db, "CREATE TABLE startmenu_verbs(key TEXT PRIMARY KEY ASC, startmenu_key TEXT SECONDARY KEY ASC, label TEXT, icon TEXT, id INTEGER, bonus INTEGER)", 0, 0, &zErrMsg);        
+        sqlite3_exec(db, "CREATE TABLE startmenu_verbs(key TEXT PRIMARY KEY ASC, startmenu_key TEXT KEY, label TEXT, icon TEXT, id INTEGER, bonus INTEGER)", 0, 0, &zErrMsg);        
+        sqlite3_exec(db, "CREATE INDEX startmenu_verbs_index ON startmenu_verbs(startmenu_key)", 0, 0, &zErrMsg);
     }
     ~StartMenuSource() {
         //sqlite3_close(db);
@@ -90,7 +91,16 @@ struct StartMenuSource : Source {
             // (SELECT bonus FROM startmenu WHERE key=\"%s\")
             wsprintf(buff, L"INSERT OR REPLACE INTO startmenu(key,display,expand,path,verb,bonus) VALUES(\"%s\",           \"%s\", \"%s\", \"%s\",   \"%s\",      coalesce((SELECT bonus FROM startmenu WHERE key=\"%s\"), 0));\n",
                                                                                                          startmenu_key,     str,    str,    lnks[i], packedVerbs,                                                 startmenu_key);
+
             q+=buff;
+
+            for(int j=0;j<commands.size();j++) {
+                wsprintf(buff, L"INSERT OR REPLACE INTO startmenu_verbs(key, startmenu_key, label, icon, id) VALUES(\"%s\",                                   \"%s\",        \"%s\",              \"%s\",           %d);\n",
+                                                                                                                    startmenu_key+L"/verb/"+commands[j].verb, startmenu_key, commands[j].display, commands[j].verb, commands[j].id);
+                q+=buff;
+            }
+
+
             CString progress;
             progress.Format(L"%d/%d\n", i, lnks.size());
             OutputDebugString(progress);
@@ -120,71 +130,38 @@ struct StartMenuSource : Source {
     }
     // may be I should just have threaded the results ???
     virtual bool getSubResults(const TCHAR *query, const TCHAR *itemquery, std::vector<SourceResult> &results) {
-        CString r=getString(itemquery);
-        
-        CString str;
+        CString q(itemquery);
+        CString key=q.Left(q.ReverseFind('/'));
+        CString val=q.Mid(q.ReverseFind('/')+1);
 
-        TCHAR itemkey[256];
-        TCHAR value[256];
-        TCHAR subvalue[256];
+        Info info;
+        info.results=&results;
+        info.source=this;
+        char *zErrMsg = 0;
+        WCHAR buff[4096];            
+        wsprintf(buff, L"SELECT key, label, label, bonus FROM startmenu_verbs WHERE startmenu_key = \"%s\";", key);
+        sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
 
-        int m=_stscanf(itemquery, L"%[^/]/%[^/]/%[^/]", itemkey, value, subvalue);
-
-        if(CString(value)==L"verb") { // read the special verb format
-            int i=0;
-            CString packedVerbs=r;
-            do {                
-                int s=packedVerbs.Find(L"\n");
-                CString tmp=packedVerbs.Left(s);
-                if(tmp==L"")
-                    break;
-                packedVerbs=packedVerbs.Mid(s+1);
-
-                TCHAR display[256];
-                TCHAR icon[256];
-                SourceResult r;
-                int c=_stscanf(tmp, L"%[^;];%[^;];%i", display, icon, &r.id);
-                r.key=CString(itemquery)+L"/"+ItoS(i);
-
-                if(CString(display).MakeUpper().Find(CString(query).MakeUpper())!=-1) {
-                    r.display=display;
-                    r.expand=display;
-                    results.push_back(r);
-                }
-                i++;
-            } while(1);
-        }
-
-        return false; 
+        return true;
     }
     // itemkey/name : itemkey/verb/0/icon < get subresults ???
     virtual CString getString(const TCHAR *itemquery) {
         CString str;
 
-        TCHAR itemkey[256]={0};
-        TCHAR value[256]={0};
-        TCHAR subvalue[256]={0};
-        TCHAR subsubvalue[256]={0};
-
-        int m=_stscanf(itemquery, L"%[^/]/%[^/]/%[^/]/%[^/]", itemkey, value, subvalue, subsubvalue);
+        CString q(itemquery);
+        CString key=q.Left(q.ReverseFind('/'));
+        CString val=q.Mid(q.ReverseFind('/')+1);
         
-        WCHAR buff[4096];
-        char *zErrMsg = 0;
-        wsprintf(buff, L"SELECT %s FROM startmenu WHERE key = \"%s\";", value, itemkey);
-
-        sqlite3_exec(db, CStringA(buff), getStringCB, &str, &zErrMsg);
-
-        if(CString(value)==L"verb" && CString(subvalue) != L"") {
-            int c=_ttoi(subvalue);
-            CString tmp=getLine(str, c);
-            TCHAR display[256];
-            TCHAR icon[256];
-            int   id;
-            _stscanf(tmp, L"%[^;];%[^;];%i", display, icon, &id);
-            if(CString(subsubvalue)==L"icon")
-                return icon;
-            else if(CString(subsubvalue)==L"display")
-                return display;
+        if(key.Find(L"verb")!=-1) {            
+            WCHAR buff[4096];
+            char *zErrMsg = 0;
+            wsprintf(buff, L"SELECT %s FROM startmenu_verbs WHERE key = \"%s\";", val, key);
+            sqlite3_exec(db, CStringA(buff), getStringCB, &str, &zErrMsg);            
+        } else {
+            WCHAR buff[4096];
+            char *zErrMsg = 0;
+            wsprintf(buff, L"SELECT %s FROM startmenu WHERE key = \"%s\";", val, key);
+            sqlite3_exec(db, CStringA(buff), getStringCB, &str, &zErrMsg);
         }
 
         return str; 
