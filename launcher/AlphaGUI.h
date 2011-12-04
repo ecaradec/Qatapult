@@ -84,16 +84,54 @@ struct EmailVerbRule : Rule {
     }
 };
 
+
 // those kind of sources could have a simplified load and save ?
-struct WebsiteSource : Source {
+struct WebsiteSource : Source {    
+    sqlite3 *db;
     WebsiteSource() : Source(L"WEBSITE") {
-        // fixing something here will be overwritten by the load from the index below
-        m_index[L"Google"]=SourceResult(L"Google", L"Google", L"Google", this, 0, 0, m_index[L"Google"].bonus);
-        m_index[L"Amazon"]=SourceResult(L"Amazon", L"Amazon", L"Amazon", this, 1, 0, m_index[L"Amazon"].bonus);
+        int rc = sqlite3_open("websites.db", &db);
+        
+        char *zErrMsg = 0;
+
+        sqlite3_exec(db, "CREATE TABLE websites(key TEXT PRIMARY KEY ASC, display TEXT, href TEXT, searchHref TEXT, icon TEXT, bonus INTEGER)", 0, 0, &zErrMsg);        
+        
+        sqlite3_exec(db, "INSERT INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Google', 'Google', 'http://google.com', 'http://www.google.fr/search?q=%q', 'google', 0);\n\
+                          INSERT INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Amazon', 'Amazon', 'http://amazon.com', 'http://www.amazon.fr/search?q=%q', 'amazon', 0);\n", 0, 0, &zErrMsg);
     }    
+    ~WebsiteSource() {
+        sqlite3_close(db);
+    }
     // get icon
     virtual Gdiplus::Bitmap *getIcon(SourceResult *r) { 
-        return Gdiplus::Bitmap::FromFile(L"..\\icons\\"+r->display+".png");
+        return Gdiplus::Bitmap::FromFile(L"..\\icons\\"+r->source->getString(r->key+L"/icon")+".png");
+    }
+    void validate(SourceResult *r) {
+        WCHAR buff[4096];
+        char *zErrMsg = 0;
+        wsprintf(buff, L"UPDATE websites SET bonus = bonus + 10 WHERE key=\"%s\"\n", r->key);        
+        int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
+    }
+    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+        Info info;
+        info.results=&results;
+        info.source=this;
+        char *zErrMsg = 0;
+        WCHAR buff[4096];
+        wsprintf(buff, L"SELECT key, display, display, bonus FROM websites WHERE display LIKE \"%%%s%%\";", query); // display twice for expand
+        sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
+    }
+    CString getString(const TCHAR *itemquery) {
+        CString q(itemquery);
+        CString key=q.Left(q.ReverseFind('/'));
+        CString val=q.Mid(q.ReverseFind('/')+1);
+
+        char *zErrMsg = 0;
+        WCHAR buff[4096];
+        wsprintf(buff, L"SELECT %s FROM websites WHERE key='%s'", val, key);
+
+        CString str;
+        sqlite3_exec(db, CStringA(buff), getStringCB, &str, 0);
+        return str;
     }
 };
 
@@ -105,9 +143,40 @@ struct SearchWithVerbSource : Source {
 
 struct ContactSource : Source {
     ContactSource() : Source(L"CONTACT") {        
-        //m_index[L"Iris Bourret"]=SourceResult(L"Iris Bourret", L"Iris Bourret", L"Iris Bourret", this, 1, 0);
-        m_index[L"Emmanuel Caradec"]=SourceResult(L"Emmanuel Caradec", L"Emmanuel Caradec", L"Emmanuel Caradec", this, 0, 0, m_index[L"Emmanuel Caradec"].bonus);
+        m_index2[L"Emmanuel Caradec"]=Contact(L"Emmanuel Caradec", L"emmanuel.caradec@gmail.com");
     }
+    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+        CString q(query); q.MakeUpper();
+        for(std::map<CString, Contact>::iterator it=m_index2.begin(); it!=m_index2.end();it++) {
+            if(CString(it->second.display).MakeUpper().Find(q)!=-1) {
+                results.push_back(it->second.toSourceResult());
+                results.back().source=this;
+                results.back().key=it->first;
+                //results.back().bonus=getInt(it->first+L"/bonus"); or just bonus ?
+            }
+        }
+    }
+    CString getString(const TCHAR *itemquery) {
+        CString q(itemquery);
+        CString key=q.Left(q.ReverseFind('/'));
+        CString val=q.Mid(q.ReverseFind('/')+1);
+
+        if(val==L"name")
+            return m_index2[key].display;
+        else if(val==L"email")
+            return m_index2[key].email;
+        return L"";
+    }
+    struct Contact {
+        Contact() {}
+        Contact(const CString &n, const CString &e) :display(n),email(e) { }
+        CString display;
+        CString email;
+        SourceResult toSourceResult() {
+            return SourceResult(L"", display, display, 0, 0, 0, 0);
+        }
+    };
+    std::map<CString, Contact> m_index2;
 };
 
 struct QuitVerbSource : Source {
@@ -129,15 +198,9 @@ struct QuitRule : Rule {
 struct WebSearchRule : Rule {
     WebSearchRule() : Rule(L"TEXT", L"SEARCHWITHVERB", L"WEBSITE") {}
     virtual bool execute(std::vector<SourceResult> &args) {
-        args[2].source->getString(args[2].key+"/searchurl");
-        if(args[2].display==L"Amazon") {
-            CString q(L"http://www.amazon.fr/s/field-keywords=%q"); q.Replace(L"%q", args[0].display);            
-            ShellExecute(0, 0, q, 0, 0, SW_SHOWDEFAULT);
-        } else if(args[2].display==L"Google") {
-            CString q(L"http://www.google.fr/search?q=%q"); q.Replace(L"%q", args[0].display);            
-            ShellExecute(0, 0, q, 0, 0, SW_SHOWDEFAULT);
-        }        
-
+        CString searchURL=args[2].source->getString(args[2].key+"/searchHref");        
+        searchURL.Replace(L"%q", args[0].display);            
+        ShellExecute(0, 0, searchURL, 0, 0, SW_SHOWDEFAULT);
         return true;
     }
 };
@@ -148,18 +211,6 @@ std::map<CString, std::vector<SourceResult> > g_history;
 // SHGetImageList
 struct AlphaGUI : IWindowlessGUI {
     AlphaGUI():m_input(this) {
-        //WNDCLASS wnd={0};
-        //wnd.style=0;
-        //wnd.lpfnWndProc=::DefWindowProc;
-        //wnd.lpfnWndProc=(WNDPROC)AlphaGUI::_WndProc;
-        //wnd.lpszClassName=L"GUI";            
-        //ATOM clss=RegisterClass(&wnd);
-
-
-
-
-
-
         m_pane=0;    
 
         m_hwnd=CreateWindowEx(WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -209,6 +260,7 @@ struct AlphaGUI : IWindowlessGUI {
         m_rules.push_back(new FileVerbRule);        
 
         m_sources[L"WEBSITE"].push_back(new WebsiteSource);   
+        
         m_sources[L"SEARCHWITHVERB"].push_back(new SearchWithVerbSource);        
         m_rules.push_back(new WebSearchRule);
         
@@ -223,18 +275,10 @@ struct AlphaGUI : IWindowlessGUI {
             (*it)->m_pArgs=&m_args;
 
         OnQueryChange(L"");
-        
-
 
         // we shouldn't create a thread for each source, this is inefficient
         // crawl should be called with an empty index for each source
         HANDLE h=CreateThread(0, 0, (LPTHREAD_START_ROUTINE)crawlProc, this, 0, 0);
-
-        // verb sources
-        //m_sources[L"FILEVERB"]=new FileVerbSource;
-        //m_sources[L"HISTORY"]=new HistorySource;
-
-        //SetWindowPos(m_hwnd, 0, 0, 0, 0, 0, SWP_NOSIZE);
     }
     static DWORD __stdcall crawlProc(AlphaGUI *thiz) {
         //Sleep(10*1000);
