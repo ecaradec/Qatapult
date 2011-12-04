@@ -5,10 +5,11 @@
 struct FileSource : Source {
     FileSource() : Source(L"File",L"FILE") {
         type=L"FILE";
-        load();
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags) {
-        CString q(query); 
+        CString q(query);
+        // this source could get results from it's history
+        // when it's not prefixed ???
         if(q.Find(L":\\")!=1 && q.Find(L"\\\\")==-1)
             return;
         CString Q(q); Q.MakeUpper();
@@ -32,6 +33,7 @@ struct FileSource : Source {
 
                 if(CString(foldername).MakeUpper().Find(f)!=-1) {
                     SourceResult r;
+                    r.key=noslash+L"\\";
                     r.display=L"[D]"+foldername;
                     r.expand=noslash+L"\\";
                     r.source=this;
@@ -48,6 +50,7 @@ struct FileSource : Source {
 
                 if(CString(w32fd.cFileName).MakeUpper().Find(f)!=-1) {
                     SourceResult r;
+                    r.key=expand;
                     r.display=CString(isdirectory?L"[D]":L"[F]")+w32fd.cFileName;
                     r.expand=expand;
                     r.source=this;
@@ -59,21 +62,13 @@ struct FileSource : Source {
         }
         FindClose(h);
     }
-    Gdiplus::Bitmap *getIcon(std::vector<SourceResult> &args,SourceResult *r) {
+    Gdiplus::Bitmap *getIcon(SourceResult *r) {
         return ::getIcon(r->expand);
     }
-    // ail pas de details pour avoir le path ici ?
-    // it doesn't work here ??*
-    // a temporary index feel really sucky
-    virtual bool getData(const TCHAR *itemkey, const TCHAR *name, char *buff, int len) { 
-        /*X *x=(X*)m_index[itemkey].data;
-        if(CString(name)==L"VERBS") {
-             *((std::vector<Command>**)buff)=&((X*)m_index[itemkey].data)->m_commands;
-        }else if(CString(name)==L"PATH") {
-            wcscpy((TCHAR*)buff, (r->expand.GetString());
-        }*/
-        return false; 
+    CString getString(const TCHAR *itemquery) {
+        if(CString(itemquery).Right(5)==L"/path") {
+            return CString(itemquery).Left(CString(itemquery).GetLength()-5);
+        }
+        return L"";
     }
-
-    //ClauncherDlg            *m_pUI;
 };

@@ -23,7 +23,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     while(GetMessage(&msg, NULL, 0, 0) > 0)
     {
         bool translate=true;
-        if (/*msg.hwnd == gui.m_hwnd ||*/::IsChild(gui.m_listhosthwnd, msg.hwnd)) {
+        if (::IsChild(gui.m_listhosthwnd, msg.hwnd)) {
             if(msg.message==WM_KEYDOWN && (msg.wParam==VK_LEFT || msg.wParam==VK_RIGHT)) {
                 translate=false;
             }

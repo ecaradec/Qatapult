@@ -1,6 +1,7 @@
 #pragma once
 #include "FindFileRecursively.h"
 #include "sqlite3/sqlite3.h"
+#include "md5.h"
 
 inline CString GetSpecialFolder(int csidl) {
     CString tmp;
@@ -15,7 +16,7 @@ inline CString GetSpecialFolder(int csidl) {
                                             pinfo->source,   // source
                                             0,               // id
                                             0,               // data
-                                            (int)argv[3])); // bonus
+                                            atoi(argv[3]?argv[3]:"0"))); // bonus
     return 0;
 }
 
@@ -31,13 +32,13 @@ struct StartMenuSource : Source {
     sqlite3 *db;
     StartMenuSource(HWND hwnd) : Source(L"FILE", L"STARTMENU"), m_hwnd(hwnd) {        
         m_ignoreemptyquery=true;
-
+        
         int rc = sqlite3_open("startmenu.db", &db);
         
         char *zErrMsg = 0;
 
-        sqlite3_exec(db, "CREATE TABLE startmenu(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, bonus INTEGER)", 0, 0, &zErrMsg);        
-        sqlite3_exec(db, "CREATE TABLE startmenu_verbs(key TEXT PRIMARY KEY ASC, startmenu_key TEXT SECONDARY KEY, label TEXT, icon TEXT, id INTEGER, bonus INTEGER)", 0, 0, &zErrMsg);        
+        sqlite3_exec(db, "CREATE TABLE startmenu(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, verb TEXT, bonus INTEGER)", 0, 0, &zErrMsg);        
+        //sqlite3_exec(db, "CREATE TABLE startmenu_verbs(key TEXT PRIMARY KEY ASC, startmenu_key TEXT SECONDARY KEY ASC, label TEXT, icon TEXT, id INTEGER, bonus INTEGER)", 0, 0, &zErrMsg);        
     }
     ~StartMenuSource() {
         //sqlite3_close(db);
@@ -73,24 +74,30 @@ struct StartMenuSource : Source {
             CString d=lnks[i].Left(lnks[i].ReverseFind(L'\\'));
             CString f=lnks[i].Mid(lnks[i].ReverseFind(L'\\')+1);
 
-            X *x=new X;
-            x->m_path=lnks[i];
-            getItemVerbs(d, f, x->m_commands);
-                        
-            // this is enough for inserting once in the table, improve it later            
-            wsprintf(buff, L"INSERT OR REPLACE INTO startmenu(key,display,expand,path) VALUES(\"%s\", \"%s\", \"%s\", \"%s\");\n", lnks[i], str, str, lnks[i]);
-            q+=buff;
-            for(int j=0;j<x->m_commands.size();j++) {
-                wsprintf(buff, L"INSERT OR REPLACE INTO startmenu_verbs(key, startmenu_key, label, icon, id) VALUES(\"%d_%s\",    \"%s\",    \"%s\",                     \"%s\",                  %d);\n",
-                                                                                                                    j, lnks[i], lnks[i], x->m_commands[j].display, x->m_commands[j].verb, x->m_commands[j].id);
-                q+=buff;
+            std::vector<Command> commands;
+            getItemVerbs(d, f, commands);
+
+            CString packedVerbs;
+            for(int j=0;j<commands.size();j++) {               
+                wsprintf(buff, L"%s;%s;%d\n", commands[j].display, commands[j].verb, commands[j].id);
+                packedVerbs+=buff;
             }
+                        
+            CString startmenu_key=md5(lnks[i]);
+
+            // this is enough for inserting once in the table, improve it later       
+            // the bonus value and possible other runtime values should be reinjected with a (select bonus from startmenu where key=<key>)
+            // (SELECT bonus FROM startmenu WHERE key=\"%s\")
+            wsprintf(buff, L"INSERT OR REPLACE INTO startmenu(key,display,expand,path,verb,bonus) VALUES(\"%s\",           \"%s\", \"%s\", \"%s\",   \"%s\",      coalesce((SELECT bonus FROM startmenu WHERE key=\"%s\"), 0));\n",
+                                                                                                         startmenu_key,     str,    str,    lnks[i], packedVerbs,                                                 startmenu_key);
+            q+=buff;
             CString progress;
             progress.Format(L"%d/%d\n", i, lnks.size());
             OutputDebugString(progress);
         }
         q+="END;";
              
+        OutputDebugStringA(q);
         char *zErrMsg = 0;
         int z=sqlite3_exec(db, q, 0, 0, &zErrMsg);      
         if(z!=0) {
@@ -99,33 +106,102 @@ struct StartMenuSource : Source {
         q="";
 //        OutputDebugStringA(q);        
     }
-    // getvalue name, buff, bufflen
-    Gdiplus::Bitmap *getIcon(SourceResult *r) {
-        return ::getIcon(getString(r->key, L"path"));
-    }
-    virtual bool getSubResults(const TCHAR *itemkey, const TCHAR *name, std::vector<SourceResult> &results) {
-        if(CString(name)==L"VERBS") {
-            Info info;
-            info.results=&results;
-            info.source=this;
-            char *zErrMsg = 0;
-            WCHAR buff[4096];            
-            wsprintf(buff, L"SELECT key, label, label, bonus FROM startmenu_verbs WHERE startmenu_key = \"%s\";", itemkey);
-            sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
-            int test=0;
-        }
-        return false; 
-    }
-    virtual CString getString(const TCHAR *itemkey, const TCHAR *name) {
+    // validate
+    void validate(SourceResult *r) {
         WCHAR buff[4096];
         char *zErrMsg = 0;
+        wsprintf(buff, L"UPDATE startmenu SET bonus = bonus + 10 WHERE key=\"%s\"\n", r->key);        
+        int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
+    }
+
+    // getvalue name, buff, bufflen
+    Gdiplus::Bitmap *getIcon(SourceResult *r) {
+        return ::getIcon(getString(r->key+L"/path"));
+    }
+    // may be I should just have threaded the results ???
+    virtual bool getSubResults(const TCHAR *query, const TCHAR *itemquery, std::vector<SourceResult> &results) {
+        CString r=getString(itemquery);
+        
         CString str;
-        wsprintf(buff, L"SELECT %s FROM startmenu WHERE key = \"%s\";", name, itemkey);
+
+        TCHAR itemkey[256];
+        TCHAR value[256];
+        TCHAR subvalue[256];
+
+        int m=_stscanf(itemquery, L"%[^/]/%[^/]/%[^/]", itemkey, value, subvalue);
+
+        if(CString(value)==L"verb") { // read the special verb format
+            int i=0;
+            CString packedVerbs=r;
+            do {                
+                int s=packedVerbs.Find(L"\n");
+                CString tmp=packedVerbs.Left(s);
+                if(tmp==L"")
+                    break;
+                packedVerbs=packedVerbs.Mid(s+1);
+
+                TCHAR display[256];
+                TCHAR icon[256];
+                SourceResult r;
+                int c=_stscanf(tmp, L"%[^;];%[^;];%i", display, icon, &r.id);
+                r.key=CString(itemquery)+L"/"+ItoS(i);
+
+                if(CString(display).MakeUpper().Find(CString(query).MakeUpper())!=-1) {
+                    r.display=display;
+                    r.expand=display;
+                    results.push_back(r);
+                }
+                i++;
+            } while(1);
+        }
+
+        return false; 
+    }
+    // itemkey/name : itemkey/verb/0/icon < get subresults ???
+    virtual CString getString(const TCHAR *itemquery) {
+        CString str;
+
+        TCHAR itemkey[256]={0};
+        TCHAR value[256]={0};
+        TCHAR subvalue[256]={0};
+        TCHAR subsubvalue[256]={0};
+
+        int m=_stscanf(itemquery, L"%[^/]/%[^/]/%[^/]/%[^/]", itemkey, value, subvalue, subsubvalue);
+        
+        WCHAR buff[4096];
+        char *zErrMsg = 0;
+        wsprintf(buff, L"SELECT %s FROM startmenu WHERE key = \"%s\";", value, itemkey);
+
         sqlite3_exec(db, CStringA(buff), getStringCB, &str, &zErrMsg);
+
+        if(CString(value)==L"verb" && CString(subvalue) != L"") {
+            int c=_ttoi(subvalue);
+            CString tmp=getLine(str, c);
+            TCHAR display[256];
+            TCHAR icon[256];
+            int   id;
+            _stscanf(tmp, L"%[^;];%[^;];%i", display, icon, &id);
+            if(CString(subsubvalue)==L"icon")
+                return icon;
+            else if(CString(subsubvalue)==L"display")
+                return display;
+        }
+
         return str; 
     }
-    virtual int getInt(const TCHAR *itemkey, const TCHAR *name) { 
+    virtual int getInt(const TCHAR *itemquery) {
         return false; 
+    }
+    virtual CString getLine(const CString &text, int l) {
+        CString tmp(text);
+        int p=0;
+        do {            
+            if(l==0)
+                return tmp.Mid(p, tmp.Find(L"\n", p+1)-p);
+            p=tmp.Find(L"\n", p+1);            
+            l--;
+        } while(1);
+        return L"";
     }
 
     HWND m_hwnd;

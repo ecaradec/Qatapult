@@ -19,8 +19,7 @@
 struct FileVerbRule : Rule {
     FileVerbRule() : Rule(L"FILE",L"FILEVERB") {}
     bool execute(std::vector<SourceResult> &args) {
-        CString path;
-        (*m_pArgs)[0].source->getData(args[0].key, L"PATH", (char*)path.GetBufferSetLength(MAX_PATH), MAX_PATH); path.ReleaseBuffer();
+        CString path=(*m_pArgs)[0].source->getString(args[0].key+L"/path");
 
         CString fp(path); fp.TrimRight(L"\\");
         CString d=fp.Left(fp.ReverseFind(L'\\'));
@@ -48,11 +47,10 @@ struct FileVerbRule : Rule {
 
 struct TextSource : Source {
     TextSource() : Source(L"TEXT") {
-        load();
         m_ignoreemptyquery=true;
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &r, int def) {
-        if(CString(query).Find(L'\'')==0) {
+        if(CString(query).Find(L'\'')==0 || CString(query).Find(L'.')==0) {
             r.push_back(SourceResult(L"", CString(query).Mid(1), CString(query).Mid(1), this, 1, 0, 0));            
         } else if(m_pArgs->size()!=0) {
             r.push_back(SourceResult(L"", query, query, this, 0, 0, 0));
@@ -90,7 +88,6 @@ struct EmailVerbRule : Rule {
 struct WebsiteSource : Source {
     WebsiteSource() : Source(L"WEBSITE") {
         // fixing something here will be overwritten by the load from the index below
-        load();
         m_index[L"Google"]=SourceResult(L"Google", L"Google", L"Google", this, 0, 0, m_index[L"Google"].bonus);
         m_index[L"Amazon"]=SourceResult(L"Amazon", L"Amazon", L"Amazon", this, 1, 0, m_index[L"Amazon"].bonus);
     }    
@@ -102,7 +99,6 @@ struct WebsiteSource : Source {
 
 struct SearchWithVerbSource : Source {
     SearchWithVerbSource() : Source(L"SEARCHWITHVERB") {        
-        load();
         m_index[L"Search With"]=SourceResult(L"Search With", L"Search With", L"Search With", this, 0, 0, m_index[L"Search With"].bonus);
     }
 };
@@ -110,14 +106,12 @@ struct SearchWithVerbSource : Source {
 struct ContactSource : Source {
     ContactSource() : Source(L"CONTACT") {        
         //m_index[L"Iris Bourret"]=SourceResult(L"Iris Bourret", L"Iris Bourret", L"Iris Bourret", this, 1, 0);
-        load();
         m_index[L"Emmanuel Caradec"]=SourceResult(L"Emmanuel Caradec", L"Emmanuel Caradec", L"Emmanuel Caradec", this, 0, 0, m_index[L"Emmanuel Caradec"].bonus);
     }
 };
 
 struct QuitVerbSource : Source {
     QuitVerbSource() : Source(L"QUITVERB") {        
-        load();
         m_index[L"Quit (QSLL )"]=SourceResult(L"Quit (QSLL )", L"Quit (QSLL )", L"Quit (QSLL )", this, 0, 0, m_index[L"Quit (QSLL )"].bonus);
         m_ignoreemptyquery=true;
     }
@@ -135,6 +129,7 @@ struct QuitRule : Rule {
 struct WebSearchRule : Rule {
     WebSearchRule() : Rule(L"TEXT", L"SEARCHWITHVERB", L"WEBSITE") {}
     virtual bool execute(std::vector<SourceResult> &args) {
+        args[2].source->getString(args[2].key+"/searchurl");
         if(args[2].display==L"Amazon") {
             CString q(L"http://www.amazon.fr/s/field-keywords=%q"); q.Replace(L"%q", args[0].display);            
             ShellExecute(0, 0, q, 0, 0, SW_SHOWDEFAULT);
@@ -159,6 +154,12 @@ struct AlphaGUI : IWindowlessGUI {
         //wnd.lpfnWndProc=(WNDPROC)AlphaGUI::_WndProc;
         //wnd.lpszClassName=L"GUI";            
         //ATOM clss=RegisterClass(&wnd);
+
+
+
+
+
+
         m_pane=0;    
 
         m_hwnd=CreateWindowEx(WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -432,6 +433,10 @@ struct AlphaGUI : IWindowlessGUI {
                         // found one rule
                         ShowWindow(m_hwnd, SW_HIDE);
                         ShowWindow(m_listhosthwnd, SW_HIDE);
+                        
+                        for(uint a=0;a<m_args.size(); a++) {
+                            m_args[a].source->validate(&m_args[a]);
+                        }
 
                         m_results.clear();
                         m_args.clear();
@@ -439,9 +444,6 @@ struct AlphaGUI : IWindowlessGUI {
                         m_input.SetText(L"");
                         m_queries.clear();
 
-                        for(uint a=0;a<m_args.size(); a++) {
-                            m_args[a].source->validate(&m_args[a]);
-                        }
                         return FALSE;
                     }
                 }

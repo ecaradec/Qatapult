@@ -9,37 +9,56 @@ struct Info {
 
 struct FileVerbSource : Source {
     FileVerbSource() : Source(L"FILEVERB") {
-        load();
     }
     ~FileVerbSource() {
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
-        CString fp((*m_pArgs)[0].source->getString((*m_pArgs)[0].key, L"path") ); fp.TrimRight(L"\\");
+        // try cache support
+        (*m_pArgs)[0].source->getSubResults(query, (*m_pArgs)[0].key+L"/verb", results);
+        for(int i=0;i<results.size();i++)
+            results[i].source=this;
 
-        CString d=fp.Left(fp.ReverseFind(L'\\'));
-        CString f=fp.Mid(fp.ReverseFind(L'\\')+1);
+        // no cache support
+        // this is better that way, optimization on the startmenu doesn't imply structural
+        // changes on everything that output files.
+        if(results.size()==0) {
+            // path or pidl query might be useful
+            //CString path=(*m_pArgs)[0].source->getString(query, (*m_pArgs)[0].key+L"/path");
+            CString path=(*m_pArgs)[0].expand; path.TrimRight(L"\\");
+            CString d=path.Left(path.ReverseFind(L'\\'));
+            CString f=path.Mid(path.ReverseFind(L'\\')+1).MakeUpper();
 
-        (*m_pArgs)[0].source->getSubResults((*m_pArgs)[0].key, L"VERBS", results);
+            std::vector<Command> commands;
+            getItemVerbs(d, f, commands);
 
-        /*std::vector<Command> *commands=0;
-        (*m_pArgs)[0].source->getData((*m_pArgs)[0].key, L"VERBS", (char*)&commands, sizeof(commands));
-
-        for(std::vector<Command>::iterator it=commands->begin();it!=commands->end();it++) {
-            if(CString(it->display).MakeUpper().Find(CString(query).MakeUpper())!=-1) {
-                results.push_back(SourceResult(ItoS(it->id), it->display, it->display, this, it->id, 0, 0));
+            for(int i=0;i<commands.size();i++) {
+                SourceResult r;
+                r.key=path+L"/"+ItoS(i);
+                r.display=commands[i].display;
+                r.expand=path;
+                r.id=commands[i].id;
+                r.source=this;
+                results.push_back(r);
             }
-        }*/
+        }
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r) {
-        std::vector<Command> *commands=0;
-        (*m_pArgs)[0].source->getData((*m_pArgs)[0].key, L"VERBS", (char*)&commands, sizeof(commands));
-        
-        CString verb;
-        for(int i=0;i<commands->size();i++)
-            if((*commands)[i].id==r->id) {
-                verb=(*commands)[i].verb;
-                break;
-            }
+        CString verb=(*m_pArgs)[0].source->getString(r->key+L"/icon");
+
+        if(verb==L"") {
+            CString path=(*m_pArgs)[0].expand;
+            CString d=path.Left(path.ReverseFind(L'\\'));
+            CString f=path.Mid(path.ReverseFind(L'\\')+1).MakeUpper();
+
+            std::vector<Command> commands;
+            getItemVerbs(d, f, commands);
+
+            for(int i=0;i<commands.size();i++)                
+                if(commands[i].display==r->display) {
+                    verb=commands[i].verb;
+                    break;
+                }
+        }
 
         Gdiplus::Bitmap *bmp=Gdiplus::Bitmap::FromFile(L"..\\icons\\"+verb+L".png");
         if(bmp->GetLastStatus()!=Gdiplus::Ok) {
@@ -48,6 +67,4 @@ struct FileVerbSource : Source {
         }
         return bmp;
     }
-
-    std::vector<Command> m_commands;
 };

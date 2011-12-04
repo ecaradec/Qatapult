@@ -35,15 +35,21 @@ bool getContextMenu(const CString &d, const CString &f, IContextMenu **ppCM) {
     return true;
 }
 
+HRESULT ProcessCMCommand(LPCONTEXTMENU pCM, UINT idCmdOffset) {
+    CMINVOKECOMMANDINFO ici;
+    ZeroMemory(&ici, sizeof(ici));
+    ici.cbSize = sizeof(CMINVOKECOMMANDINFO);
+    ici.lpVerb = (LPCSTR)MAKEINTRESOURCE(idCmdOffset);
+    ici.nShow = SW_SHOWNORMAL;
+
+    return pCM->InvokeCommand(&ici);
+}
+
 void getItemVerbs(const CString &d, const CString &f, std::vector<Command> &commands) {
     CComPtr<IContextMenu> pCM;
     getContextMenu(d,f,&pCM);
     if(pCM) {
         HMENU hmenu=CreatePopupMenu();
-        // only get the fast results
-        //if(def==0)
-        //    m_pContextMenu->QueryContextMenu(m.GetSafeHmenu(), 0, 0, 0xFFFF, CMF_NORMAL);
-        //else
         pCM->QueryContextMenu(hmenu, 0, 0, 0xFFFF, CMF_DEFAULTONLY);
         int i=0;
         CString s;
@@ -75,11 +81,10 @@ void getItemVerbs(const CString &d, const CString &f, std::vector<Command> &comm
                 cmd.display=s;
                 cmd.id=mii.wID;
                 cmd.verb=buff;
-                commands.push_back(cmd); 
+                commands.push_back(cmd);
             }
         }
-
-        
+        DestroyMenu(hmenu);
         //m.TrackPopupMenu(0, 0, 0, this, 0);
     }
 }
