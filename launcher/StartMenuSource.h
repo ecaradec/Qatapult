@@ -110,9 +110,9 @@ struct StartMenuSource : Source {
         OutputDebugStringA(q);
         char *zErrMsg = 0;
         int z=sqlite3_exec(db, q, 0, 0, &zErrMsg);      
-        if(z!=0) {
-            DebugBreak();
-        }
+        //if(z!=0) {
+        //    DebugBreak();
+        //}
         q="";
 //        OutputDebugStringA(q);        
     }
