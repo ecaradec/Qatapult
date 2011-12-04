@@ -42,7 +42,7 @@ struct StartMenuSource : Source {
         sqlite3_exec(db, "CREATE INDEX startmenu_verbs_index ON startmenu_verbs(startmenu_key)", 0, 0, &zErrMsg);
     }
     ~StartMenuSource() {
-        //sqlite3_close(db);
+        sqlite3_close(db);
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
         // could probably be done in subclass as well as the callback since sourceresult will not change 
@@ -144,7 +144,7 @@ struct StartMenuSource : Source {
 
         return true;
     }
-    // itemkey/name : itemkey/verb/0/icon < get subresults ???
+    // itemkey/name : itemkey/verb/open/icon < get subresults ???
     virtual CString getString(const TCHAR *itemquery) {
         CString str;
 
@@ -152,7 +152,7 @@ struct StartMenuSource : Source {
         CString key=q.Left(q.ReverseFind('/'));
         CString val=q.Mid(q.ReverseFind('/')+1);
         
-        if(key.Find(L"verb")!=-1) {            
+        if(key.Find(L"/verb/")!=-1) {            
             WCHAR buff[4096];
             char *zErrMsg = 0;
             wsprintf(buff, L"SELECT %s FROM startmenu_verbs WHERE key = \"%s\";", val, key);
@@ -168,17 +168,6 @@ struct StartMenuSource : Source {
     }
     virtual int getInt(const TCHAR *itemquery) {
         return false; 
-    }
-    virtual CString getLine(const CString &text, int l) {
-        CString tmp(text);
-        int p=0;
-        do {            
-            if(l==0)
-                return tmp.Mid(p, tmp.Find(L"\n", p+1)-p);
-            p=tmp.Find(L"\n", p+1);            
-            l--;
-        } while(1);
-        return L"";
     }
 
     HWND m_hwnd;
