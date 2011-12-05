@@ -141,42 +141,53 @@ struct SearchWithVerbSource : Source {
     }
 };
 
-struct ContactSource : Source {
-    ContactSource() : Source(L"CONTACT") {        
-        m_index2[L"Emmanuel Caradec"]=Contact(L"Emmanuel Caradec", L"emmanuel.caradec@gmail.com");
+// those kind of sources could have a simplified load and save ?
+struct ContactSource : Source {    
+    sqlite3 *db;
+    ContactSource() : Source(L"CONTACT") {
+        int rc = sqlite3_open("contacts.db", &db);
+        
+        char *zErrMsg = 0;
+
+        sqlite3_exec(db, "CREATE TABLE contacts(key TEXT PRIMARY KEY ASC, display TEXT, email TEXT, bonus INTEGER)", 0, 0, &zErrMsg);        
+        
+        sqlite3_exec(db, "INSERT INTO contacts (key, display, email, bonus) VALUES('EmmanuelCaradec', 'Emmanuel Caradec', 'emmanuel.caradec@gmail.com', 0);\n", 0, 0, &zErrMsg);
+    }    
+    ~ContactSource() {
+        sqlite3_close(db);
+    }
+    // get icon
+    virtual Gdiplus::Bitmap *getIcon(SourceResult *r) { 
+        return Gdiplus::Bitmap::FromFile(L"..\\icons\\"+r->source->getString(r->key+L"/icon")+".png");
+    }
+    void validate(SourceResult *r) {
+        WCHAR buff[4096];
+        char *zErrMsg = 0;
+        wsprintf(buff, L"UPDATE contacts SET bonus = bonus + 10 WHERE key=\"%s\"\n", r->key);        
+        int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
-        CString q(query); q.MakeUpper();
-        for(std::map<CString, Contact>::iterator it=m_index2.begin(); it!=m_index2.end();it++) {
-            if(CString(it->second.display).MakeUpper().Find(q)!=-1) {
-                results.push_back(it->second.toSourceResult());
-                results.back().source=this;
-                results.back().key=it->first;
-                //results.back().bonus=getInt(it->first+L"/bonus"); or just bonus ?
-            }
-        }
+        Info info;
+        info.results=&results;
+        info.source=this;
+        char *zErrMsg = 0;
+        WCHAR buff[4096];
+        wsprintf(buff, L"SELECT key, display, display, bonus FROM contacts WHERE display LIKE \"%%%s%%\";", query); // display twice for expand
+        sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
     }
     CString getString(const TCHAR *itemquery) {
         CString q(itemquery);
         CString key=q.Left(q.ReverseFind('/'));
         CString val=q.Mid(q.ReverseFind('/')+1);
 
-        if(val==L"name")
-            return m_index2[key].display;
-        else if(val==L"email")
-            return m_index2[key].email;
-        return L"";
+        char *zErrMsg = 0;
+        WCHAR buff[4096];
+        wsprintf(buff, L"SELECT %s FROM contacts WHERE key='%s'", val, key);
+
+        CString str;
+        sqlite3_exec(db, CStringA(buff), getStringCB, &str, 0);
+        return str;
     }
-    struct Contact {
-        Contact() {}
-        Contact(const CString &n, const CString &e) :display(n),email(e) { }
-        CString display;
-        CString email;
-        SourceResult toSourceResult() {
-            return SourceResult(L"", display, display, 0, 0, 0, 0);
-        }
-    };
-    std::map<CString, Contact> m_index2;
 };
 
 struct QuitVerbSource : Source {
