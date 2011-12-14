@@ -17,12 +17,13 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     Gdiplus::GdiplusStartupInput gdiplusStartupInput;
     Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
-    AlphaGUI gui;
+    AlphaGUI gui; 
 
     MSG msg;
     while(GetMessage(&msg, NULL, 0, 0) > 0)
     {
         bool translate=true;
+        // forward left & right key to onkeyboard message when on the listhostwindow
         if (::IsChild(gui.m_listhosthwnd, msg.hwnd)) {
             if(msg.message==WM_KEYDOWN && (msg.wParam==VK_LEFT || msg.wParam==VK_RIGHT)) {
                 translate=false;
@@ -32,6 +33,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             if(!translate)
                 continue;
         }
+
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }

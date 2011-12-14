@@ -1,4 +1,11 @@
 Debug
-Debug/Debug
+Release
 *.suo
 *.sdf
+workdir/settings.ini
+workdir/contacts.csv
+workdir/contacts.xml
+*.db
+workdir/sqlite3.exe
+workdir/testblat.bat
+workdir/*.log

@@ -71,12 +71,16 @@ void getItemVerbs(const CString &d, const CString &f, std::vector<Command> &comm
 
             if(mii.hSubMenu)
                 continue;
-                //s+=" [MENU]";
-
+            
             if(s.GetLength()>0) {
                 //WCHAR buff[256]={0};
                 pCM->GetCommandString(mii.wID, GCS_VERBW, 0, (LPSTR)buff, sizeof(buff));
                 
+                if(wcscmp(buff, L"cut")==0 ||
+                   wcscmp(buff, L"copy")==0 ||
+                   wcscmp(buff, L"paste")==0)
+                   continue;
+
                 Command cmd;
                 cmd.display=s;
                 cmd.id=mii.wID;

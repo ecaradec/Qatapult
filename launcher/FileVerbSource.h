@@ -9,14 +9,23 @@ struct Info {
 
 struct FileVerbSource : Source {
     FileVerbSource() : Source(L"FILEVERB") {
+        /*m_index[L"Open"]=SourceResult(L"Open", L"Open", L"Open", this, 0, 0, 10);
+        m_index[L"RunAs"]=SourceResult(L"RunAs", L"RunAs", L"RunAs", this, 0, 0, 9);
+        m_index[L"Delete"]=SourceResult(L"Delete", L"Delete", L"Delete", this, 0, 0, 8);
+        m_index[L"Properties"]=SourceResult(L"Properties", L"Properties", L"Properties", this, 0, 0, 6);*/
+        // need another rule
+        //m_index[L"ShellMenu"]=SourceResult(L"ShellMenu", L"ShellMenu", L"ShellMenu", this, 0, 0, 6);
     }
     ~FileVerbSource() {
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
         // try cache support
+        int curResults=results.size();
         (*m_pArgs)[0].source->getSubResults(query, (*m_pArgs)[0].key+L"/verb", results);
-        for(int i=0;i<results.size();i++)
+        for(int i=curResults;i<results.size();i++) {
             results[i].source=this;
+            results[i].bonus=1;
+        }
 
         // no cache support
         // this is better that way, optimization on the startmenu doesn't imply structural
@@ -37,7 +46,7 @@ struct FileVerbSource : Source {
                 r.display=commands[i].display;
                 r.expand=path;
                 r.id=commands[i].id;
-                r.source=this;
+                r.source=this;                
                 results.push_back(r);
             }
         }
@@ -60,10 +69,10 @@ struct FileVerbSource : Source {
                 }
         }
 
-        Gdiplus::Bitmap *bmp=Gdiplus::Bitmap::FromFile(L"..\\icons\\"+verb+L".png");
+        Gdiplus::Bitmap *bmp=Gdiplus::Bitmap::FromFile(L"icons\\"+r->key+L".png");
         if(bmp->GetLastStatus()!=Gdiplus::Ok) {
             delete bmp;
-            bmp=Gdiplus::Bitmap::FromFile(L"..\\icons\\defaultverb.png");
+            bmp=Gdiplus::Bitmap::FromFile(L"icons\\defaultverb.png");
         }
         return bmp;
     }

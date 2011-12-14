@@ -5,6 +5,18 @@ inline CString md5(const CString &data) {
     return CString(md5(data_str).c_str());
 }
 
+CStringA sqlEscapeString(const CStringA &args) {
+    CStringA tmp(args);
+    tmp.Replace("\"", "");
+    return tmp;
+}
+
+CStringW sqlEscapeStringW(const CStringW &args) {
+    CStringW tmp(args);
+    tmp.Replace(L"\"", L"");
+    return tmp;
+}
+
 struct Source {
     Source(const CString& t) {
         m_name=t;
@@ -43,7 +55,7 @@ struct Source {
         }
     }
     virtual void validate(SourceResult *r)  {}
-    virtual void crawl(std::map<CString,SourceResult> *index) {}
+    virtual void crawl() {}
 
     // unused yet
     // get named data of various types

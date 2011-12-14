@@ -14,15 +14,40 @@ inline CString GetSpecialFolder(int csidl) {
                                             argv[1],         // display
                                             argv[2],         // expand
                                             pinfo->source,   // source
-                                            0,               // id
+                                            atoi(argv[3]?argv[3]:"0"),               // id
                                             0,               // data
-                                            atoi(argv[3]?argv[3]:"0"))); // bonus
+                                            atoi(argv[4]?argv[4]:"0"))); // bonus
     return 0;
 }
 
+CStringW UTF8toUTF16(const CStringA& utf8)
+{
+    CStringW utf16;
+    int len = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+    if (len>1)
+    { 
+        wchar_t *ptr = utf16.GetBuffer(len-1);
+        if (ptr) MultiByteToWideChar(CP_UTF8, 0, utf8, -1, ptr, len);
+        utf16.ReleaseBuffer();
+    }
+    return utf16;
+}
+CStringA UTF16toUTF8(const CStringW& utf16)
+{
+    CStringA utf8;
+    int len = WideCharToMultiByte(CP_UTF8, 0, utf16, -1, NULL, 0, 0, 0);
+    if (len>1)
+    { 
+        char *ptr = utf8.GetBuffer(len-1);
+        if (ptr) WideCharToMultiByte(CP_UTF8, 0, utf16, -1, ptr, len, 0, 0);
+        utf8.ReleaseBuffer();
+    }
+    return utf8;
+}
 
 static int getStringCB(void *NotUsed, int argc, char **argv, char **azColName) {
      *((CString*)NotUsed)=argv[0];
+     //*((CString*)NotUsed)=UTF8toUTF16(argv[0]);
     return 0;
 }
 
@@ -51,10 +76,10 @@ struct StartMenuSource : Source {
         info.source=this;
         char *zErrMsg = 0;
         WCHAR buff[4096];
-        wsprintf(buff, L"SELECT key, display, expand, bonus FROM startmenu WHERE display LIKE \"%%%s%%\";", query);
+        wsprintf(buff, L"SELECT key, display, expand, 0, bonus FROM startmenu WHERE display LIKE \"%%%s%%\";", query);
         sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
     }
-    void crawl(std::map<CString,SourceResult> *index) {
+    void crawl() {
         std::vector<CString> lnks;
                 
         FindFilesRecursively(GetSpecialFolder(CSIDL_COMMON_STARTMENU), L"*.lnk", lnks);
@@ -90,24 +115,23 @@ struct StartMenuSource : Source {
             // the bonus value and possible other runtime values should be reinjected with a (select bonus from startmenu where key=<key>)
             // (SELECT bonus FROM startmenu WHERE key=\"%s\")
             wsprintf(buff, L"INSERT OR REPLACE INTO startmenu(key,display,expand,path,verb,bonus) VALUES(\"%s\",           \"%s\", \"%s\", \"%s\",   \"%s\",      coalesce((SELECT bonus FROM startmenu WHERE key=\"%s\"), 0));\n",
-                                                                                                         startmenu_key,     str,    str,    lnks[i], packedVerbs,                                                 startmenu_key);
+                                                                                                         sqlEscapeStringW(startmenu_key),     sqlEscapeStringW(str),    sqlEscapeStringW(str),    sqlEscapeStringW(lnks[i]), sqlEscapeStringW(packedVerbs),                                                 sqlEscapeStringW(startmenu_key));
 
             q+=buff;
 
-            for(int j=0;j<commands.size();j++) {
+            /*for(int j=0;j<commands.size();j++) {
                 wsprintf(buff, L"INSERT OR REPLACE INTO startmenu_verbs(key, startmenu_key, label, icon, id) VALUES(\"%s\",                                   \"%s\",        \"%s\",              \"%s\",           %d);\n",
-                                                                                                                    startmenu_key+L"/verb/"+commands[j].verb, startmenu_key, commands[j].display, commands[j].verb, commands[j].id);
+                                                                                                                    sqlEscapeStringW(startmenu_key+L"/verb/"+commands[j].verb), sqlEscapeStringW(startmenu_key), sqlEscapeStringW(commands[j].display), sqlEscapeStringW(commands[j].verb), commands[j].id);
                 q+=buff;
-            }
+            }*/
 
-
-            CString progress;
-            progress.Format(L"%d/%d\n", i, lnks.size());
-            OutputDebugString(progress);
+            //CString progress;
+            //progress.Format(L"%d/%d\n", i, lnks.size());
+            //OutputDebugString(progress);
         }
         q+="END;";
              
-        OutputDebugStringA(q);
+        //OutputDebugStringA(q);
         char *zErrMsg = 0;
         int z=sqlite3_exec(db, q, 0, 0, &zErrMsg);      
         //if(z!=0) {
@@ -139,7 +163,7 @@ struct StartMenuSource : Source {
         info.source=this;
         char *zErrMsg = 0;
         WCHAR buff[4096];            
-        wsprintf(buff, L"SELECT key, label, label, bonus FROM startmenu_verbs WHERE startmenu_key = \"%s\";", key);
+        wsprintf(buff, L"SELECT key, label, label, id, bonus FROM startmenu_verbs WHERE startmenu_key = \"%s\" AND label LIKE \"%%%s%%\";", key, query);
         sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
 
         return true;

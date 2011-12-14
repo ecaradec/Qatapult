@@ -7,6 +7,12 @@
 #include "IWindowlessGUI.h"
 #include "WindowlessInput.h"
 #include "Rule.h"
+#include "pugixml.hpp"
+#include "resource.h"
+#include "DBSource.h"
+#include "ContactSource.h"
+
+#define WM_INVALIDATE (WM_USER+2)
 
 // TODO
 // [_] filtering outside of commands (not sure this is a good thing, doesn't work nicely for files
@@ -25,20 +31,21 @@ struct FileVerbRule : Rule {
         CString d=fp.Left(fp.ReverseFind(L'\\'));
         CString f=fp.Mid(fp.ReverseFind(L'\\')+1);
 
+        CString verb=args[1].key;
         CComPtr<IContextMenu> pCM;
         getContextMenu(d, f, &pCM);
 
         HMENU hmenu=CreatePopupMenu();
         pCM->QueryContextMenu(hmenu, 0, 0, 0xFFFF, CMF_DEFAULTONLY);
-
-        ProcessCMCommand(pCM, args[1].id);        
+        
+        ProcessCMCommand(pCM, CStringA(args[1].key));        
         return true;
     }
-    HRESULT ProcessCMCommand(LPCONTEXTMENU pCM, UINT idCmdOffset) {
+    HRESULT ProcessCMCommand(LPCONTEXTMENU pCM, const CHAR *verb) {
        CMINVOKECOMMANDINFO ici;
        ZeroMemory(&ici, sizeof(ici));
        ici.cbSize = sizeof(CMINVOKECOMMANDINFO);
-       ici.lpVerb = (LPCSTR)MAKEINTRESOURCE(idCmdOffset);
+       ici.lpVerb = (LPCSTR)verb;
        ici.nShow = SW_SHOWNORMAL;
 
        return pCM->InvokeCommand(&ici);
@@ -77,61 +84,97 @@ struct TextSource : Source {
     }
 };
 
+bool sendEmail(const TCHAR *to, const TCHAR *subject, const TCHAR *body, const TCHAR *attach) {
+    WCHAR curDir[MAX_PATH];
+    GetCurrentDirectory(MAX_PATH, curDir);
+
+    TCHAR from[1024];
+    GetPrivateProfileString(L"QSLLContacts", L"email", L"", from, sizeof(from), CString(curDir)+"\\settings.ini");
+    TCHAR username[1024];
+    GetPrivateProfileString(L"QSLLContacts", L"username", L"", username, sizeof(username), CString(curDir)+"\\settings.ini");
+    TCHAR password[1024];
+    GetPrivateProfileString(L"QSLLContacts", L"password", L"", password, sizeof(password), CString(curDir)+"\\settings.ini");
+    TCHAR server[1024];
+    GetPrivateProfileString(L"QSLLContacts", L"server", L"", server, sizeof(server), CString(curDir)+"\\settings.ini");
+
+    TCHAR buff[4096];
+    if(attach)
+        wsprintf(buff, L"-to %s -f %s -subject \"%s\" -body \"%s\" -attach \"%s\" -u %s -pw %s -debug -log blat.log -server %s", to, from, subject, body, attach, username, password, server);
+    else
+        wsprintf(buff, L"-to %s -f %s -subject \"%s\" -body \"%s\" -u %s -pw %s -debug -log blat.log -server %s", to, from, subject, body, username, password, server);
+
+    SHELLEXECUTEINFO sei={0};
+    sei.cbSize=sizeof(SHELLEXECUTEINFO);
+    sei.lpFile=L"blat";
+    sei.lpParameters=buff;
+    sei.nShow=SW_HIDE;
+    sei.fMask=SEE_MASK_NOCLOSEPROCESS;
+
+    ShellExecuteEx(&sei);
+
+    WaitForSingleObject(sei.hProcess, INFINITE);
+    DWORD processExitCode=-1;
+    GetExitCodeProcess(sei.hProcess, &processExitCode);
+    if(processExitCode==1) {
+        // retry
+        ShellExecuteEx(&sei);
+
+        WaitForSingleObject(sei.hProcess, INFINITE);
+        processExitCode=-1;
+        GetExitCodeProcess(sei.hProcess, &processExitCode);
+        if(processExitCode==1) {
+            MessageBox(0, L"Can't send email ! Check your SMTP configuration.", L"QSLL", MB_OK);
+        }
+    }
+    return processExitCode==0;
+}
+
+
+// http://www.jeffkastner.com/2010/01/blat-stunnel-and-gmail/
 struct EmailVerbRule : Rule {
-    EmailVerbRule() : Rule(L"TEXT", L"EMAILVERB",L"CONTACT") {}
-    virtual bool execute(std::vector<SourceResult> &args) { 
+    EmailVerbRule() : Rule(L"TEXT", L"EMAILVERB",L"CONTACT") {
+    }
+    virtual bool execute(std::vector<SourceResult> &args) {
+        CString email=args[2].source->getString(args[2].key+L"/email");       
+
+        CString content(args[0].display);
+        CString subject;
+        CString body=" ";
+        int subjectEnd=content.Find(L".");
+        if(subjectEnd==-1) {
+            subject=content;
+        } else {
+            subject=content.Left(subjectEnd);
+            body=content.Mid(subjectEnd+1);
+        }
+
+        sendEmail(email, subject, body, 0);
         return true;
     }
 };
 
+// http://www.jeffkastner.com/2010/01/blat-stunnel-and-gmail/
+struct EmailFileVerbRule : Rule {
+    EmailFileVerbRule() : Rule(L"FILE", L"EMAILVERB",L"CONTACT") {
+    }
+    virtual bool execute(std::vector<SourceResult> &args) {
+        CString path=args[0].source->getString(args[0].key+L"/path");
+        CString email=args[2].source->getString(args[2].key+L"/email");        
+        CString filename=path.Right(path.GetLength() - (path.ReverseFind(L'\\')+1));
+
+        sendEmail(email, filename, L"Here is your file", path);
+        return true;
+    }
+};
 
 // those kind of sources could have a simplified load and save ?
-struct WebsiteSource : Source {    
-    sqlite3 *db;
-    WebsiteSource() : Source(L"WEBSITE") {
-        int rc = sqlite3_open("websites.db", &db);
-        
+struct WebsiteSource : DBSource {
+    WebsiteSource() : DBSource(L"websites", L"WEBSITE") {
         char *zErrMsg = 0;
-
         sqlite3_exec(db, "CREATE TABLE websites(key TEXT PRIMARY KEY ASC, display TEXT, href TEXT, searchHref TEXT, icon TEXT, bonus INTEGER)", 0, 0, &zErrMsg);        
         
-        sqlite3_exec(db, "INSERT INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Google', 'Google', 'http://google.com', 'http://www.google.fr/search?q=%q', 'google', 0);\n\
-                          INSERT INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Amazon', 'Amazon', 'http://amazon.com', 'http://www.amazon.fr/search?q=%q', 'amazon', 0);\n", 0, 0, &zErrMsg);
-    }    
-    ~WebsiteSource() {
-        sqlite3_close(db);
-    }
-    // get icon
-    virtual Gdiplus::Bitmap *getIcon(SourceResult *r) { 
-        return Gdiplus::Bitmap::FromFile(L"..\\icons\\"+r->source->getString(r->key+L"/icon")+".png");
-    }
-    void validate(SourceResult *r) {
-        WCHAR buff[4096];
-        char *zErrMsg = 0;
-        wsprintf(buff, L"UPDATE websites SET bonus = bonus + 10 WHERE key=\"%s\"\n", r->key);        
-        int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
-    }
-    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
-        Info info;
-        info.results=&results;
-        info.source=this;
-        char *zErrMsg = 0;
-        WCHAR buff[4096];
-        wsprintf(buff, L"SELECT key, display, display, bonus FROM websites WHERE display LIKE \"%%%s%%\";", query); // display twice for expand
-        sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
-    }
-    CString getString(const TCHAR *itemquery) {
-        CString q(itemquery);
-        CString key=q.Left(q.ReverseFind('/'));
-        CString val=q.Mid(q.ReverseFind('/')+1);
-
-        char *zErrMsg = 0;
-        WCHAR buff[4096];
-        wsprintf(buff, L"SELECT %s FROM websites WHERE key='%s'", val, key);
-
-        CString str;
-        sqlite3_exec(db, CStringA(buff), getStringCB, &str, 0);
-        return str;
+        sqlite3_exec(db, "INSERT OR REPLACE INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Google', 'Google', 'http://google.com', 'https://www.google.com/#q=%q', 'google', coalesce((SELECT bonus FROM websites WHERE key=\"Google\"), 0));\n\
+                          INSERT OR REPLACE INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Amazon', 'Amazon', 'http://amazon.com', 'http://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=%q', 'amazon', coalesce((SELECT bonus FROM websites WHERE key=\"Amazon\"), 0));\n", 0, 0, &zErrMsg);
     }
 };
 
@@ -141,54 +184,6 @@ struct SearchWithVerbSource : Source {
     }
 };
 
-// those kind of sources could have a simplified load and save ?
-struct ContactSource : Source {    
-    sqlite3 *db;
-    ContactSource() : Source(L"CONTACT") {
-        int rc = sqlite3_open("contacts.db", &db);
-        
-        char *zErrMsg = 0;
-
-        sqlite3_exec(db, "CREATE TABLE contacts(key TEXT PRIMARY KEY ASC, display TEXT, email TEXT, bonus INTEGER)", 0, 0, &zErrMsg);        
-        
-        sqlite3_exec(db, "INSERT INTO contacts (key, display, email, bonus) VALUES('EmmanuelCaradec', 'Emmanuel Caradec', 'emmanuel.caradec@gmail.com', 0);\n", 0, 0, &zErrMsg);
-    }    
-    ~ContactSource() {
-        sqlite3_close(db);
-    }
-    // get icon
-    virtual Gdiplus::Bitmap *getIcon(SourceResult *r) { 
-        return Gdiplus::Bitmap::FromFile(L"..\\icons\\"+r->source->getString(r->key+L"/icon")+".png");
-    }
-    void validate(SourceResult *r) {
-        WCHAR buff[4096];
-        char *zErrMsg = 0;
-        wsprintf(buff, L"UPDATE contacts SET bonus = bonus + 10 WHERE key=\"%s\"\n", r->key);        
-        int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
-    }
-    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
-        Info info;
-        info.results=&results;
-        info.source=this;
-        char *zErrMsg = 0;
-        WCHAR buff[4096];
-        wsprintf(buff, L"SELECT key, display, display, bonus FROM contacts WHERE display LIKE \"%%%s%%\";", query); // display twice for expand
-        sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
-    }
-    CString getString(const TCHAR *itemquery) {
-        CString q(itemquery);
-        CString key=q.Left(q.ReverseFind('/'));
-        CString val=q.Mid(q.ReverseFind('/')+1);
-
-        char *zErrMsg = 0;
-        WCHAR buff[4096];
-        wsprintf(buff, L"SELECT %s FROM contacts WHERE key='%s'", val, key);
-
-        CString str;
-        sqlite3_exec(db, CStringA(buff), getStringCB, &str, 0);
-        return str;
-    }
-};
 
 struct QuitVerbSource : Source {
     QuitVerbSource() : Source(L"QUITVERB") {        
@@ -218,10 +213,18 @@ struct WebSearchRule : Rule {
 
 std::map<CString, std::vector<SourceResult> > g_history;
 
+void CenterWindow(HWND hwnd) {
+    CRect workarea;
+    ::SystemParametersInfo(SPI_GETWORKAREA, 0, &workarea, 0);
+
+    CRect r;
+    GetWindowRect(hwnd, r);
+    SetWindowPos(hwnd, 0, (workarea.left+workarea.right)/2-r.Width()/2, (workarea.top+workarea.bottom)/2 - r.Height(), 0, 0, SWP_NOSIZE);
+}
 
 // SHGetImageList
 struct AlphaGUI : IWindowlessGUI {
-    AlphaGUI():m_input(this) {
+    AlphaGUI():m_input(this), m_invalidatepending(false) {
         m_pane=0;    
 
         m_hwnd=CreateWindowEx(WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -235,6 +238,8 @@ struct AlphaGUI : IWindowlessGUI {
         ::SetWindowLongPtr(m_listhosthwnd, GWLP_WNDPROC, (LONG)_ListBoxWndProc);
         ::SetWindowLongPtr(m_listhosthwnd, GWLP_USERDATA, (LONG)this);
 
+        m_hwndsettings=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GET_GMAILAUTHCODE), 0, DlgProc);
+
         // this is not the correct way to get gui font : 
         // http://fox-toolkit.2306850.n4.nabble.com/getSystemFont-call-to-SystemParametersInfo-fails-when-WINVER-gt-0x0600-td4011173.html
         // http://blogs.msdn.com/b/oldnewthing/archive/2005/07/07/436435.aspx
@@ -242,14 +247,17 @@ struct AlphaGUI : IWindowlessGUI {
         WPARAM w=(WPARAM)GetStockObject(DEFAULT_GUI_FONT);
         SendMessage(m_listhwnd, WM_SETFONT, w, TRUE);
 
-        m_background.Load(L"..\\background.png");
+        m_background.Load(L"background.png");
         PremultAlpha(m_background);
         
-        m_background3.Load(L"..\\background3.png");
+        m_background3.Load(L"background3.png");
         PremultAlpha(m_background3);
 
-        m_focus.Load(L"..\\focus.png");
+        m_focus.Load(L"focus.png");
         PremultAlpha(m_focus);
+
+        m_knob.Load(L"ui-radio-button.png");
+        PremultAlpha(m_knob);
 
         premult.Create(m_background3.GetWidth(), m_background.GetHeight(), 32, CImage::createAlphaChannel);
 
@@ -262,13 +270,14 @@ struct AlphaGUI : IWindowlessGUI {
         m_sources[L"FILE"].push_back(new StartMenuSource(m_hwnd));
         m_sources[L"TEXT"].push_back(new TextSource);
         m_sources[L"CONTACT"].push_back(new ContactSource);
-        
+
         // rules & custom sources
-        m_sources[L"EMAILVERB"].push_back(new EmailVerbSource);        
+        m_sources[L"EMAILVERB"].push_back(new EmailVerbSource);                
         m_rules.push_back(new EmailVerbRule);
+        m_rules.push_back(new EmailFileVerbRule);
 
         m_sources[L"FILEVERB"].push_back(new FileVerbSource);
-        m_rules.push_back(new FileVerbRule);        
+        m_rules.push_back(new FileVerbRule);     
 
         m_sources[L"WEBSITE"].push_back(new WebsiteSource);   
         
@@ -285,21 +294,26 @@ struct AlphaGUI : IWindowlessGUI {
         for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++)
             (*it)->m_pArgs=&m_args;
 
-        OnQueryChange(L"");
-
+        OnQueryChange(L"");        
+                
         // we shouldn't create a thread for each source, this is inefficient
         // crawl should be called with an empty index for each source
         HANDLE h=CreateThread(0, 0, (LPTHREAD_START_ROUTINE)crawlProc, this, 0, 0);
     }
     static DWORD __stdcall crawlProc(AlphaGUI *thiz) {
-        //Sleep(10*1000);
-        std::map<CString,SourceResult> *index=new std::map<CString,SourceResult>;
-        thiz->m_sources[L"FILE"][1]->crawl(index);
-        PostMessage(thiz->m_hwnd, WM_USER, (WPARAM)index, 0);
+        while(1) {
+            for(std::map<CString, std::vector<Source*> >::iterator it=thiz->m_sources.begin(); it!=thiz->m_sources.end();it++)
+                for(int i=0;i<it->second.size();i++)
+                    it->second[i]->crawl();
+            Sleep(10*60*1000);
+        }
         return TRUE;
     }
     void Invalidate() {
-        Update();
+        if(m_invalidatepending==false) {
+            PostMessage(m_hwnd, WM_INVALIDATE, 0, 0);        
+            m_invalidatepending=true;
+        }
     }
     void CollectItems(const CString &q, const uint pane, std::vector<SourceResult> &args, std::vector<SourceResult> &results, int def) {
         // collect all active rules (match could have an args that tell how much to match )
@@ -401,6 +415,7 @@ struct AlphaGUI : IWindowlessGUI {
         Invalidate();
     }
     void Update() {        
+        m_invalidatepending=false;
         // load icons if they aren't 
         // that means that the only element that may have an icon are in m_args
         for(uint i=0;i<m_args.size();i++) {
@@ -424,22 +439,23 @@ struct AlphaGUI : IWindowlessGUI {
         StringFormat sfcenter;
         sfcenter.SetAlignment(StringAlignmentCenter);    
         sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);        
-
-        int w;
+        
         if(m_args.size()==3) {
             m_background3.AlphaBlend(hdc, 0, 0);
-            w=m_background3.GetWidth();
+            m_curWidth=m_background3.GetWidth();
         } else {
             m_background.AlphaBlend(hdc, 0, 0);
-            w=m_background.GetWidth();
+            m_curWidth=m_background.GetWidth();
         }
 
-        m_input.Draw(hdc, RectF(0,178, REAL(w), 20));
+        m_input.Draw(hdc, RectF(0,178, REAL(m_curWidth), 20));
         
         // draw icon on screen        
         m_focus.AlphaBlend(hdc, 22+157*0, 22);
 
         m_focus.AlphaBlend(hdc, 22+157*1, 22);
+
+        m_knob.AlphaBlend(hdc, m_curWidth-20, 5);
 
         if(m_args.size()==3)
             m_focus.AlphaBlend(hdc, 22+157*2, 22);
@@ -453,9 +469,9 @@ struct AlphaGUI : IWindowlessGUI {
         CRect workarea;
         ::SystemParametersInfo(SPI_GETWORKAREA, 0, &workarea, 0);
 
-        POINT p1={(workarea.left+workarea.right)/2-w/2,200};
+        POINT p1={(workarea.left+workarea.right)/2-m_curWidth/2,200};
         POINT p2={0};
-        SIZE s={w, m_background.GetHeight()};
+        SIZE s={m_curWidth, m_background.GetHeight()};
         BLENDFUNCTION bf={AC_SRC_OVER, 0, 255, AC_SRC_ALPHA};
         BOOL b=::UpdateLayeredWindow(m_hwnd, 0, &p1, &s, hdc, &p2, 0, &bf, ULW_ALPHA);
         
@@ -463,7 +479,7 @@ struct AlphaGUI : IWindowlessGUI {
 
         CRect r;
         GetWindowRect(m_hwnd, &r);
-        SetWindowPos(m_listhosthwnd, 0, r.left+22+157*m_pane, r.bottom, 0, 0, SWP_NOSIZE|SWP_NOACTIVATE);
+        SetWindowPos(m_listhosthwnd, 0, r.left+22+157*m_pane, r.bottom, 0, 0, SWP_NOSIZE|SWP_NOACTIVATE);        
     }
     SourceResult *GetSelectedItem() {
         int sel=::SendMessage(m_listhwnd, LB_GETCARETINDEX, 0, 0);
@@ -483,12 +499,11 @@ struct AlphaGUI : IWindowlessGUI {
             // might need to disambiguate here ?
             for(uint i=0;i<m_rules.size();i++)
                 if(m_rules[i]->match(m_args, m_args.size())>1) {
+                    // found one rule
+                    ShowWindow(m_hwnd, SW_HIDE);
+                    ShowWindow(m_listhosthwnd, SW_HIDE);                       
 
-                    if(m_rules[i]->execute(m_args)) {                        
-                        // found one rule
-                        ShowWindow(m_hwnd, SW_HIDE);
-                        ShowWindow(m_listhosthwnd, SW_HIDE);
-                        
+                    if(m_rules[i]->execute(m_args)) {                                                
                         for(uint a=0;a<m_args.size(); a++) {
                             m_args[a].source->validate(&m_args[a]);
                         }
@@ -503,7 +518,7 @@ struct AlphaGUI : IWindowlessGUI {
                     }
                 }
             return FALSE;
-        }	
+        }
         else if(msg == WM_KEYDOWN && wParam == VK_ESCAPE)
         {
             if(IsWindowVisible(m_listhosthwnd)) {
@@ -513,15 +528,25 @@ struct AlphaGUI : IWindowlessGUI {
                 return FALSE;
             }
 
+            if(m_pane==0) {
+                ShowWindow(m_hwnd, SW_HIDE);
+                ShowWindow(m_listhosthwnd, SW_HIDE);
+
+                m_input.SetText(L"");
+                return FALSE;
+            }
+
             if(m_pane>0) {                                
-                m_input.SetText(m_queries.size()==0?L"":m_queries.back());
+                CString query=m_queries.size()==0?L"":m_queries.back();                
+
                 m_pane--;
                 m_args.pop_back();       
                 m_queries.pop_back();
-
+                
+                m_input.SetText(query);
                 ShowNextArg();
                 Invalidate();
-            }
+            }            
             
             return FALSE;
         }
@@ -565,7 +590,7 @@ struct AlphaGUI : IWindowlessGUI {
             CRect r;
             GetWindowRect(m_hwnd, &r);
             ::ShowWindow(m_listhosthwnd, SW_SHOW);
-            ::SetActiveWindow(m_listhosthwnd);
+            //::SetActiveWindow(m_listhosthwnd);
             ::SetFocus(m_listhwnd);
             
             return FALSE;
@@ -574,7 +599,7 @@ struct AlphaGUI : IWindowlessGUI {
         {
             m_input.OnWindowMessage(msg,wParam,lParam);
             return FALSE;
-        }
+        }        
 
         return TRUE;
     }
@@ -583,20 +608,58 @@ struct AlphaGUI : IWindowlessGUI {
             return S_OK;
 
         HWND h1,h2;
-        if(msg==WM_HOTKEY && wParam==1) {
+        if(msg==WM_INVALIDATE) {
+            Update();
+        } if(msg==WM_COMMAND) {
+            if(wParam==0)
+                PostQuitMessage(0);
+            else if(wParam==1) {    
+                CenterWindow(m_hwndsettings);
+                ShowWindow(m_hwndsettings,SW_SHOW);
+                ShowWindow(m_hwnd, SW_HIDE);
+                ShowWindow(m_listhosthwnd, SW_HIDE);                        
+            }
+        } else if(msg == WM_LBUTTONUP) {
+            int xPos = ((int)(short)LOWORD(lParam)); 
+            int yPos = ((int)(short)HIWORD(lParam)); 
+            
+            if(CRect(CPoint(m_curWidth-20,5), CSize(10,10)).PtInRect(CPoint(xPos, yPos))) {
+                HMENU hmenu=CreatePopupMenu();
+
+                AppendMenu(hmenu, MF_STRING, 1, L"Configure Gmail");
+                //AppendMenu(hmenu, MF_STRING, 2, L"Configure Smtp");
+                AppendMenu(hmenu, MF_STRING, 0, L"Quit");
+                
+                POINT p={m_curWidth-20+5,5+5};
+                ClientToScreen(m_hwnd, &p);
+                TrackPopupMenu(hmenu, TPM_LEFTALIGN, p.x, p.y, 0, m_hwnd, 0);
+                //OutputDebugStringA("click");
+            }
+        } else if(msg==WM_HOTKEY && wParam==1) {
             
             if(IsWindowVisible(m_hwnd)) {
                 ShowWindow(m_hwnd, SW_HIDE);
                 ShowWindow(m_listhosthwnd, SW_HIDE);
             } else {
                 ShowWindow(m_hwnd, SW_SHOW);
-                h1=SetActiveWindow(m_hwnd);
-                h2=SetFocus(m_hwnd);
+                SetForegroundWindow(m_hwnd);
+                //h1=SetActiveWindow(m_hwnd);
+                //h2=SetFocus(m_hwnd);
             }
         } else if(msg==WM_USER) {
             //((std::map<CString,SourceResult> *)wParam)->begin()->second.source->updateIndex(((std::map<CString,SourceResult> *)wParam));
             //((std::map<CString,SourceResult> *)wParam)->begin()->second.source->save();
             OutputDebugString(L"crawling complete\n");
+        }
+        else if(msg == WM_NCHITTEST)
+        {
+            /*int xPos = ((int)(short)LOWORD(lParam)); 
+            int yPos = ((int)(short)HIWORD(lParam)); 
+            if(CRect(CPoint(m_curWidth-20,5), CSize(10,10)).PtInRect(CPoint(xPos, yPos))) {
+                return HTCLIENT;
+            }
+            return HTCAPTION;*/
+
         }
         return ::DefWindowProc(hwnd, msg, wParam, lParam);
     }
@@ -662,11 +725,13 @@ struct AlphaGUI : IWindowlessGUI {
     CImage             m_background;
     CImage             m_background3;
     CImage             m_focus;
+    CImage             m_knob;
 
     CString            lastResultExpand;
 
     // new behavior    
-
+    bool                       m_invalidatepending;
+    int                        m_curWidth; // current width
     CImage                     premult;
     uint                       m_pane;
     std::map<CString, std::vector<Source*> > m_sources;
@@ -677,4 +742,5 @@ struct AlphaGUI : IWindowlessGUI {
 
     HWND                       m_listhwnd;
     HWND                       m_listhosthwnd;
+    HWND                       m_hwndsettings;
 };
