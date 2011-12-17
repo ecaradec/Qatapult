@@ -76,6 +76,7 @@ inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh) {
 }
 
 inline Gdiplus::Bitmap *getIcon(const CString &path) {
+    
     // get hicon
     SHFILEINFO sh;
     SHGetFileInfo(path, FILE_ATTRIBUTE_NORMAL, &sh, sizeof(sh), SHGFI_SYSICONINDEX);        

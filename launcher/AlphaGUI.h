@@ -1,16 +1,24 @@
 #include "SourceResult.h"
 #include "Source.h"
+#include "Rule.h"
+
 #include "FileSource.h"
 #include "StartMenuSource.h"
 #include "FileVerbSource.h"
+#include "FileVerbRule.h"
 #include "EmailVerbSource.h"
 #include "IWindowlessGUI.h"
 #include "WindowlessInput.h"
-#include "Rule.h"
 #include "pugixml.hpp"
 #include "resource.h"
 #include "DBSource.h"
+#include "TextSource.h"
 #include "ContactSource.h"
+#include "SendEmail.h"
+#include "EmailVerbRule.h"
+#include "EmailFileVerbRule.h"
+#include "WebsitePlugin.h"
+#include "QuitPlugin.h"
 
 #define WM_INVALIDATE (WM_USER+2)
 
@@ -21,197 +29,6 @@
 // [_] add an index for the startmenu source
 // [_] add usage info in the index for ranking purpose
 // [_] SourceResult should contains an map to store it's data probably, would solve most problems
-
-struct FileVerbRule : Rule {
-    FileVerbRule() : Rule(L"FILE",L"FILEVERB") {}
-    bool execute(std::vector<SourceResult> &args) {
-        CString path=(*m_pArgs)[0].source->getString(args[0].key+L"/path");
-
-        CString fp(path); fp.TrimRight(L"\\");
-        CString d=fp.Left(fp.ReverseFind(L'\\'));
-        CString f=fp.Mid(fp.ReverseFind(L'\\')+1);
-
-        CString verb=args[1].key;
-        CComPtr<IContextMenu> pCM;
-        getContextMenu(d, f, &pCM);
-
-        HMENU hmenu=CreatePopupMenu();
-        pCM->QueryContextMenu(hmenu, 0, 0, 0xFFFF, CMF_DEFAULTONLY);
-        
-        ProcessCMCommand(pCM, CStringA(args[1].key));        
-        return true;
-    }
-    HRESULT ProcessCMCommand(LPCONTEXTMENU pCM, const CHAR *verb) {
-       CMINVOKECOMMANDINFO ici;
-       ZeroMemory(&ici, sizeof(ici));
-       ici.cbSize = sizeof(CMINVOKECOMMANDINFO);
-       ici.lpVerb = (LPCSTR)verb;
-       ici.nShow = SW_SHOWNORMAL;
-
-       return pCM->InvokeCommand(&ici);
-    }
-};
-
-struct TextSource : Source {
-    TextSource() : Source(L"TEXT") {
-        m_ignoreemptyquery=true;
-    }
-    void collect(const TCHAR *query, std::vector<SourceResult> &r, int def) {
-        if(CString(query).Find(L'\'')==0 || CString(query).Find(L'.')==0) {
-            r.push_back(SourceResult(L"", CString(query).Mid(1), CString(query).Mid(1), this, 1, 0, 0));            
-        } else if(m_pArgs->size()!=0) {
-            r.push_back(SourceResult(L"", query, query, this, 0, 0, 0));
-        }
-    }
-    void rate(SourceResult *r) {
-        if(r->id==1)
-            r->rank=100;
-        else
-            r->rank=0;
-    }
-    virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
-        RectF r1(r);
-        r1.Y+=5;
-        r1.X+=5;
-        r1.Width-=10;
-        r1.Height-=10;
-        StringFormat sfcenter;
-        sfcenter.SetAlignment(StringAlignmentNear);    
-        sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
-        Gdiplus::Font f(L"Arial", 12.0f); 
-
-        g.DrawString(sr->display, sr->display.GetLength(), &f, r1, &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
-    }
-};
-
-bool sendEmail(const TCHAR *to, const TCHAR *subject, const TCHAR *body, const TCHAR *attach) {
-    WCHAR curDir[MAX_PATH];
-    GetCurrentDirectory(MAX_PATH, curDir);
-
-    TCHAR from[1024];
-    GetPrivateProfileString(L"QSLLContacts", L"email", L"", from, sizeof(from), CString(curDir)+"\\settings.ini");
-    TCHAR username[1024];
-    GetPrivateProfileString(L"QSLLContacts", L"username", L"", username, sizeof(username), CString(curDir)+"\\settings.ini");
-    TCHAR password[1024];
-    GetPrivateProfileString(L"QSLLContacts", L"password", L"", password, sizeof(password), CString(curDir)+"\\settings.ini");
-    TCHAR server[1024];
-    GetPrivateProfileString(L"QSLLContacts", L"server", L"", server, sizeof(server), CString(curDir)+"\\settings.ini");
-
-    TCHAR buff[4096];
-    if(attach)
-        wsprintf(buff, L"-to %s -f %s -subject \"%s\" -body \"%s\" -attach \"%s\" -u %s -pw %s -debug -log blat.log -server %s", to, from, subject, body, attach, username, password, server);
-    else
-        wsprintf(buff, L"-to %s -f %s -subject \"%s\" -body \"%s\" -u %s -pw %s -debug -log blat.log -server %s", to, from, subject, body, username, password, server);
-
-    SHELLEXECUTEINFO sei={0};
-    sei.cbSize=sizeof(SHELLEXECUTEINFO);
-    sei.lpFile=L"blat";
-    sei.lpParameters=buff;
-    sei.nShow=SW_HIDE;
-    sei.fMask=SEE_MASK_NOCLOSEPROCESS;
-
-    ShellExecuteEx(&sei);
-
-    WaitForSingleObject(sei.hProcess, INFINITE);
-    DWORD processExitCode=-1;
-    GetExitCodeProcess(sei.hProcess, &processExitCode);
-    if(processExitCode==1) {
-        // retry
-        ShellExecuteEx(&sei);
-
-        WaitForSingleObject(sei.hProcess, INFINITE);
-        processExitCode=-1;
-        GetExitCodeProcess(sei.hProcess, &processExitCode);
-        if(processExitCode==1) {
-            MessageBox(0, L"Can't send email ! Check your SMTP configuration.", L"QSLL", MB_OK);
-        }
-    }
-    return processExitCode==0;
-}
-
-
-// http://www.jeffkastner.com/2010/01/blat-stunnel-and-gmail/
-struct EmailVerbRule : Rule {
-    EmailVerbRule() : Rule(L"TEXT", L"EMAILVERB",L"CONTACT") {
-    }
-    virtual bool execute(std::vector<SourceResult> &args) {
-        CString email=args[2].source->getString(args[2].key+L"/email");       
-
-        CString content(args[0].display);
-        CString subject;
-        CString body=" ";
-        int subjectEnd=content.Find(L".");
-        if(subjectEnd==-1) {
-            subject=content;
-        } else {
-            subject=content.Left(subjectEnd);
-            body=content.Mid(subjectEnd+1);
-        }
-
-        sendEmail(email, subject, body, 0);
-        return true;
-    }
-};
-
-// http://www.jeffkastner.com/2010/01/blat-stunnel-and-gmail/
-struct EmailFileVerbRule : Rule {
-    EmailFileVerbRule() : Rule(L"FILE", L"EMAILVERB",L"CONTACT") {
-    }
-    virtual bool execute(std::vector<SourceResult> &args) {
-        CString path=args[0].source->getString(args[0].key+L"/path");
-        CString email=args[2].source->getString(args[2].key+L"/email");        
-        CString filename=path.Right(path.GetLength() - (path.ReverseFind(L'\\')+1));
-
-        sendEmail(email, filename, L"Here is your file", path);
-        return true;
-    }
-};
-
-// those kind of sources could have a simplified load and save ?
-struct WebsiteSource : DBSource {
-    WebsiteSource() : DBSource(L"websites", L"WEBSITE") {
-        char *zErrMsg = 0;
-        sqlite3_exec(db, "CREATE TABLE websites(key TEXT PRIMARY KEY ASC, display TEXT, href TEXT, searchHref TEXT, icon TEXT, bonus INTEGER)", 0, 0, &zErrMsg);        
-        
-        sqlite3_exec(db, "INSERT OR REPLACE INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Google', 'Google', 'http://google.com', 'https://www.google.com/#q=%q', 'google', coalesce((SELECT bonus FROM websites WHERE key=\"Google\"), 0));\n\
-                          INSERT OR REPLACE INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Amazon', 'Amazon', 'http://amazon.com', 'http://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=%q', 'amazon', coalesce((SELECT bonus FROM websites WHERE key=\"Amazon\"), 0));\n", 0, 0, &zErrMsg);
-    }
-};
-
-struct SearchWithVerbSource : Source {
-    SearchWithVerbSource() : Source(L"SEARCHWITHVERB") {        
-        m_index[L"Search With"]=SourceResult(L"Search With", L"Search With", L"Search With", this, 0, 0, m_index[L"Search With"].bonus);
-    }
-};
-
-
-struct QuitVerbSource : Source {
-    QuitVerbSource() : Source(L"QUITVERB") {        
-        m_index[L"Quit (QSLL )"]=SourceResult(L"Quit (QSLL )", L"Quit (QSLL )", L"Quit (QSLL )", this, 0, 0, m_index[L"Quit (QSLL )"].bonus);
-        m_ignoreemptyquery=true;
-    }
-};
-
-struct QuitRule : Rule {
-    QuitRule() : Rule(L"QUITVERB") {}
-    virtual bool execute(std::vector<SourceResult> &args) {
-        PostQuitMessage(0);
-        return true;
-    }    
-};
-
-
-struct WebSearchRule : Rule {
-    WebSearchRule() : Rule(L"TEXT", L"SEARCHWITHVERB", L"WEBSITE") {}
-    virtual bool execute(std::vector<SourceResult> &args) {
-        CString searchURL=args[2].source->getString(args[2].key+"/searchHref");        
-        searchURL.Replace(L"%q", args[0].display);            
-        ShellExecute(0, 0, searchURL, 0, 0, SW_SHOWDEFAULT);
-        return true;
-    }
-};
-
-std::map<CString, std::vector<SourceResult> > g_history;
 
 void CenterWindow(HWND hwnd) {
     CRect workarea;
