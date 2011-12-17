@@ -8,17 +8,7 @@ inline CString GetSpecialFolder(int csidl) {
     SHGetFolderPath(0, csidl, 0, SHGFP_TYPE_CURRENT, tmp.GetBufferSetLength(MAX_PATH)); tmp.ReleaseBuffer();
     return tmp;
 }
- static int getResultsCB(void *NotUsed, int argc, char **argv, char **azColName) {
-     Info *pinfo=(Info*)NotUsed;
-     pinfo->results->push_back(SourceResult(argv[0],         // key
-                                            argv[1],         // display
-                                            argv[2],         // expand
-                                            pinfo->source,   // source
-                                            atoi(argv[3]?argv[3]:"0"),               // id
-                                            0,               // data
-                                            atoi(argv[4]?argv[4]:"0"))); // bonus
-    return 0;
-}
+
 
 CStringW UTF8toUTF16(const CStringA& utf8)
 {
@@ -44,6 +34,19 @@ CStringA UTF16toUTF8(const CStringW& utf16)
     }
     return utf8;
 }
+
+ static int getResultsCB(void *NotUsed, int argc, char **argv, char **azColName) {
+     Info *pinfo=(Info*)NotUsed;
+     pinfo->results->push_back(SourceResult(UTF8toUTF16(argv[0]),         // key
+                                            UTF8toUTF16(argv[1]),         // display
+                                            UTF8toUTF16(argv[2]),          // expand
+                                            pinfo->source,   // source
+                                            atoi(argv[3]?argv[3]:"0"),               // id
+                                            0,               // data
+                                            atoi(argv[4]?argv[4]:"0"))); // bonus
+    return 0;
+}
+
 
 static int getStringCB(void *NotUsed, int argc, char **argv, char **azColName) {
      *((CString*)NotUsed)=argv[0];
@@ -92,6 +95,14 @@ struct StartMenuSource : Source {
         CStringA q; // 82 bug
         q+="BEGIN;\n";
         WCHAR buff[0xFFFF];
+        char *zErrMsg=0;
+
+        sqlite3_stmt *stmt=0;
+        const char *unused=0;
+        int rc;
+
+        rc = sqlite3_exec(db, "BEGIN;", 0, 0, &zErrMsg);
+
         for(uint i=0;i<lnks.size();i++) {
             CString str(lnks[i]);
             PathRemoveExtension(str.GetBuffer()); str.ReleaseBuffer();
@@ -110,35 +121,45 @@ struct StartMenuSource : Source {
             }
                         
             CString startmenu_key=md5(lnks[i]);
+            
+            for(int j=0;j<commands.size();j++) {
+                //wsprintf(buff, L"INSERT OR REPLACE INTO startmenu_verbs(key, startmenu_key, label, icon, id) VALUES(\"%s\",                                   \"%s\",        \"%s\",              \"%s\",           %d);\n",
+                //                                                                                                    sqlEscapeStringW(startmenu_key+L"/verb/"+commands[j].verb), sqlEscapeStringW(startmenu_key), sqlEscapeStringW(commands[j].display), sqlEscapeStringW(commands[j].verb), commands[j].id);
+                //q+=buff;
 
-            // this is enough for inserting once in the table, improve it later       
-            // the bonus value and possible other runtime values should be reinjected with a (select bonus from startmenu where key=<key>)
-            // (SELECT bonus FROM startmenu WHERE key=\"%s\")
-            wsprintf(buff, L"INSERT OR REPLACE INTO startmenu(key,display,expand,path,verb,bonus) VALUES(\"%s\",           \"%s\", \"%s\", \"%s\",   \"%s\",      coalesce((SELECT bonus FROM startmenu WHERE key=\"%s\"), 0));\n",
-                                                                                                         sqlEscapeStringW(startmenu_key),     sqlEscapeStringW(str),    sqlEscapeStringW(str),    sqlEscapeStringW(lnks[i]), sqlEscapeStringW(packedVerbs),                                                 sqlEscapeStringW(startmenu_key));
+                rc = sqlite3_prepare_v2(db,
+                                    "INSERT OR REPLACE INTO startmenu_verbs(key, startmenu_key, label, icon, id, bonus) VALUES(?, ?, ?, ?, ?, coalesce((SELECT bonus FROM startmenu WHERE key=?), 0));\n",
+                                    -1, &stmt, &unused);
+                rc = sqlite3_bind_text16(stmt, 1, (startmenu_key+L"/verb/"+commands[j].verb).GetString(), -1, SQLITE_STATIC);
+                rc = sqlite3_bind_text16(stmt, 2, startmenu_key.GetString(), -1, SQLITE_STATIC);
+                rc = sqlite3_bind_text16(stmt, 3, commands[j].display.GetString(), -1, SQLITE_STATIC);
+                rc = sqlite3_bind_text16(stmt, 4, commands[j].verb.GetString(), -1, SQLITE_STATIC);
+                rc = sqlite3_bind_int   (stmt, 5, commands[j].id);
+                rc = sqlite3_bind_text16(stmt, 6, startmenu_key.GetString(), -1, SQLITE_STATIC);
+                rc = sqlite3_step(stmt);
+                sqlite3_finalize(stmt);
+            }
+            
+            rc = sqlite3_prepare_v2(db,
+                                    "INSERT OR REPLACE INTO startmenu(key,display,expand,path,verb,bonus) VALUES(?, ?, ?, ?, ?, coalesce((SELECT bonus FROM startmenu WHERE key=?), 0));\n",
+                                    -1, &stmt, &unused);
+            rc = sqlite3_bind_text16(stmt, 1, startmenu_key.GetString(), -1, SQLITE_STATIC);
+            rc = sqlite3_bind_text16(stmt, 2, str.GetString(), -1, SQLITE_STATIC);
+            rc = sqlite3_bind_text16(stmt, 3, str.GetString(), -1, SQLITE_STATIC);
+            rc = sqlite3_bind_text16(stmt, 4, lnks[i].GetString(), -1, SQLITE_STATIC);
+            rc = sqlite3_bind_text16(stmt, 5, packedVerbs.GetString(), -1, SQLITE_STATIC);
+            rc = sqlite3_bind_text16(stmt, 6, startmenu_key.GetString(), -1, SQLITE_STATIC);
+            rc = sqlite3_step(stmt);
+            //const char *errmsg=sqlite3_errmsg(db);
+            sqlite3_finalize(stmt);
 
-            q+=buff;
 
-            /*for(int j=0;j<commands.size();j++) {
-                wsprintf(buff, L"INSERT OR REPLACE INTO startmenu_verbs(key, startmenu_key, label, icon, id) VALUES(\"%s\",                                   \"%s\",        \"%s\",              \"%s\",           %d);\n",
-                                                                                                                    sqlEscapeStringW(startmenu_key+L"/verb/"+commands[j].verb), sqlEscapeStringW(startmenu_key), sqlEscapeStringW(commands[j].display), sqlEscapeStringW(commands[j].verb), commands[j].id);
-                q+=buff;
-            }*/
-
-            //CString progress;
-            //progress.Format(L"%d/%d\n", i, lnks.size());
-            //OutputDebugString(progress);
+            CString progress;
+            progress.Format(L"%d/%d\n", i, lnks.size());
+            OutputDebugString(progress);
         }
-        q+="END;";
-             
-        //OutputDebugStringA(q);
-        char *zErrMsg = 0;
-        int z=sqlite3_exec(db, q, 0, 0, &zErrMsg);      
-        //if(z!=0) {
-        //    DebugBreak();
-        //}
-        q="";
-//        OutputDebugStringA(q);        
+
+        rc = sqlite3_exec(db, "END;", 0, 0, &zErrMsg);
     }
     // validate
     void validate(SourceResult *r) {
