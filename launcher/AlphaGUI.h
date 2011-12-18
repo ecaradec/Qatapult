@@ -441,10 +441,12 @@ struct AlphaGUI : IWindowlessGUI {
             return FALSE;
         }
         else if(msg == WM_CHAR)
-        {
+        {            
             m_input.OnWindowMessage(msg,wParam,lParam);
-            KillTimer(m_hwnd, 1);
-            SetTimer(m_hwnd, 1, 1000, 0);
+            if(wParam!=27) {
+                KillTimer(m_hwnd, 1);
+                SetTimer(m_hwnd, 1, 1000, 0);
+            }
             return FALSE;
         }
         else if(msg==WM_TIMER && wParam==1)
