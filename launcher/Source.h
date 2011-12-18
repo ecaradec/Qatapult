@@ -1,4 +1,5 @@
 #pragma once
+
 #include "md5.h"
 inline CString md5(const CString &data) {
     std::string data_str=CStringA(data);

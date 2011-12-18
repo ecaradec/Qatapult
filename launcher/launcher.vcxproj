@@ -119,8 +119,11 @@
     <ClInclude Include="AlphaGUI.h" />
     <ClInclude Include="ContactSource.h" />
     <ClInclude Include="DBSource.h" />
+    <ClInclude Include="EmailFileVerbRule.h" />
+    <ClInclude Include="EmailVerbRule.h" />
     <ClInclude Include="EmailVerbSource.h" />
     <ClInclude Include="FileSource.h" />
+    <ClInclude Include="FileVerbRule.h" />
     <ClInclude Include="FileVerbSource.h" />
     <ClInclude Include="FindFileRecursively.h" />
     <ClInclude Include="geticon.h" />
@@ -131,13 +134,18 @@
     <ClInclude Include="LevhensteinDistance.h" />
     <ClInclude Include="pugiconfig.hpp" />
     <ClInclude Include="pugixml.hpp" />
+    <ClInclude Include="QuitPlugin.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Rule.h" />
+    <ClInclude Include="SearchWithVerbSource.h" />
+    <ClInclude Include="SendEmail.h" />
     <ClInclude Include="Source.h" />
     <ClInclude Include="SourceResult.h" />
     <ClInclude Include="StartMenuSource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="TextSource.h" />
+    <ClInclude Include="WebsitePlugin.h" />
     <ClInclude Include="WindowlessInput.h" />
   </ItemGroup>
   <ItemGroup>

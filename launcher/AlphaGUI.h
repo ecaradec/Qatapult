@@ -253,7 +253,9 @@ struct AlphaGUI : IWindowlessGUI {
         HDC hdc=premult.GetDC();
 
         Graphics g(hdc);
-        g.SetInterpolationMode(InterpolationModeHighQuality);
+        //g.SetInterpolationMode(InterpolationModeHighQuality);
+        g.SetInterpolationMode(InterpolationModeHighQualityBicubic);
+        
         g.SetCompositingQuality(CompositingQualityHighQuality);
 
         g.Clear(Gdiplus::Color(0,0,0,0));

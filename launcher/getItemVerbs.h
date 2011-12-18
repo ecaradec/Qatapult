@@ -50,7 +50,7 @@ void getItemVerbs(const CString &d, const CString &f, std::vector<Command> &comm
     getContextMenu(d,f,&pCM);
     if(pCM) {
         HMENU hmenu=CreatePopupMenu();
-        pCM->QueryContextMenu(hmenu, 0, 0, 0xFFFF, CMF_DEFAULTONLY);
+        pCM->QueryContextMenu(hmenu, 0, 0, 0xFFFF, CMF_EXPLORE);
         int i=0;
         CString s;
         for(int i=0;i<::GetMenuItemCount(hmenu);i++) {
