@@ -103,4 +103,7 @@ struct ContactSource : DBSource {
         CString email=getString(sr->key+L"/email");
         g.DrawString(email, email.GetLength(), &f2, r1, &sfcenter, &SolidBrush(Color(0x88FFFFFF)));
     }
+    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
+        return Gdiplus::Bitmap::FromFile(L"icons\\contact.png");
+    }
 };
