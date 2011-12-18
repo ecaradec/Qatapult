@@ -159,7 +159,8 @@ struct AlphaGUI : IWindowlessGUI {
                 activesources[activerules[i]->m_types[pane]]=true;
 
         // collect displayable items
-        results.clear();        
+        ClearResults(results);
+        //results.clear();        
         for(std::map<CString,bool>::iterator it=activesources.begin(); it!=activesources.end(); it++)
             for(uint i=0;i<m_sources[it->first].size();i++)
                 if(m_sources[it->first][i]->m_ignoreemptyquery == true && q==L"")
@@ -317,6 +318,20 @@ struct AlphaGUI : IWindowlessGUI {
         //::SendMessage(m_listhwnd, LB_GETSELITEMS, 1, (LPARAM)&sel);
         return (SourceResult*)::SendMessage(m_listhwnd, LB_GETITEMDATA, sel, 0);
     }
+    void ClearResults(std::vector<SourceResult> &results) {
+        for(uint j=0;j<results.size();j++) {
+            for(int a=0;a<m_args.size();a++) {
+                if( results[j].key == m_args[a].key )
+                    continue;
+            }
+
+            delete results[j].icon;
+            results[j].icon=0;
+            delete results[j].smallicon;
+            results[j].smallicon=0;
+        }
+        results.clear();
+    }
     LRESULT OnKeyboardMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         if(msg == WM_KEYDOWN && wParam == VK_RETURN)
         {
@@ -339,7 +354,8 @@ struct AlphaGUI : IWindowlessGUI {
                             m_args[a].source->validate(&m_args[a]);
                         }
 
-                        m_results.clear();
+                        ClearResults(m_results);
+                        //m_results.clear();
                         m_args.clear();
                         m_pane=0;
                         m_input.SetText(L"");
