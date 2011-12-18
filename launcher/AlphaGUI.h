@@ -198,7 +198,6 @@ struct AlphaGUI : IWindowlessGUI {
         //    int j=SendMessage(m_listhwnd, LB_GETITEMDATA, id, 0);
         //}
 
-
         if(m_results.size()>0) {
             OnSelChange(&m_results.front());
         } else {
@@ -270,7 +269,7 @@ struct AlphaGUI : IWindowlessGUI {
 
         StringFormat sfcenter;
         sfcenter.SetAlignment(StringAlignmentCenter);    
-        sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);        
+        sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
         
         if(m_args.size()==3) {
             m_background3.AlphaBlend(hdc, 0, 0);

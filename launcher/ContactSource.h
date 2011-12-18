@@ -32,7 +32,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 WritePrivateProfileStringA("QSLLContacts", "accessToken", accessToken, CStringA(curDir)+"\\settings.ini");
                 WritePrivateProfileStringA("QSLLContacts", "refreshToken", refreshToken, CStringA(curDir)+"\\settings.ini");
                 
-                MessageBox(0, L"Hello", L"Everything should be ok, type quit and restart to load your contact. It's still a beta right ?", MB_OK);
+                MessageBox(0, L"Hello", L"Everything should be ok, type quit and restart to load your contacts. It's still a beta right ?", MB_OK);
                 ::EndDialog(hWnd, 0);
             } else if(wParam==IDCANCEL) {
                 ::EndDialog(hWnd, 0);
@@ -84,6 +84,9 @@ struct ContactSource : DBSource {
         }
     }
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
+        //if(sr->icon)
+        //    g.DrawImage(sr->icon, RectF(r.X+10, r.Y+10, 128, 128));
+
         RectF r1(r);
         r1.Y+=5;
         r1.X+=5;

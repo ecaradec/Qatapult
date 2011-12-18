@@ -14,5 +14,5 @@ struct QuitRule : Rule {
     virtual bool execute(std::vector<SourceResult> &args) {
         PostQuitMessage(0);
         return true;
-    }    
+    }
 };

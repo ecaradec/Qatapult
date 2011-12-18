@@ -125,10 +125,9 @@ struct StartMenuSource : Source {
             //const char *errmsg=sqlite3_errmsg(db);
             sqlite3_finalize(stmt);
 
-
-            CString progress;
-            progress.Format(L"%d/%d\n", i, lnks.size());
-            OutputDebugString(progress);
+            //CString progress;
+            //progress.Format(L"%d/%d\n", i, lnks.size());
+            //OutputDebugString(progress);
         }
 
         rc = sqlite3_exec(db, "END;", 0, 0, &zErrMsg);

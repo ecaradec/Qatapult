@@ -34,7 +34,7 @@ struct FileSource : Source {
                 if(CString(foldername).MakeUpper().Find(f)!=-1) {
                     SourceResult r;
                     r.key=noslash+L"\\";
-                    r.display=L"[D]"+foldername;
+                    r.display=foldername;
                     r.expand=noslash+L"\\";
                     r.source=this;
                     r.rank=10;
@@ -51,7 +51,7 @@ struct FileSource : Source {
                 if(CString(w32fd.cFileName).MakeUpper().Find(f)!=-1) {
                     SourceResult r;
                     r.key=expand;
-                    r.display=CString(isdirectory?L"[D]":L"[F]")+w32fd.cFileName;
+                    r.display=w32fd.cFileName;
                     r.expand=expand;
                     r.source=this;
                     r.rank=10;
