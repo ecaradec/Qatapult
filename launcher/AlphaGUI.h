@@ -45,6 +45,13 @@ struct AlphaGUI : IWindowlessGUI {
     AlphaGUI():m_input(this), m_invalidatepending(false) {
         m_pane=0;    
 
+        if(GetFileAttributes(L"settings.ini") == INVALID_FILE_ATTRIBUTES) {
+            SHFILEOPSTRUCT sffo={0};
+            sffo.wFunc=FO_COPY;
+            sffo.pFrom=L"settings.default.ini\0";
+            sffo.pTo=L"settings.ini\0";
+            SHFileOperation(&sffo);
+        }
         
         // this is not the correct way to get gui font : 
         // http://fox-toolkit.2306850.n4.nabble.com/getSystemFont-call-to-SystemParametersInfo-fails-when-WINVER-gt-0x0600-td4011173.html
