@@ -1,3 +1,4 @@
+#include "geticon.h"
 #include "SourceResult.h"
 #include "Source.h"
 #include "Rule.h"
@@ -44,19 +45,7 @@ struct AlphaGUI : IWindowlessGUI {
     AlphaGUI():m_input(this), m_invalidatepending(false) {
         m_pane=0;    
 
-        m_hwnd=CreateWindowEx(WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
-        ::SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG)_WndProc);
-        ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);        
         
-        m_listhosthwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_TOPMOST, L"STATIC", L"", WS_POPUP|WS_THICKFRAME, 0, 0, 250, 400, 0, 0, 0, 0); // fix parent
-        CRect rc;
-        GetClientRect(m_listhosthwnd,&rc);
-        m_listhwnd=CreateWindow(L"ListBox", L"", WS_VISIBLE|WS_CHILD|LBS_NOTIFY|LBS_HASSTRINGS|WS_VSCROLL, 0, 0, rc.Width(), rc.Height(), m_listhosthwnd, 0, 0, 0); // fix parent
-        ::SetWindowLongPtr(m_listhosthwnd, GWLP_WNDPROC, (LONG)_ListBoxWndProc);
-        ::SetWindowLongPtr(m_listhosthwnd, GWLP_USERDATA, (LONG)this);
-
-        m_hwndsettings=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GET_GMAILAUTHCODE), 0, DlgProc);
-
         // this is not the correct way to get gui font : 
         // http://fox-toolkit.2306850.n4.nabble.com/getSystemFont-call-to-SystemParametersInfo-fails-when-WINVER-gt-0x0600-td4011173.html
         // http://blogs.msdn.com/b/oldnewthing/archive/2005/07/07/436435.aspx
@@ -77,6 +66,22 @@ struct AlphaGUI : IWindowlessGUI {
         PremultAlpha(m_knob);
 
         premult.Create(m_background3.GetWidth(), m_background.GetHeight(), 32, CImage::createAlphaChannel);
+
+
+        m_hwnd=CreateWindowEx(WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
+        ::SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG)_WndProc);
+        ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);        
+        
+        m_listhosthwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_TOPMOST, L"STATIC", L"", WS_POPUP|WS_THICKFRAME, 0, 0, m_background.GetWidth(), 400, 0, 0, 0, 0); // fix parent
+        CRect rc;
+        GetClientRect(m_listhosthwnd,&rc);
+        m_listhwnd=CreateWindow(L"ListBox", L"", WS_VISIBLE|WS_CHILD|LBS_NOTIFY|LBS_HASSTRINGS|WS_VSCROLL|LBS_OWNERDRAWFIXED, 0, 0, rc.Width(), rc.Height(), m_listhosthwnd, 0, 0, 0); // fix parent
+        ::SetWindowLongPtr(m_listhosthwnd, GWLP_WNDPROC, (LONG)_ListBoxWndProc);
+        ::SetWindowLongPtr(m_listhosthwnd, GWLP_USERDATA, (LONG)this);
+        ::SendMessage(m_listhwnd, LB_SETITEMHEIGHT, 0, 40);
+
+
+        m_hwndsettings=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GET_GMAILAUTHCODE), 0, DlgProc);
 
         Invalidate();        
 
@@ -296,7 +301,7 @@ struct AlphaGUI : IWindowlessGUI {
 
         CRect r;
         GetWindowRect(m_hwnd, &r);
-        SetWindowPos(m_listhosthwnd, 0, r.left+22+157*m_pane, r.bottom, 0, 0, SWP_NOSIZE|SWP_NOACTIVATE);        
+        SetWindowPos(m_listhosthwnd, 0, r.left+157*m_pane, r.bottom, 0, 0, SWP_NOSIZE|SWP_NOACTIVATE);        
     }
     SourceResult *GetSelectedItem() {
         int sel=::SendMessage(m_listhwnd, LB_GETCARETINDEX, 0, 0);
