@@ -9,7 +9,7 @@ struct DBSource : Source {
         sqlite3_close(db);
     }
     // get icon
-    virtual Gdiplus::Bitmap *getIcon(SourceResult *r) { 
+    virtual Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) { 
         return Gdiplus::Bitmap::FromFile(L"icons\\"+r->source->getString(r->key+L"/icon")+".png");
     }
     void validate(SourceResult *r) {

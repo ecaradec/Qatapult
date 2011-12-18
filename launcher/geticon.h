@@ -17,13 +17,18 @@ int getNextHigherIconSize(int v) {
         return 256;
     return v;
 }
+#define ICON_SIZE_SMALL 0
+#define ICON_SIZE_LARGE 1
 
-inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh) {      
+inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh, long flags) {      
     IImageList *pil=0;
     CLSID clsid;
     CLSIDFromString(L"{46EB5926-582E-4017-9FDF-E8998DAA0950}", &clsid);
     //SHGetImageList(SHIL_EXTRALARGE, clsid, (void**)&pil);   
-    SHGetImageList(SHIL_JUMBO, clsid, (void**)&pil);   
+    if(flags==ICON_SIZE_SMALL)
+        SHGetImageList(SHIL_LARGE, clsid, (void**)&pil);   
+    else
+        SHGetImageList(SHIL_JUMBO, clsid, (void**)&pil);   
     
     HICON hicon;
     HRESULT hr=pil->GetIcon(sh.iIcon, ILD_ASYNC|ILD_TRANSPARENT|ILD_PRESERVEALPHA, &hicon);
@@ -41,7 +46,8 @@ inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh) {
                 
     DWORD pixels[256*256];
     LONG l=sizeof(pixels);
-    GetBitmapBits(iconinfo.hbmColor, l, pixels);
+    if(GetBitmapBits(iconinfo.hbmColor, l, pixels)==0)
+        return 0;
     
     int leftMax=0;
     int bottomMax=0;
@@ -62,8 +68,8 @@ inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh) {
     Gdiplus::Graphics g3(icon);
     HDC hdc3=g3.GetHDC();
 
-    for(int y=0;y<bmColor.bmHeight;y++)
-        for(int x=0;x<bmColor.bmWidth;x++) {
+    for(int y=0;y<cx;y++)
+        for(int x=0;x<cy;x++) {
             DWORD pixel=pixels[x+y*bmColor.bmWidth];
             icon->SetPixel(x,y,pixel);
         }
@@ -75,17 +81,17 @@ inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh) {
     return icon;
 }
 
-inline Gdiplus::Bitmap *getIcon(const CString &path) {
+inline Gdiplus::Bitmap *getIcon(const CString &path, long flags=ICON_SIZE_LARGE) {
     
     // get hicon
     SHFILEINFO sh;
     SHGetFileInfo(path, FILE_ATTRIBUTE_NORMAL, &sh, sizeof(sh), SHGFI_SYSICONINDEX);        
-    return getIcon(sh);
+    return getIcon(sh,flags);
 }
 
-inline Gdiplus::Bitmap *getIcon(ITEMIDLIST *pidl) {
+inline Gdiplus::Bitmap *getIcon(ITEMIDLIST *pidl, long flags=ICON_SIZE_LARGE) {
     // get hicon
     SHFILEINFO sh;
     SHGetFileInfo((LPCWSTR)pidl, FILE_ATTRIBUTE_NORMAL, &sh, sizeof(sh), SHGFI_PIDL|SHGFI_SYSICONINDEX);        
-    return getIcon(sh);
+    return getIcon(sh,flags);
 }

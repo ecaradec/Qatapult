@@ -18,20 +18,29 @@ CStringW sqlEscapeStringW(const CStringW &args) {
 }
 
 struct Source {
-    Source(const CString& t) {
+    Source(const CString& t)
+        :itemlistFont(L"Arial", 8.0f, FontStyleBold, UnitPoint),
+         itemscoreFont(L"Arial", 8.0f) {
         m_name=t;
         type=t;
         m_ignoreemptyquery=false;
+
+
+        sfitemlist.SetTrimming(StringTrimmingEllipsisCharacter);
     }
-    Source(const CString& t, const CString &n) {
+    Source(const CString& t, const CString &n)
+    :itemlistFont(L"Arial", 8.0f, FontStyleBold, UnitPoint),
+    itemscoreFont(L"Arial", 8.0f){
         m_name=n;
         type=t;
         m_ignoreemptyquery=false;
+
+        sfitemlist.SetTrimming(StringTrimmingEllipsisCharacter);
     }
 
     virtual ~Source() =0 {}
     // get icon
-    virtual Gdiplus::Bitmap *getIcon(SourceResult *r) { return 0; }
+    virtual Gdiplus::Bitmap *getIcon(SourceResult *r, long flags=ICON_SIZE_LARGE) { return 0; }
     // draw
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
         if(sr->icon)
@@ -43,6 +52,18 @@ struct Source {
 
         Gdiplus::Font f(L"Arial", 8.0f);
         g.DrawString(sr->display, sr->display.GetLength(), &f, RectF(r.X, r.Y+r.Height-15, r.Width, 20), &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
+    }
+    virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r) {
+        g.FillRectangle(&SolidBrush(Color(0xFFFFFFFF)), r);
+
+        if(!sr->smallicon)
+            sr->smallicon=getIcon(sr,ICON_SIZE_SMALL);
+        
+        if(sr->smallicon)
+            g.DrawImage(sr->smallicon, RectF(r.X+10, r.Y, r.Height, r.Height)); // height not a bug, think a minute
+        
+        g.DrawString(sr->display, sr->display.GetLength(), &itemlistFont, RectF(r.X+r.Height+5+10, r.Y+5, r.Width, r.Height), &sfitemlist, &SolidBrush(Color(0xFF000000)));
+        g.DrawString(ItoS(sr->rank), -1, &itemscoreFont, RectF(r.X+r.Height+5+10, r.Y+25, r.Width, r.Height), &sfitemlist, &SolidBrush(Color(0xFF000000)));
     }
     // get results
     // fuse index and bonus from the db
@@ -66,6 +87,9 @@ struct Source {
     virtual void release(SourceResult *r) {}
     virtual void rate(SourceResult *r) {}
 
+    StringFormat                    sfitemlist;
+    Gdiplus::Font                   itemlistFont;
+    Gdiplus::Font                   itemscoreFont;
     bool                            m_ignoreemptyquery;
     CString                         m_name;
     CString                         type;

@@ -142,8 +142,8 @@ struct StartMenuSource : Source {
     }
 
     // getvalue name, buff, bufflen
-    Gdiplus::Bitmap *getIcon(SourceResult *r) {
-        return ::getIcon(getString(r->key+L"/path"));
+    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
+        return ::getIcon(getString(r->key+L"/path"),flags);
     }
     // may be I should just have threaded the results ???
     virtual bool getSubResults(const TCHAR *query, const TCHAR *itemquery, std::vector<SourceResult> &results) {

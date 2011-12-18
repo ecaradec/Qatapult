@@ -5,12 +5,13 @@ inline CString ItoS(int i) {
 struct Source;
 
 struct SourceResult {
-    SourceResult() { rank=0; bonus=0; icon=0; source=0; data=0; dirty=false; }
+    SourceResult() { rank=0; bonus=0; icon=0; smallicon=0; source=0; data=0; dirty=false; }
     SourceResult(const CString &_key, const CString &_display, const CString &_expand, Source *_s, int _id, void *_data, int _bonus) { 
         key=_key;
         rank=0;
         bonus=_bonus;
         icon=0;
+        smallicon=0;
         display=_display;
         expand=_expand;
         source=_s;
@@ -31,6 +32,7 @@ struct SourceResult {
     int      rank;
     bool     dirty;    
     Gdiplus::Bitmap *icon;
+    Gdiplus::Bitmap *smallicon;
     // never use data from sourceresult outside the source, 
     // don't even copy it, should really create 2 class one with data* the other without
     // it should always be null outside the source

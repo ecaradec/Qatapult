@@ -481,6 +481,20 @@ struct AlphaGUI : IWindowlessGUI {
     LRESULT ListBoxWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {           
         if(msg==WM_COMMAND && HIWORD(wParam)==LBN_SELCHANGE)
             OnSelChange(GetSelectedItem());
+        else if(msg==WM_DRAWITEM) {
+            DRAWITEMSTRUCT *dis=(DRAWITEMSTRUCT*)lParam;
+            Graphics g(dis->hDC);
+            
+            Gdiplus::RectF r; 
+            r.X=dis->rcItem.left;
+            r.Y=dis->rcItem.top;
+            r.Width=dis->rcItem.right-dis->rcItem.left;
+            r.Height=dis->rcItem.bottom-dis->rcItem.top;
+
+            if(dis->itemData)
+                ((SourceResult*)dis->itemData)->source->drawListItem(g,(SourceResult*)dis->itemData, r);
+            //(SourceResult*)::SendMessage(m_listhwnd, LB_GETITEMDATA, sel, 0)
+        }
 
         if(msg == WM_CHAR)
             m_input.OnWindowMessage(msg,wParam,lParam);

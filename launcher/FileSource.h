@@ -62,8 +62,8 @@ struct FileSource : Source {
         }
         FindClose(h);
     }
-    Gdiplus::Bitmap *getIcon(SourceResult *r) {
-        return ::getIcon(r->expand);
+    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
+        return ::getIcon(r->expand,flags);
     }
     CString getString(const TCHAR *itemquery) {
         if(CString(itemquery).Right(5)==L"/path") {
