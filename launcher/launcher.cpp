@@ -25,7 +25,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         bool translate=true;
         // forward left & right key to onkeyboard message when on the listhostwindow
         if (::IsChild(gui.m_listhosthwnd, msg.hwnd)) {
-            if(msg.message==WM_KEYDOWN && (msg.wParam==VK_LEFT || msg.wParam==VK_RIGHT)) {
+            if(msg.message==WM_KEYDOWN && (msg.wParam==VK_TAB)) {
                 translate=false;
             }
 

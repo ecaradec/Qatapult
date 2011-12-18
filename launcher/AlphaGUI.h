@@ -369,37 +369,35 @@ struct AlphaGUI : IWindowlessGUI {
         }
         else if(msg == WM_KEYDOWN && wParam == VK_TAB)
         {        
-            SourceResult *r=GetSelectedItem();
-            m_input.SetText(r->expand);            
+            if((GetKeyState(VK_SHIFT)&0xa000)==0) {            
+                uint p=m_pane;
+                if(p+1<m_args.size())
+                    m_pane++;
+
+                if(p<m_args.size()) {
+                    m_queries.push_back(m_input.m_text);
+                    m_input.SetText(L"");
+                } else {
+                    m_queries.push_back(L"");
+                    m_input.SetText(L"");
+                }           
+            } else {
+                if(m_pane==0)
+                    return FALSE;
+
+                if(m_pane>0)
+                    m_pane--;
+                m_input.SetText(m_queries[m_pane]);
+                m_queries.pop_back();
+            
+            }
             
             return FALSE;
         }
         else if(msg == WM_KEYDOWN && wParam == VK_RIGHT)
         {
-            uint p=m_pane;
-            if(p+1<m_args.size())
-                m_pane++;
-
-            if(p<m_args.size()) {
-                m_queries.push_back(m_input.m_text);
-                m_input.SetText(L"");
-            } else {
-                m_queries.push_back(L"");
-                m_input.SetText(L"");
-            }
-            
-            return FALSE;
-        }
-        else if(msg == WM_KEYDOWN && wParam == VK_LEFT)
-        {        
-            if(m_pane==0)
-                return FALSE;
-
-            if(m_pane>0)
-                m_pane--;
-            m_input.SetText(m_queries[m_pane]);
-            m_queries.pop_back();
-            
+            SourceResult *r=GetSelectedItem();
+            m_input.SetText(r->expand);       
             return FALSE;
         }
         else if(msg == WM_KEYDOWN && wParam == VK_DOWN)

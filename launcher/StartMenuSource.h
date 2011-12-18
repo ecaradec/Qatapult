@@ -111,44 +111,16 @@ struct StartMenuSource : Source {
             CString d=lnks[i].Left(lnks[i].ReverseFind(L'\\'));
             CString f=lnks[i].Mid(lnks[i].ReverseFind(L'\\')+1);
 
-            std::vector<Command> commands;
-            getItemVerbs(d, f, commands);
-
-            CString packedVerbs;
-            for(int j=0;j<commands.size();j++) {               
-                wsprintf(buff, L"%s;%s;%d\n", commands[j].display, commands[j].verb, commands[j].id);
-                packedVerbs+=buff;
-            }
-                        
             CString startmenu_key=md5(lnks[i]);
             
-            for(int j=0;j<commands.size();j++) {
-                //wsprintf(buff, L"INSERT OR REPLACE INTO startmenu_verbs(key, startmenu_key, label, icon, id) VALUES(\"%s\",                                   \"%s\",        \"%s\",              \"%s\",           %d);\n",
-                //                                                                                                    sqlEscapeStringW(startmenu_key+L"/verb/"+commands[j].verb), sqlEscapeStringW(startmenu_key), sqlEscapeStringW(commands[j].display), sqlEscapeStringW(commands[j].verb), commands[j].id);
-                //q+=buff;
-
-                rc = sqlite3_prepare_v2(db,
-                                    "INSERT OR REPLACE INTO startmenu_verbs(key, startmenu_key, label, icon, id, bonus) VALUES(?, ?, ?, ?, ?, coalesce((SELECT bonus FROM startmenu WHERE key=?), 0));\n",
-                                    -1, &stmt, &unused);
-                rc = sqlite3_bind_text16(stmt, 1, (startmenu_key+L"/verb/"+commands[j].verb).GetString(), -1, SQLITE_STATIC);
-                rc = sqlite3_bind_text16(stmt, 2, startmenu_key.GetString(), -1, SQLITE_STATIC);
-                rc = sqlite3_bind_text16(stmt, 3, commands[j].display.GetString(), -1, SQLITE_STATIC);
-                rc = sqlite3_bind_text16(stmt, 4, commands[j].verb.GetString(), -1, SQLITE_STATIC);
-                rc = sqlite3_bind_int   (stmt, 5, commands[j].id);
-                rc = sqlite3_bind_text16(stmt, 6, startmenu_key.GetString(), -1, SQLITE_STATIC);
-                rc = sqlite3_step(stmt);
-                sqlite3_finalize(stmt);
-            }
-            
             rc = sqlite3_prepare_v2(db,
-                                    "INSERT OR REPLACE INTO startmenu(key,display,expand,path,verb,bonus) VALUES(?, ?, ?, ?, ?, coalesce((SELECT bonus FROM startmenu WHERE key=?), 0));\n",
+                                    "INSERT OR REPLACE INTO startmenu(key,display,expand,path,bonus) VALUES(?, ?, ?, ?, coalesce((SELECT bonus FROM startmenu WHERE key=?), 0));\n",
                                     -1, &stmt, &unused);
             rc = sqlite3_bind_text16(stmt, 1, startmenu_key.GetString(), -1, SQLITE_STATIC);
             rc = sqlite3_bind_text16(stmt, 2, str.GetString(), -1, SQLITE_STATIC);
             rc = sqlite3_bind_text16(stmt, 3, str.GetString(), -1, SQLITE_STATIC);
             rc = sqlite3_bind_text16(stmt, 4, lnks[i].GetString(), -1, SQLITE_STATIC);
-            rc = sqlite3_bind_text16(stmt, 5, packedVerbs.GetString(), -1, SQLITE_STATIC);
-            rc = sqlite3_bind_text16(stmt, 6, startmenu_key.GetString(), -1, SQLITE_STATIC);
+            rc = sqlite3_bind_text16(stmt, 5, startmenu_key.GetString(), -1, SQLITE_STATIC);
             rc = sqlite3_step(stmt);
             //const char *errmsg=sqlite3_errmsg(db);
             sqlite3_finalize(stmt);
