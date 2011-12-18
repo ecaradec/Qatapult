@@ -420,8 +420,17 @@ struct AlphaGUI : IWindowlessGUI {
         else if(msg == WM_CHAR)
         {
             m_input.OnWindowMessage(msg,wParam,lParam);
+            KillTimer(m_hwnd, 1);
+            SetTimer(m_hwnd, 1, 1000, 0);
             return FALSE;
-        }        
+        }
+        else if(msg==WM_TIMER && wParam==1)
+        {
+            if(IsWindowVisible(m_hwnd)) {
+                KillTimer(m_hwnd, 1);
+                ::ShowWindow(m_listhosthwnd, SW_SHOWNOACTIVATE);
+            }
+        }
 
         return TRUE;
     }

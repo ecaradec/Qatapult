@@ -31,8 +31,8 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 GetCurrentDirectory(MAX_PATH, curDir);
                 WritePrivateProfileStringA("QSLLContacts", "accessToken", accessToken, CStringA(curDir)+"\\settings.ini");
                 WritePrivateProfileStringA("QSLLContacts", "refreshToken", refreshToken, CStringA(curDir)+"\\settings.ini");
-
-
+                
+                MessageBox(0, L"Hello", L"Everything should be ok, type quit and restart to load your contact. It's still a beta right ?", MB_OK);
                 ::EndDialog(hWnd, 0);
             } else if(wParam==IDCANCEL) {
                 ::EndDialog(hWnd, 0);
@@ -102,5 +102,5 @@ struct ContactSource : DBSource {
         r1.Y+=rOut.Height;
         CString email=getString(sr->key+L"/email");
         g.DrawString(email, email.GetLength(), &f2, r1, &sfcenter, &SolidBrush(Color(0x88FFFFFF)));
-    }    
+    }
 };

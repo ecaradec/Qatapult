@@ -8,23 +8,24 @@ struct FileVerbRule : Rule {
         CString d=fp.Left(fp.ReverseFind(L'\\'));
         CString f=fp.Mid(fp.ReverseFind(L'\\')+1);
 
-        CString verb=args[1].key;
-        CComPtr<IContextMenu> pCM;
-        getContextMenu(d, f, &pCM);
-
-        HMENU hmenu=CreatePopupMenu();
-        pCM->QueryContextMenu(hmenu, 0, 0, 0xFFFF, CMF_DEFAULTONLY);
-        
-        ProcessCMCommand(pCM, args[1].id);
+        if((*m_pArgs)[1].key == L"Open") {
+            ShellExecute(0, L"open", path, 0, 0, SW_SHOWDEFAULT);
+        } else if((*m_pArgs)[1].key == L"Edit") {
+            ShellExecute(0, L"edit", path, 0, 0, SW_SHOWDEFAULT);
+        } else if((*m_pArgs)[1].key == L"RunAs") {
+            ShellExecute(0, L"runas", path, 0, 0, SW_SHOWDEFAULT);
+        } else if((*m_pArgs)[1].key == L"Properties") {
+            ShellExecute(0, L"properties", path, 0, 0, SW_SHOWDEFAULT);
+        } else if((*m_pArgs)[1].key == L"Delete") {
+            SHFILEOPSTRUCT sffo={0};
+            int l=path.GetLength();
+            TCHAR *str=path.GetBufferSetLength(l+1);
+            str[l+1]=0; // add extra 0
+            sffo.wFunc=FO_DELETE;
+            sffo.pFrom=str;
+            sffo.fFlags=FOF_ALLOWUNDO;            
+            SHFileOperation(&sffo);
+        }
         return true;
-    }
-    HRESULT ProcessCMCommand(LPCONTEXTMENU pCM, int verb) {
-       CMINVOKECOMMANDINFO ici;
-       ZeroMemory(&ici, sizeof(ici));
-       ici.cbSize = sizeof(CMINVOKECOMMANDINFO);
-       ici.lpVerb = (LPCSTR)verb;
-       ici.nShow = SW_SHOWNORMAL;
-
-       return pCM->InvokeCommand(&ici);
     }
 };

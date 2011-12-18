@@ -9,10 +9,12 @@ struct Info {
 
 struct FileVerbSource : Source {
     FileVerbSource() : Source(L"FILEVERB") {
-        m_index[L"Open"]=SourceResult(L"Open", L"Open", L"Open", this, 0, 0, 10);
-        m_index[L"RunAs"]=SourceResult(L"RunAs", L"RunAs", L"RunAs", this, 0, 0, 9);
-        m_index[L"Delete"]=SourceResult(L"Delete", L"Delete", L"Delete", this, 0, 0, 8);
-        m_index[L"Properties"]=SourceResult(L"Properties", L"Properties", L"Properties", this, 0, 0, 7);
+        int b=10;
+        m_index[L"Open"]=SourceResult(L"Open", L"Open", L"Open", this, 0, 0, b--);
+        m_index[L"Edit"]=SourceResult(L"Edit", L"Edit", L"Edit", this, 0, 0, b--);
+        m_index[L"RunAs"]=SourceResult(L"RunAs", L"RunAs", L"RunAs", this, 0, 0, b--);
+        m_index[L"Delete"]=SourceResult(L"Delete", L"Delete", L"Delete", this, 0, 0, b--);
+        m_index[L"Properties"]=SourceResult(L"Properties", L"Properties", L"Properties", this, 0, 0, b--);
     }
     ~FileVerbSource() {
     }
