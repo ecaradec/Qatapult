@@ -35,7 +35,7 @@ void HttpSubmit(const CString &href, CHAR *data, CStringA *res) {
                 hRequest = NULL;
 
     // Use WinHttpOpen to obtain a session handle.
-    hSession = WinHttpOpen(  L"QSLL/1.0", 
+    hSession = WinHttpOpen(  L"Qatapult/1.0", 
                                 WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
                                 WINHTTP_NO_PROXY_NAME, 
                                 WINHTTP_NO_PROXY_BYPASS, 0);
@@ -184,7 +184,7 @@ void HttpGet(const CString &href, CStringA *res) {
                 hRequest = NULL;
 
     // Use WinHttpOpen to obtain a session handle.
-    hSession = WinHttpOpen(  L"QSLL/1.0", 
+    hSession = WinHttpOpen(  L"Qatapult/1.0", 
                                 WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
                                 WINHTTP_NO_PROXY_NAME, 
                                 WINHTTP_NO_PROXY_BYPASS, 0);

@@ -14,7 +14,7 @@
     <ProjectGuid>{E8DF9869-E289-41BB-B930-3FE959E704E8}</ProjectGuid>
     <RootNamespace>launcher</RootNamespace>
     <Keyword>MFCProj</Keyword>
-    <ProjectName>QSLL</ProjectName>
+    <ProjectName>Qatapult</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
