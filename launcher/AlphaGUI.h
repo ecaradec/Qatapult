@@ -1,3 +1,4 @@
+#include "resource.h"
 #include "geticon.h"
 #include "SourceResult.h"
 #include "Source.h"
