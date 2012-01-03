@@ -20,6 +20,75 @@
 #include "EmailFileVerbRule.h"
 #include "WebsitePlugin.h"
 #include "QuitPlugin.h"
+#include "LevhensteinDistance.h"
+
+
+struct ClockSource : Source {
+    ClockSource() : Source(L"CLOCK") {
+        m_ignoreemptyquery=true;
+        m_index[L"Clock"]=SourceResult(L"Clock", L"Clock", L"Clock", this, 0, 0, 0);
+        m_refreshPeriod=1000;
+        angle=0;
+        hours=Gdiplus::Bitmap::FromFile(L"icons\\hours.png");
+        minutes=Gdiplus::Bitmap::FromFile(L"icons\\minutes.png");
+        seconds=Gdiplus::Bitmap::FromFile(L"icons\\seconds.png");        
+    }
+    virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
+        if(sr->icon)
+            g.DrawImage(sr->icon, RectF(r.X+10, r.Y+10, 128, 128));
+
+        SYSTEMTIME st;
+        GetSystemTime(&st);
+
+        Gdiplus::Matrix m;
+
+        m.Reset();
+        m.Translate(r.X+10+128/2,r.Y+10+128/2);
+        m.Rotate(((float)st.wHour+(float)st.wMinute/60)/24*360+180);
+        m.Translate(-4,-4);
+        g.DrawImage(hours, &RectF(0, 0, 8, 40), &m, 0, 0, Gdiplus::UnitPixel);
+
+        m.Reset();
+        m.Translate(r.X+10+128/2,r.Y+10+128/2);
+        m.Rotate(((float)st.wMinute+(float)st.wSecond/60)/60*360+180);
+        m.Translate(-4,-4);
+        g.DrawImage(minutes, &RectF(0, 0, 8, 40), &m, 0, 0, Gdiplus::UnitPixel);
+
+        m.Reset();
+        m.Translate(r.X+10+128/2,r.Y+10+128/2);
+        m.Rotate((float)st.wSecond/60*360+180);
+        m.Translate(-2,-4);
+        g.DrawImage(seconds, &RectF(0, 0, 8, 40), &m, 0, 0, Gdiplus::UnitPixel);
+
+        StringFormat sfcenter;
+        sfcenter.SetAlignment(StringAlignmentCenter);    
+        sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
+
+        Gdiplus::Font f(L"Arial", 8.0f);
+        //g.DrawString(sr->display, sr->display.GetLength(), &f, RectF(r.X, r.Y+r.Height-15, r.Width, 20), &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
+        drawUnderlined(g, sr->display, m_pUI->getQuery(), RectF(r.X, r.Y+r.Height-20, r.Width, 20));
+    }
+    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
+        return Gdiplus::Bitmap::FromFile(L"icons\\clock.png");
+    }
+    CString getString(const TCHAR *itemquery) {
+        if(CString(itemquery).Right(5)==L"/path") {
+            return CString(itemquery).Left(CString(itemquery).GetLength()-5);
+        }
+        return L"";
+    }
+    int angle;
+    Bitmap *hours;
+    Bitmap *minutes;
+    Bitmap *seconds;
+};
+
+struct ClockRule : Rule {
+    ClockRule() : Rule(L"CLOCK") {}
+    bool execute(std::vector<SourceResult> &args) {
+        return true;
+    }
+};
 
 #define WM_INVALIDATE (WM_USER+2)
 
@@ -99,6 +168,10 @@ struct AlphaGUI : IWindowlessGUI {
         m_sources[L"FILE"].push_back(new StartMenuSource(m_hwnd));
         m_sources[L"TEXT"].push_back(new TextSource);
         m_sources[L"CONTACT"].push_back(new ContactSource);
+        
+        // clock
+        m_sources[L"CLOCK"].push_back(new ClockSource);
+        m_rules.push_back(new ClockRule);
 
         // rules & custom sources
         m_sources[L"EMAILVERB"].push_back(new EmailVerbSource);                
