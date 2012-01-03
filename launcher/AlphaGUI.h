@@ -279,6 +279,17 @@ struct AlphaGUI : IWindowlessGUI {
         }
 
         ShowNextArg();
+
+        // animation timer
+        int refresh=0;
+        for(int i=0; i<m_args.size(); i++) {
+            refresh=max(m_args[0].source->m_refreshPeriod, refresh);
+        }
+
+        if(refresh!=0)
+            SetTimer(m_hwnd, 2, refresh, 0);
+        else
+            KillTimer(m_hwnd,2);
     }
     void ShowNextArg() {
         // check if there is extra args     
