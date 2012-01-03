@@ -76,6 +76,55 @@ struct Source {
             }
         }
     }
+    
+    void drawUnderlined(Graphics &g, CString text, CString query, RectF &rect, StringAlignment align=StringAlignmentCenter, float fontSize=10.0f) {
+        int p=CString(text).MakeUpper().Find(CString(query).MakeUpper());
+        int len=query.GetLength();
+
+        Gdiplus::Font arial(L"Arial", fontSize);
+        Gdiplus::Font arialUn(L"Arial", fontSize, Gdiplus::FontStyleUnderline);
+        Gdiplus::StringFormat sfmt;  
+        sfmt.SetFormatFlags(StringFormatFlagsNoClip);
+        
+        int             charRangeCount=3;
+
+        Gdiplus::CharacterRange charRange[3] = { CharacterRange(0, p), CharacterRange(p, len), CharacterRange(p+len, text.GetLength() - (p + len)) };
+        Gdiplus::Region         regions[3];
+        Gdiplus::Font*          fonts[3]={&arial,&arialUn,&arial};        
+
+        sfmt.SetMeasurableCharacterRanges(charRangeCount, charRange);        
+        RectF rtmp(rect);
+        rtmp.X=0;
+        rtmp.Width=9999;
+        g.MeasureCharacterRanges(text, -1, &arial, rtmp, &sfmt, charRangeCount, regions);
+        
+        PointF origin(0,0);
+        RectF bbox;
+        sfmt.SetAlignment(align);
+        g.MeasureString(text, -1, &arial, rect, &sfmt, &bbox);
+
+        Gdiplus::StringFormat sfmtDisp;
+        sfmtDisp.SetTrimming(StringTrimmingEllipsisCharacter);
+        
+        float begin=bbox.X;
+        float pos=begin;
+        int y=0;
+        const WCHAR *text2=text;
+        for(int i=0;i<charRangeCount;i++) {
+            Gdiplus::RectF r1;
+            regions[i].GetBounds(&r1, &g);
+            r1.X=pos;
+            pos+=r1.Width;
+            r1.Width+=20;
+            r1.Width=min(r1.Width+r1.X, rect.X+rect.Width)-r1.X;
+            //y+=20;
+            //r1.Y=y;
+
+            g.DrawString(text2, charRange[i].Length, fonts[i], r1, &sfmtDisp, &Gdiplus::SolidBrush(Gdiplus::Color(255,255,255)));            
+            text2+=charRange[i].Length;
+        }
+    }
+
     virtual void validate(SourceResult *r)  {}
     virtual void crawl() {}
 
