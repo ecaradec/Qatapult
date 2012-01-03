@@ -9,3 +9,4 @@ workdir/contacts.xml
 workdir/sqlite3.exe
 workdir/testblat.bat
 workdir/*.log
+workdir/photos/
