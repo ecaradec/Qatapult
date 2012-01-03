@@ -339,10 +339,19 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 else
                     m_sources[it->first][i]->collect(q, results, def);
 
+        uselev=0;
         CString Q(q); Q.MakeUpper();
         for(uint i=0;i<results.size();i++) {
             // pourcentage de chaine correspondante ?
-            results[i].rank = 100*float(Q.GetLength())/ results[i].display.GetLength() + results[i].bonus;
+            CStringA item=results[i].display;
+            item.MakeUpper();
+            if(uselev) {
+                float len=levenshtein_distance(CStringA(Q), item.GetString());
+                float f = 1 - len / results[i].display.GetLength();
+                results[i].rank = 100*f + results[i].bonus;
+            } else {
+                results[i].rank = 100*float(Q.GetLength())/ results[i].display.GetLength() + results[i].bonus;
+            }
             results[i].source->rate(&results[i]);
         }
     }
