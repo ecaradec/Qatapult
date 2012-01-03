@@ -109,10 +109,61 @@ void CenterWindow(HWND hwnd) {
     SetWindowPos(hwnd, 0, (workarea.left+workarea.right)/2-r.Width()/2, (workarea.top+workarea.bottom)/2 - r.Height(), 0, 0, SWP_NOSIZE);
 }
 
+BOOL CALLBACK ToggleSettingsEWProc(HWND hwnd, LPARAM lParam) {
+    TCHAR className[256];
+    GetClassName(hwnd, className, sizeof(className));
+    if(_tcscmp(L"#32770", className)==0)
+        ShowWindow(hwnd, (hwnd==(HWND)lParam)?SW_SHOW:SW_HIDE);
+    return TRUE;
+}
+
+BOOL CALLBACK SettingsDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    HWND htreeview;
+    switch(msg)
+    {
+        case WM_INITDIALOG:
+            // doesn't seem to work
+            htreeview=GetDlgItem(hWnd, IDC_TREE); 
+            TreeView_SetExtendedStyle(htreeview, TVS_FULLROWSELECT, TVS_FULLROWSELECT);            
+        return TRUE;
+        case WM_COMMAND:
+            if(wParam==IDOK) {
+                g_pUI->InvalidateIndex();
+                ::EndDialog(hWnd, 0);
+            } else if(wParam==IDCANCEL) {
+                ::EndDialog(hWnd, 0);
+            }
+        return TRUE;
+        case WM_NOTIFY:
+            if(((NMHDR*)lParam)->code==TVN_SELCHANGED) {
+                NMTREEVIEW *nmtv=(NMTREEVIEW*)lParam;
+                EnumChildWindows(hWnd, ToggleSettingsEWProc, nmtv->itemNew.lParam);
+            }
+        return TRUE;
+    }
+    return FALSE;
+}
+
+BOOL CALLBACK EmailDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    switch(msg)
+    {
+        case WM_INITDIALOG:
+        return TRUE;
+        case WM_NOTIFY:
+        return TRUE;
+    }
+    return FALSE;
+}
+
+
 // SHGetImageList
-struct AlphaGUI : IWindowlessGUI {
+struct AlphaGUI : IWindowlessGUI, UI {
     AlphaGUI():m_input(this), m_invalidatepending(false) {
         m_pane=0;    
+
+        g_pUI=this;
 
         if(GetFileAttributes(L"settings.ini") == INVALID_FILE_ATTRIBUTES) {
             SHFILEOPSTRUCT sffo={0};
@@ -143,27 +194,13 @@ struct AlphaGUI : IWindowlessGUI {
 
         premult.Create(m_background3.GetWidth(), m_background.GetHeight(), 32, CImage::createAlphaChannel);
 
-
-        m_hwnd=CreateWindowEx(WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
-        ::SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG)_WndProc);
-        ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);        
-        
-        m_listhosthwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_TOPMOST, L"STATIC", L"", WS_POPUP|WS_THICKFRAME, 0, 0, m_background.GetWidth(), 400, 0, 0, 0, 0); // fix parent
-        CRect rc;
-        GetClientRect(m_listhosthwnd,&rc);
-        m_listhwnd=CreateWindow(L"ListBox", L"", WS_VISIBLE|WS_CHILD|LBS_NOTIFY|LBS_HASSTRINGS|WS_VSCROLL|LBS_OWNERDRAWFIXED, 0, 0, rc.Width(), rc.Height(), m_listhosthwnd, 0, 0, 0); // fix parent
-        ::SetWindowLongPtr(m_listhosthwnd, GWLP_WNDPROC, (LONG)_ListBoxWndProc);
-        ::SetWindowLongPtr(m_listhosthwnd, GWLP_USERDATA, (LONG)this);
-        ::SendMessage(m_listhwnd, LB_SETITEMHEIGHT, 0, 40);
-
-
-        m_hwndsettings=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GET_GMAILAUTHCODE), 0, DlgProc);
+        CreateSettingsDlg();
 
         Invalidate();        
 
         RegisterHotKey(m_hwnd, 1, MOD_SHIFT, VK_SPACE);
 
-        // sources        
+        // sources 
         m_sources[L"FILE"].push_back(new FileSource);
         m_sources[L"FILE"].push_back(new StartMenuSource(m_hwnd));
         m_sources[L"TEXT"].push_back(new TextSource);
@@ -190,32 +227,93 @@ struct AlphaGUI : IWindowlessGUI {
         m_rules.push_back(new QuitRule);
 
         for(std::map<CString, std::vector<Source*> >::iterator it=m_sources.begin(); it!=m_sources.end(); it++)
-            for(int i=0;i<it->second.size();i++)
+            for(int i=0;i<it->second.size();i++) {
                 it->second[i]->m_pArgs=&m_args;
+                it->second[i]->m_pUI=this;
+            }
 
         for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++)
             (*it)->m_pArgs=&m_args;
 
-        OnQueryChange(L"");        
-                
+        OnQueryChange(L"");                        
+
         // we shouldn't create a thread for each source, this is inefficient
         // crawl should be called with an empty index for each source
-        HANDLE h=CreateThread(0, 0, (LPTHREAD_START_ROUTINE)crawlProc, this, 0, 0);
+        CreateThread(0, 0, (LPTHREAD_START_ROUTINE)crawlProc, this, 0, &m_crawlThreadId);
     }
+    DWORD m_crawlThreadId;
     static DWORD __stdcall crawlProc(AlphaGUI *thiz) {
-        while(1) {
-            for(std::map<CString, std::vector<Source*> >::iterator it=thiz->m_sources.begin(); it!=thiz->m_sources.end();it++)
-                for(int i=0;i<it->second.size();i++)
-                    it->second[i]->crawl();
-            Sleep(10*60*1000);
-        }
+        MSG msg;
+        msg.message=WM_USER; // create a fake message on first pass
+        do {        
+            switch(msg.message)  {
+                case WM_USER:
+                    for(std::map<CString, std::vector<Source*> >::iterator it=thiz->m_sources.begin(); it!=thiz->m_sources.end();it++)
+                        for(int i=0;i<it->second.size();i++)
+                            it->second[i]->crawl();            
+            }
+            
+            //TranslateMessage(&msg);
+            //DispatchMessage(&msg);
+        } while(GetMessage(&msg, 0, WM_USER, WM_USER+1)!=0);
+
         return TRUE;
+    }
+    void InvalidateIndex() {
+        PostThreadMessage(m_crawlThreadId, WM_USER, 0, 0);
     }
     void Invalidate() {
         if(m_invalidatepending==false) {
             PostMessage(m_hwnd, WM_INVALIDATE, 0, 0);        
             m_invalidatepending=true;
         }
+    }
+    void CreateSettingsDlg() {
+        m_hwnd=CreateWindowEx(WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
+        ::SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG)_WndProc);
+        ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);        
+        
+        m_listhosthwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_TOPMOST, L"STATIC", L"", WS_POPUP|WS_THICKFRAME, 0, 0, m_background.GetWidth(), 400, 0, 0, 0, 0); // fix parent
+        CRect rc;
+        GetClientRect(m_listhosthwnd,&rc);
+        m_listhwnd=CreateWindow(L"ListBox", L"", WS_VISIBLE|WS_CHILD|LBS_NOTIFY|LBS_HASSTRINGS|WS_VSCROLL|LBS_OWNERDRAWFIXED, 0, 0, rc.Width(), rc.Height(), m_listhosthwnd, 0, 0, 0); // fix parent
+        ::SetWindowLongPtr(m_listhosthwnd, GWLP_WNDPROC, (LONG)_ListBoxWndProc);
+        ::SetWindowLongPtr(m_listhosthwnd, GWLP_USERDATA, (LONG)this);
+        ::SendMessage(m_listhwnd, LB_SETITEMHEIGHT, 0, 40);
+
+
+        m_hwndsettings=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_SETTINGS), 0, (DLGPROC)SettingsDlgProc);  //CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GET_GMAILAUTHCODE), 0, DlgProc);
+        HWND hTreeView=GetDlgItem(m_hwndsettings, IDC_TREE);
+
+        HWND hwndGmail=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GMAILCONTACTS), m_hwndsettings, (DLGPROC)DlgProc);
+        SetWindowPos(hwndGmail, 0, 160, 0, 0, 0, SWP_NOSIZE);
+
+        //HWND hwndEmail=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_EMAIL), m_hwndsettings, (DLGPROC)DlgProc);
+        //SetWindowPos(hwndEmail, 0, 160, 0, 0, 0, SWP_NOSIZE);
+
+        HWND hwndSF=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_SEARCHFOLDERS), m_hwndsettings, (DLGPROC)SearchFolderDlgProc);
+        SetWindowPos(hwndSF, 0, 160, 0, 0, 0, SWP_NOSIZE);
+        
+        TV_INSERTSTRUCT tviis;
+        TV_ITEM tvi;
+        HTREEITEM hitem;
+        ZeroMemory(&(tviis.item), sizeof(TV_ITEM));
+        tviis.item.mask = TVIF_TEXT|TVIF_PARAM;
+        tviis.hParent = TVI_ROOT;
+        
+        tviis.item.pszText = L"Search folders";
+        tviis.item.lParam=(LPARAM)hwndSF;
+        HTREEITEM htreeSF=TreeView_InsertItem(hTreeView, &tviis);
+
+        //tviis.item.pszText = L"Email";
+        //tviis.item.lParam=(LPARAM)hwndEmail;
+        //HTREEITEM htreeEmail=TreeView_InsertItem(hTreeView, &tviis);
+
+        tviis.item.pszText = L"Gmail contacts";
+        tviis.item.lParam=(LPARAM)hwndGmail;
+        HTREEITEM htreeGmail=TreeView_InsertItem(hTreeView, &tviis);
+
+        BOOL b=TreeView_SelectItem(hTreeView, htreeSF);
     }
     void CollectItems(const CString &q, const uint pane, std::vector<SourceResult> &args, std::vector<SourceResult> &results, int def) {
         // collect all active rules (match could have an args that tell how much to match )
@@ -562,11 +660,10 @@ struct AlphaGUI : IWindowlessGUI {
             int xPos = ((int)(short)LOWORD(lParam)); 
             int yPos = ((int)(short)HIWORD(lParam)); 
             
-            if(CRect(CPoint(m_curWidth-20,5), CSize(10,10)).PtInRect(CPoint(xPos, yPos))) {
+            if(CRect(CPoint(m_curWidth-20,5), CSize(15,15)).PtInRect(CPoint(xPos, yPos))) {
                 HMENU hmenu=CreatePopupMenu();
 
-                AppendMenu(hmenu, MF_STRING, 1, L"Configure Gmail");
-                //AppendMenu(hmenu, MF_STRING, 2, L"Configure Smtp");
+                AppendMenu(hmenu, MF_STRING, 1, L"Options");
                 AppendMenu(hmenu, MF_STRING, 0, L"Quit");
                 
                 POINT p={m_curWidth-20+5,5+5};

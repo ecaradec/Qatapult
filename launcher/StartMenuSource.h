@@ -54,6 +54,125 @@ static int getStringCB(void *NotUsed, int argc, char **argv, char **azColName) {
     return 0;
 }
 
+static int getIntCB(void *NotUsed, int argc, char **argv, char **azColName) {
+     *((int*)NotUsed)=atoi(argv[0]?argv[0]:"0");
+    return 0;
+}
+
+int SaveSearchFolders(HWND hListView) {
+    WCHAR curDir[MAX_PATH];
+    GetCurrentDirectory(MAX_PATH, curDir);
+
+    int itemcount=ListView_GetItemCount(hListView);
+    for(int i=0;i<itemcount;i++) {
+        TCHAR path[MAX_PATH]={0};
+        LVITEM lvi;
+        memset(&lvi, 0, sizeof(lvi));
+        lvi.pszText=path;
+        lvi.cchTextMax=sizeof(path);
+        lvi.iItem=i;
+        lvi.mask=LVFIF_TEXT;
+        ListView_GetItem(hListView, &lvi);
+
+        WritePrivateProfileString(L"SearchFolders", ItoS(i), path, CString(curDir)+L"\\settings.ini");
+    }
+    return itemcount;
+}
+
+BOOL CALLBACK SearchFolderDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    int res;
+    HWND hListView=GetDlgItem(hWnd, IDC_LIST3);
+    CRect r;
+    switch(msg)
+    {
+        case WM_INITDIALOG:
+            // allows for full row selection
+            ListView_SetExtendedListViewStyle(hListView, ListView_GetExtendedListViewStyle(hListView)| LVS_EX_FULLROWSELECT);
+
+            GetClientRect(hListView, &r);
+
+            WCHAR szText[256];     // Temporary buffer.
+            LVCOLUMN lvc;
+            int iCol;
+            lvc.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+            lvc.pszText=L"Path";
+            lvc.cx=r.Width()-60;
+            ListView_InsertColumn(hListView, 0, &lvc);
+
+            lvc.pszText=L"Depth";
+            lvc.cx=60;
+            lvc.fmt = LVCFMT_CENTER;
+            ListView_InsertColumn(hListView, 1, &lvc);
+
+            //lvc.pszText=L"Bonus";
+            //lvc.cx=40;
+            //ListView_InsertColumn(GetDlgItem(hWnd, IDC_LIST3), 0, &lvc);
+            
+            WCHAR curDir[MAX_PATH];
+            GetCurrentDirectory(MAX_PATH, curDir);
+
+            int i;
+            for(i=0;;i++) {
+                TCHAR path[MAX_PATH];
+                GetPrivateProfileString(L"SearchFolders", ItoS(i), L"", path, sizeof(path), CString(curDir)+L"\\settings.ini");
+                if(_tcslen(path)==0)
+                    break;
+                LVITEM lvi;
+                memset(&lvi, 0, sizeof(lvi));
+                lvi.pszText=path;
+                lvi.mask=LVFIF_TEXT;
+                lvi.iItem=i;
+                int iitem=ListView_InsertItem(hListView, &lvi);
+                ListView_SetItemText(hListView, iitem, 1, L"3");
+            }
+
+            LVITEM lvi;
+            memset(&lvi, 0, sizeof(lvi));
+            lvi.pszText=L"";
+            lvi.mask=LVFIF_TEXT;
+            lvi.iItem=i;
+            res=ListView_InsertItem(hListView, &lvi);
+
+        return TRUE;
+        case WM_COMMAND:
+            if(wParam==10000) {
+                int iitem=ListView_GetSelectionMark(hListView);
+                ListView_DeleteItem(hListView, iitem);
+
+                SaveSearchFolders(hListView);
+            }
+        return TRUE;        
+        case WM_NOTIFY:
+            if(((NMHDR*)lParam)->code==LVN_ENDLABELEDIT) {
+
+                NMLVDISPINFO *nmdi=(NMLVDISPINFO*)lParam;                
+                ListView_SetItem(hListView, &nmdi->item);
+
+                int itemcount=SaveSearchFolders(hListView);
+
+                // if the edited item was the last, add an empty one
+                if(nmdi->item.iItem==(itemcount-1)) {
+                    LVITEM lvi;
+                    memset(&lvi, 0, sizeof(lvi));
+                    lvi.pszText=L"";
+                    lvi.mask=LVFIF_TEXT;
+                    lvi.iItem=i;
+                    res=ListView_InsertItem(hListView, &lvi);
+                }
+            } else if(((NMHDR*)lParam)->code==NM_RCLICK) {
+                HMENU hmenu=CreatePopupMenu();
+                AppendMenu(hmenu, MF_STRING, 10000, L"Delete");
+                DWORD pos=GetMessagePos();
+                TrackPopupMenu(hmenu, TPM_LEFTALIGN, GET_X_LPARAM(pos), GET_Y_LPARAM(pos), 0, hWnd, 0);
+            }
+            return TRUE;
+    }
+    return FALSE;
+}
+
+int uselev;
+
 // might be useful
 // http://stackoverflow.com/questions/1744902/how-might-i-obtain-the-icontextmenu-that-is-displayed-in-an-ishellview-context-m
 struct StartMenuSource : Source {

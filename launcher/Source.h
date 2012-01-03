@@ -18,6 +18,14 @@ CStringW sqlEscapeStringW(const CStringW &args) {
     return tmp;
 }
 
+struct UI {
+    virtual ~UI() {}
+    virtual CString getQuery() = 0;
+    virtual void InvalidateIndex() = 0;
+};
+
+UI *g_pUI; // very lazy way to give access to the ui to the ui window proc
+
 struct Source {
     Source(const CString& t)
         :itemlistFont(L"Arial", 8.0f, FontStyleBold, UnitPoint),
