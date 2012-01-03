@@ -198,19 +198,41 @@ struct StartMenuSource : Source {
         info.source=this;
         char *zErrMsg = 0;
         WCHAR buff[4096];
-        wsprintf(buff, L"SELECT key, display, expand, 0, bonus FROM startmenu WHERE display LIKE \"%%%s%%\";", query);
+        if(uselev)
+            wsprintf(buff, L"SELECT key, display, expand, 0, 0 FROM startmenu;", query);
+        else
+            wsprintf(buff, L"SELECT key, display, expand, 0, bonus FROM startmenu WHERE display LIKE \"%%%s%%\";", query);
+        
+        /*sqlite3_stmt *stmt=0;
+        const char *unused=0;
+        int rc;        
+        rc = sqlite3_prepare_v2(db,
+                                "SELECT key, display, expand, 0, bonus FROM startmenu WHERE display LIKE ?;\n",
+                                -1, &stmt, &unused);
+        rc = sqlite3_bind_text16(stmt, 5, query, -1, SQLITE_STATIC);
+        rc = sqlite3_step(stmt);
+        sqlite3_finalize(stmt);*/
+
         sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
     }
     void crawl() {
         std::vector<CString> lnks;
-                
-        FindFilesRecursively(GetSpecialFolder(CSIDL_COMMON_STARTMENU), L"*.lnk", lnks);
-        FindFilesRecursively(GetSpecialFolder(CSIDL_STARTMENU), L"*.lnk", lnks);
 
-                
-        // all files from the desktop
-        //FindFilesRecursively(GetSpecialFolder(CSIDL_COMMON_DESKTOPDIRECTORY), L"*.*", lnks);
-        //FindFilesRecursively(GetSpecialFolder(CSIDL_DESKTOPDIRECTORY), L"*.*", lnks);        
+        FindFilesRecursively(GetSpecialFolder(CSIDL_COMMON_STARTMENU), L"*.lnk", lnks, 999);
+        FindFilesRecursively(GetSpecialFolder(CSIDL_STARTMENU), L"*.lnk", lnks, 999);
+
+        WCHAR curDir[MAX_PATH];
+        GetCurrentDirectory(MAX_PATH, curDir);
+        int i;
+        for(i=0;;i++) {
+            TCHAR path[MAX_PATH];
+            GetPrivateProfileString(L"SearchFolders", ItoS(i), L"", path, sizeof(path), CString(curDir)+L"\\settings.ini");
+            if(_tcslen(path)==0)
+                break;
+
+            FindFilesRecursively(path, L"*.*", lnks, 3);
+        }
+
         CStringA q; // 82 bug
         q+="BEGIN;\n";
         WCHAR buff[0xFFFF];
@@ -220,11 +242,17 @@ struct StartMenuSource : Source {
         const char *unused=0;
         int rc;
 
+        // there can only exists one single mark
+        int mark;
+        sqlite3_exec(db, "SELECT mark FROM startmenu LIMIT 1;", getIntCB, &mark, &zErrMsg);
+
         rc = sqlite3_exec(db, "BEGIN;", 0, 0, &zErrMsg);
 
         for(uint i=0;i<lnks.size();i++) {
             CString str(lnks[i]);
-            PathRemoveExtension(str.GetBuffer()); str.ReleaseBuffer();
+            if(str.Right(4)==L".lnk") {
+                PathRemoveExtension(str.GetBuffer()); str.ReleaseBuffer();
+            }
             str=PathFindFileName(str.GetBuffer()); str.ReleaseBuffer();            
 
             CString d=lnks[i].Left(lnks[i].ReverseFind(L'\\'));
@@ -233,15 +261,16 @@ struct StartMenuSource : Source {
             CString startmenu_key=md5(lnks[i]);
             
             rc = sqlite3_prepare_v2(db,
-                                    "INSERT OR REPLACE INTO startmenu(key,display,expand,path,bonus) VALUES(?, ?, ?, ?, coalesce((SELECT bonus FROM startmenu WHERE key=?), 0));\n",
+                                    "INSERT OR REPLACE INTO startmenu(key,display,expand,path,bonus,mark) VALUES(?, ?, ?, ?, coalesce((SELECT bonus FROM startmenu WHERE key=?), 0), ?);\n",
                                     -1, &stmt, &unused);
             rc = sqlite3_bind_text16(stmt, 1, startmenu_key.GetString(), -1, SQLITE_STATIC);
             rc = sqlite3_bind_text16(stmt, 2, str.GetString(), -1, SQLITE_STATIC);
             rc = sqlite3_bind_text16(stmt, 3, str.GetString(), -1, SQLITE_STATIC);
             rc = sqlite3_bind_text16(stmt, 4, lnks[i].GetString(), -1, SQLITE_STATIC);
             rc = sqlite3_bind_text16(stmt, 5, startmenu_key.GetString(), -1, SQLITE_STATIC);
+            rc = sqlite3_bind_int(stmt, 6, mark+1);
             rc = sqlite3_step(stmt);
-            //const char *errmsg=sqlite3_errmsg(db);
+            const char *errmsg=sqlite3_errmsg(db);
             sqlite3_finalize(stmt);
 
             //CString progress;
@@ -250,12 +279,19 @@ struct StartMenuSource : Source {
         }
 
         rc = sqlite3_exec(db, "END;", 0, 0, &zErrMsg);
+
+        // delete disappeared results
+        sqlite3_prepare_v2(db, "DELETE FROM startmenu WHERE mark != ?", -1, &stmt, &unused);
+        rc = sqlite3_bind_int(stmt, 1, mark+1);
+        rc = sqlite3_step(stmt);
+        //const char *errmsg=sqlite3_errmsg(db);
+        sqlite3_finalize(stmt);
     }
     // validate
     void validate(SourceResult *r) {
         WCHAR buff[4096];
         char *zErrMsg = 0;
-        wsprintf(buff, L"UPDATE startmenu SET bonus = bonus + 10 WHERE key=\"%s\"\n", r->key);        
+        wsprintf(buff, L"UPDATE startmenu SET bonus = MIN(bonus + 5,40) WHERE key=\"%s\"\n", r->key);        
         int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
     }
 
@@ -291,7 +327,7 @@ struct StartMenuSource : Source {
             WCHAR buff[4096];
             char *zErrMsg = 0;
             wsprintf(buff, L"SELECT %s FROM startmenu_verbs WHERE key = \"%s\";", val, key);
-            sqlite3_exec(db, CStringA(buff), getStringCB, &str, &zErrMsg);            
+            sqlite3_exec(db, CStringA(buff), getStringCB, &str, &zErrMsg);
         } else {
             WCHAR buff[4096];
             char *zErrMsg = 0;

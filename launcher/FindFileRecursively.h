@@ -1,7 +1,11 @@
 #pragma once
 
-inline void FindFilesRecursively(LPCTSTR lpFolder, LPCTSTR lpFilePattern, std::vector<CString> &files)
+inline void FindFilesRecursively(LPCTSTR lpFolder, LPCTSTR lpFilePattern, std::vector<CString> &files, int maxdepth, int depth=0)
 {
+    depth++;
+    if(depth>maxdepth)
+        return;
+
     TCHAR szFullPattern[MAX_PATH];
     WIN32_FIND_DATA FindFileData;
     HANDLE hFindFile;
@@ -16,7 +20,7 @@ inline void FindFilesRecursively(LPCTSTR lpFolder, LPCTSTR lpFilePattern, std::v
             {
                 // found a subdirectory; recurse into it
                 PathCombine(szFullPattern, lpFolder, FindFileData.cFileName);
-                FindFilesRecursively(szFullPattern, lpFilePattern, files);
+                FindFilesRecursively(szFullPattern, lpFilePattern, files, maxdepth, depth);
             }
         } while(FindNextFile(hFindFile, &FindFileData));
         FindClose(hFindFile);
