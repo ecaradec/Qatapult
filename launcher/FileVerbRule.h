@@ -9,7 +9,7 @@ struct FileVerbRule : Rule {
         CString f=fp.Mid(fp.ReverseFind(L'\\')+1);
 
         if((*m_pArgs)[1].key == L"Open") {
-            ShellExecute(0, L"open", path, 0, 0, SW_SHOWDEFAULT);
+            ShellExecute(0, 0, path, 0, 0, SW_SHOWDEFAULT); // null is better than open (otherwise it won't work on items that don't have the open verb )
         } else if((*m_pArgs)[1].key == L"Edit") {
             ShellExecute(0, L"edit", path, 0, 0, SW_SHOWDEFAULT);
         } else if((*m_pArgs)[1].key == L"RunAs") {
