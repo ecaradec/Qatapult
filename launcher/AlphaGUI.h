@@ -493,12 +493,13 @@ struct AlphaGUI : IWindowlessGUI, UI {
         m_focus.AlphaBlend(hdc, 22+157*m_pane, 22);
 
         for(uint i=0;i<m_args.size(); i++) {
+            m_displayPane=i;
             m_args[i].source->drawItem(g, &m_args[i], RectF(22+157*REAL(i), 22, 150, 154));
         }
         
         CRect workarea;
         ::SystemParametersInfo(SPI_GETWORKAREA, 0, &workarea, 0);
-
+        
         POINT p1={(workarea.left+workarea.right)/2-m_curWidth/2,200};
         POINT p2={0};
         SIZE s={m_curWidth, m_background.GetHeight()};
@@ -713,7 +714,6 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 return HTCLIENT;
             }
             return HTCAPTION;*/
-
         }
         else if(msg==WM_TIMER && wParam==1)
         {
