@@ -511,6 +511,14 @@ struct AlphaGUI : IWindowlessGUI, UI {
         GetWindowRect(m_hwnd, &r);
         SetWindowPos(m_listhosthwnd, 0, r.left+157*m_pane, r.bottom, 0, 0, SWP_NOSIZE|SWP_NOACTIVATE);        
     }
+    int m_displayPane;
+    CString getQuery() {
+        if(m_displayPane==m_queries.size())
+            return m_input.m_text;
+        else if(m_displayPane>m_queries.size())
+            return L"";
+        return m_queries[m_displayPane];
+    }
     SourceResult *GetSelectedItem() {
         int sel=::SendMessage(m_listhwnd, LB_GETCARETINDEX, 0, 0);
         //::SendMessage(m_listhwnd, LB_GETSELITEMS, 1, (LPARAM)&sel);
@@ -643,16 +651,9 @@ struct AlphaGUI : IWindowlessGUI, UI {
             m_input.OnWindowMessage(msg,wParam,lParam);
             if(wParam!=27) {
                 KillTimer(m_hwnd, 1);
-                SetTimer(m_hwnd, 1, 1000, 0);
+                SetTimer(m_hwnd, 1, 10000, 0);
             }
             return FALSE;
-        }
-        else if(msg==WM_TIMER && wParam==1)
-        {
-            if(IsWindowVisible(m_hwnd)) {
-                KillTimer(m_hwnd, 1);
-                ::ShowWindow(m_listhosthwnd, SW_SHOWNOACTIVATE);
-            }
         }
 
         return TRUE;
@@ -714,6 +715,26 @@ struct AlphaGUI : IWindowlessGUI, UI {
             return HTCAPTION;*/
 
         }
+        else if(msg==WM_TIMER && wParam==1)
+        {
+            if(IsWindowVisible(m_hwnd)) {
+                KillTimer(m_hwnd, 1);
+                ::ShowWindow(m_listhosthwnd, SW_SHOWNOACTIVATE);
+            }
+        }
+        else if(msg==WM_TIMER && wParam==2)
+        {
+            if(IsWindowVisible(m_hwnd)) {
+                Invalidate();
+            }
+        }
+        /*else if(msg == WM_KILLFOCUS) {
+            if((HWND)wParam!=m_listhosthwnd) {
+                ShowWindow(m_hwnd, SW_HIDE);
+                ShowWindow(m_listhosthwnd, SW_HIDE);
+            }
+        }*/
+
         return ::DefWindowProc(hwnd, msg, wParam, lParam);
     }
     LRESULT ListBoxWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {           

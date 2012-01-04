@@ -36,9 +36,9 @@ int levenshtein_distance(const char *s,const char*t)
         if(s[i-1]==t[j-1])
           cost=0;
         else
-          cost=1;
+          cost=3;
         //Step 6			 
-        d[j*n+i]=minimum(d[(j-1)*n+i]+1 +1,        // deletion
+        d[j*n+i]=minimum(d[(j-1)*n+i]+1 /*+1*/,        // deletion
                          d[j*n+i-1]+1,          // insertion
                          d[(j-1)*n+i-1]+cost);  // substiturion
       }

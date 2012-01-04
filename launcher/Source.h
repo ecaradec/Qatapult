@@ -30,6 +30,7 @@ struct Source {
     Source(const CString& t)
         :itemlistFont(L"Arial", 8.0f, FontStyleBold, UnitPoint),
          itemscoreFont(L"Arial", 8.0f) {
+        m_refreshPeriod=0;
         m_name=t;
         type=t;
         m_ignoreemptyquery=false;
@@ -40,6 +41,7 @@ struct Source {
     Source(const CString& t, const CString &n)
     :itemlistFont(L"Arial", 8.0f, FontStyleBold, UnitPoint),
     itemscoreFont(L"Arial", 8.0f){
+        m_refreshPeriod=0;
         m_name=n;
         type=t;
         m_ignoreemptyquery=false;
@@ -153,4 +155,6 @@ struct Source {
     CString                         type;
     std::map<CString, SourceResult> m_index;
     std::vector<SourceResult>      *m_pArgs;
+    UI                             *m_pUI;
+    int                             m_refreshPeriod;
 };
