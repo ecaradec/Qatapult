@@ -151,7 +151,7 @@ void HttpSubmit(const CString &href, CHAR *data, CStringA *res) {
     if (hSession) WinHttpCloseHandle(hSession);
 }
 
-void HttpGet(const CString &href, CStringA *res) {
+int HttpGet(const CString &href, CStringA *res) {
     TCHAR hostname[4096];
     DWORD hostnameLen=sizeof(hostname);
     UrlGetPart(href, hostname, &hostnameLen, URL_PART_HOSTNAME, 0);
@@ -215,6 +215,12 @@ void HttpGet(const CString &href, CStringA *res) {
     // End the request.
     if (bResults)
         bResults = WinHttpReceiveResponse( hRequest, NULL);
+
+    DWORD status=0;
+    DWORD statusLen=sizeof(status);
+    DWORD index=0;
+    if(bResults)
+        bResults=WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_STATUS_CODE|WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX, &status, &statusLen, &index);
 
     // Keep checking for data until there is nothing left.
     if (bResults)
