@@ -1,7 +1,7 @@
 
 struct QuitVerbSource : Source {
     QuitVerbSource() : Source(L"QUITVERB") {        
-        m_index[L"Quit (QSLL )"]=SourceResult(L"Quit (QSLL )", L"Quit (QSLL )", L"Quit (QSLL )", this, 0, 0, m_index[L"Quit (QSLL )"].bonus);
+        m_index[L"Quit (Qatapult )"]=SourceResult(L"Quit (Qatapult )", L"Quit (Qatapult )", L"Quit (Qatapult )", this, 0, 0, m_index[L"Quit (Qatapult )"].bonus);
         m_ignoreemptyquery=true;
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
