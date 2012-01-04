@@ -366,7 +366,14 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 
         std::sort(m_results.begin(), m_results.end(), ResultSourceCmp);
 
-        for(uint i=0;i<m_results.size();i++) {
+        int m=m=min(50,m_results.size());
+        //if(uselev)
+        //    m=min(50,m_results.size());
+        //else
+        //    m=m_results.size();
+
+        //for(uint i=0;i<min(50,m_results.size());i++) {
+        for(uint i=0;i<m;i++) {
             CString s; s.Format(L"%d %s", m_results[i].rank, m_results[i].display);
             int id=::SendMessage(m_listhwnd, LB_ADDSTRING, 0, (LPARAM)s.GetString()); // TOFIX
             ::SendMessage(m_listhwnd, LB_SETITEMDATA, id, (LPARAM)&m_results[i]);
