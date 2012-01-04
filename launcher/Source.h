@@ -62,7 +62,9 @@ struct Source {
         sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
 
         Gdiplus::Font f(L"Arial", 8.0f);
-        g.DrawString(sr->display, sr->display.GetLength(), &f, RectF(r.X, r.Y+r.Height-15, r.Width, 20), &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
+        //g.DrawString(sr->display, sr->display.GetLength(), &f, RectF(r.X, r.Y+r.Height-15, r.Width, 20), &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
+
+        drawUnderlined(g, sr->display, m_pUI->getQuery(), RectF(r.X, r.Y+r.Height-17, r.Width, 20));        
     }
     virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r) {
         g.FillRectangle(&SolidBrush(Color(0xFFFFFFFF)), r);
@@ -73,7 +75,8 @@ struct Source {
         if(sr->smallicon)
             g.DrawImage(sr->smallicon, RectF(r.X+10, r.Y, r.Height, r.Height)); // height not a bug, think a minute
         
-        g.DrawString(sr->display, sr->display.GetLength(), &itemlistFont, RectF(r.X+r.Height+5+10, r.Y+5, r.Width, r.Height), &sfitemlist, &SolidBrush(Color(0xFF000000)));
+        int x=(r.X+r.Height+5+10);
+        g.DrawString(sr->display, sr->display.GetLength(), &itemlistFont, RectF(x, r.Y+5, r.Width-x, 14), &sfitemlist, &SolidBrush(Color(0xFF000000)));
         g.DrawString(ItoS(sr->rank), -1, &itemscoreFont, RectF(r.X+r.Height+5+10, r.Y+25, r.Width, r.Height), &sfitemlist, &SolidBrush(Color(0xFF000000)));
     }
     // get results
