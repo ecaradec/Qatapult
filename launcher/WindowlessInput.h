@@ -8,7 +8,7 @@ struct WindowlessInput {
         Gdiplus::Font f(L"Arial", 10.0f);
         StringFormat sf;
         sf.SetAlignment(StringAlignmentCenter);
-        g.DrawString(m_text, m_text.GetLength(), &f, r, &sf, &SolidBrush(Color(0xFFFFFFFF)));
+        //g.DrawString(m_text, m_text.GetLength(), &f, r, &sf, &SolidBrush(Color(0xFFFFFFFF)));
         // g.DrawDriverString((UINT16*)CStringW(txt).GetBuffer(),txt.GetLength(),&m_gdipFont,&b,pos,DriverStringOptionsCmapLookup,&m);
     }
     void OnWindowMessage(UINT msg, WPARAM wparam, LPARAM lparam) {
