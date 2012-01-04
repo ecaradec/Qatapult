@@ -14,7 +14,7 @@
 #endif
 */
 
-//#define GDIPVER 0x0110
+#define GDIPVER 0x0110
 
 #include "targetver.h"
 
@@ -33,6 +33,8 @@
 
 #include <Winhttp.h>
 #include <Shlwapi.h>
+
+#include <windowsx.h>
 
 #ifdef _UNICODE
 #if defined _M_IX86
