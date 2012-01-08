@@ -3,7 +3,7 @@ struct DBSource : Source {
     sqlite3 *db;
     CStringA  m_dbname;
     DBSource(const CString &dbname, const CString &type) : Source(type), m_dbname(dbname) {
-        int rc = sqlite3_open(m_dbname+".db", &db);
+        int rc = sqlite3_open(L"databases\\"+m_dbname+".db", &db);
     }    
     ~DBSource() {
         sqlite3_close(db);

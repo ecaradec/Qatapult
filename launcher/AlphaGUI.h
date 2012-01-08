@@ -1,9 +1,20 @@
+// TODO
+
+// [_] rendre la mise a jour de l'index visible
+// [_] reecrire les CString en wstring
+// [_] corriger le probleme de troisieme pan qui ne s'ouvre pas si il n'y a pas de resultats
+// [_] supprimer la boite de dialogue qui apparait quand on change les contacts gmail et la remplacer par une mise a jour de l'index
+// [_] permettre de choisir le raccourci clavier
+// [_] definir des actions pour l'horloge
+// [_] definir des backgrounds globals à une action
+// [_] faire un setup
+// [X] deplacer mon blog sur emmanuelcaradec
+
 #include "resource.h"
 #include "geticon.h"
 #include "SourceResult.h"
 #include "Source.h"
 #include "Rule.h"
-
 #include "FileSource.h"
 #include "StartMenuSource.h"
 #include "FileVerbSource.h"
@@ -32,7 +43,7 @@ struct ClockSource : Source {
         angle=0;
         hours=Gdiplus::Bitmap::FromFile(L"icons\\hours.png");
         minutes=Gdiplus::Bitmap::FromFile(L"icons\\minutes.png");
-        seconds=Gdiplus::Bitmap::FromFile(L"icons\\seconds.png");        
+        seconds=Gdiplus::Bitmap::FromFile(L"icons\\seconds.png");
     }
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
         if(sr->icon)
@@ -92,14 +103,7 @@ struct ClockRule : Rule {
 };
 
 #define WM_INVALIDATE (WM_USER+2)
-
-// TODO
-// [_] filtering outside of commands (not sure this is a good thing, doesn't work nicely for files
-// [_] shortcuts are considered files (this is annoying with the tab completion because it expand to whole path )
-// [_] add an index for the file source with a set of default folders
-// [_] add an index for the startmenu source
-// [_] add usage info in the index for ranking purpose
-// [_] SourceResult should contains an map to store it's data probably, would solve most problems
+#define WM_PROGRESS (WM_USER+3)
 
 void CenterWindow(HWND hwnd) {
     CRect workarea;
@@ -173,6 +177,8 @@ struct AlphaGUI : IWindowlessGUI, UI {
             sffo.pTo=L"settings.ini\0";
             SHFileOperation(&sffo);
         }
+
+        CreateDirectory(L"databases", 0);
         
         // this is not the correct way to get gui font : 
         // http://fox-toolkit.2306850.n4.nabble.com/getSystemFont-call-to-SystemParametersInfo-fails-when-WINVER-gt-0x0600-td4011173.html
@@ -238,20 +244,30 @@ struct AlphaGUI : IWindowlessGUI, UI {
 
         OnQueryChange(L"");                        
 
+        m_mainThreadId=GetCurrentThreadId();
+
         // we shouldn't create a thread for each source, this is inefficient
         // crawl should be called with an empty index for each source
         CreateThread(0, 0, (LPTHREAD_START_ROUTINE)crawlProc, this, 0, &m_crawlThreadId);
     }
     DWORD m_crawlThreadId;
-    static DWORD __stdcall crawlProc(AlphaGUI *thiz) {
+    WORD m_mainThreadId;
+    static DWORD __stdcall crawlProc(AlphaGUI *thiz) {        
         MSG msg;
         msg.message=WM_USER; // create a fake message on first pass
         do {        
             switch(msg.message)  {
                 case WM_USER:
-                    for(std::map<CString, std::vector<Source*> >::iterator it=thiz->m_sources.begin(); it!=thiz->m_sources.end();it++)
+                    BOOL b=PostMessage(thiz->m_hwnd, WM_PROGRESS, 0, 0);
+                    float nbsources=thiz->m_sources.size();
+                    float isources=0;
+                    for(std::map<CString, std::vector<Source*> >::iterator it=thiz->m_sources.begin(); it!=thiz->m_sources.end();it++) {                        
                         for(int i=0;i<it->second.size();i++)
-                            it->second[i]->crawl();            
+                            it->second[i]->crawl();
+
+                        isources++;
+                        b=PostMessage(thiz->m_hwnd, WM_PROGRESS, 100.0f*isources/nbsources, 0);
+                    }
             }
             
             //TranslateMessage(&msg);
@@ -347,11 +363,11 @@ struct AlphaGUI : IWindowlessGUI, UI {
             CStringA item=results[i].display;
             item.MakeUpper();
             if(uselev) {
-                float len=levenshtein_distance(CStringA(Q), item.GetString());
-                float f = 1 - len / results[i].display.GetLength();
+                int len=levenshtein_distance(CStringA(Q), item.GetString());                
+                float f = 1 - float(len) / results[i].display.GetLength();
                 results[i].rank = 100*f + results[i].bonus;
             } else {
-                results[i].rank = 100*float(Q.GetLength())/ results[i].display.GetLength() + results[i].bonus;
+                results[i].rank = 100*float(Q.GetLength()) / results[i].display.GetLength() + results[i].bonus;
             }
             results[i].source->rate(&results[i]);
         }
@@ -499,7 +515,12 @@ struct AlphaGUI : IWindowlessGUI, UI {
         
         CRect workarea;
         ::SystemParametersInfo(SPI_GETWORKAREA, 0, &workarea, 0);
-        
+
+        Gdiplus::Font f(L"Arial", 8);
+        if(m_indexing!=L"") {
+            g.DrawString(m_indexing, -1, &f, RectF(5, 5, m_curWidth, 20), &sfcenter, &SolidBrush(Color(0x88FFFFFF)));
+        }
+
         POINT p1={(workarea.left+workarea.right)/2-m_curWidth/2,200};
         POINT p2={0};
         SIZE s={m_curWidth, m_background.GetHeight()};
@@ -705,8 +726,13 @@ struct AlphaGUI : IWindowlessGUI, UI {
             //((std::map<CString,SourceResult> *)wParam)->begin()->second.source->updateIndex(((std::map<CString,SourceResult> *)wParam));
             //((std::map<CString,SourceResult> *)wParam)->begin()->second.source->save();
             OutputDebugString(L"crawling complete\n");
-        }
-        else if(msg == WM_NCHITTEST)
+        } else if(msg==WM_PROGRESS) { // progress
+            if(wParam!=100)                
+                m_indexing=L"Updating index : "+ItoS(wParam)+L"%";
+            else
+                m_indexing=L"";
+            Invalidate();
+        } else if(msg == WM_NCHITTEST)
         {
             /*int xPos = ((int)(short)LOWORD(lParam)); 
             int yPos = ((int)(short)HIWORD(lParam)); 
@@ -728,12 +754,12 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 Invalidate();
             }
         }
-        /*else if(msg == WM_KILLFOCUS) {
+        else if(msg == WM_KILLFOCUS) {
             if((HWND)wParam!=m_listhosthwnd) {
                 ShowWindow(m_hwnd, SW_HIDE);
                 ShowWindow(m_listhosthwnd, SW_HIDE);
             }
-        }*/
+        }
 
         return ::DefWindowProc(hwnd, msg, wParam, lParam);
     }
@@ -831,4 +857,5 @@ struct AlphaGUI : IWindowlessGUI, UI {
     HWND                       m_listhwnd;
     HWND                       m_listhosthwnd;
     HWND                       m_hwndsettings;
+    CString                    m_indexing;
 };

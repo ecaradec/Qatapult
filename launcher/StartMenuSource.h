@@ -64,6 +64,7 @@ int SaveSearchFolders(HWND hListView) {
     GetCurrentDirectory(MAX_PATH, curDir);
 
     int itemcount=ListView_GetItemCount(hListView);
+    WritePrivateProfileString(L"SearchFolders", L"count", ItoS(itemcount), CString(curDir)+L"\\settings.ini");
     for(int i=0;i<itemcount;i++) {
         TCHAR path[MAX_PATH]={0};
         LVITEM lvi;
@@ -87,6 +88,7 @@ BOOL CALLBACK SearchFolderDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
     switch(msg)
     {
         case WM_INITDIALOG:
+        {
             // allows for full row selection
             ListView_SetExtendedListViewStyle(hListView, ListView_GetExtendedListViewStyle(hListView)| LVS_EX_FULLROWSELECT);
 
@@ -113,7 +115,8 @@ BOOL CALLBACK SearchFolderDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
             GetCurrentDirectory(MAX_PATH, curDir);
 
             int i;
-            for(i=0;;i++) {
+            int itemcount=GetPrivateProfileInt(L"SearchFolders", L"count", 0, CString(curDir)+L"\\settings.ini");
+            for(i=0; i<itemcount; i++) {
                 TCHAR path[MAX_PATH];
                 GetPrivateProfileString(L"SearchFolders", ItoS(i), L"", path, sizeof(path), CString(curDir)+L"\\settings.ini");
                 if(_tcslen(path)==0)
@@ -133,7 +136,7 @@ BOOL CALLBACK SearchFolderDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
             lvi.mask=LVFIF_TEXT;
             lvi.iItem=i;
             res=ListView_InsertItem(hListView, &lvi);
-
+        }
         return TRUE;
         case WM_COMMAND:
             if(wParam==10000) {
@@ -157,7 +160,7 @@ BOOL CALLBACK SearchFolderDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
                     memset(&lvi, 0, sizeof(lvi));
                     lvi.pszText=L"";
                     lvi.mask=LVFIF_TEXT;
-                    lvi.iItem=i;
+                    lvi.iItem=itemcount;
                     res=ListView_InsertItem(hListView, &lvi);
                 }
             } else if(((NMHDR*)lParam)->code==NM_RCLICK) {
@@ -180,7 +183,7 @@ struct StartMenuSource : Source {
     StartMenuSource(HWND hwnd) : Source(L"FILE", L"STARTMENU"), m_hwnd(hwnd) {        
         m_ignoreemptyquery=true;
         
-        int rc = sqlite3_open("startmenu.db", &db);
+        int rc = sqlite3_open("databases\\startmenu.db", &db);
         
         char *zErrMsg = 0;
 
@@ -291,6 +294,7 @@ struct StartMenuSource : Source {
     void validate(SourceResult *r) {
         WCHAR buff[4096];
         char *zErrMsg = 0;
+        // FIXME : bonus should be nb_use to allow fixing various coefficient to it
         wsprintf(buff, L"UPDATE startmenu SET bonus = MIN(bonus + 5,40) WHERE key=\"%s\"\n", r->key);        
         int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
     }

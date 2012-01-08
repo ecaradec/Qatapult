@@ -112,7 +112,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
-    <None Include="res\launcher.ico" />
     <None Include="res\launcher.rc2" />
   </ItemGroup>
   <ItemGroup>

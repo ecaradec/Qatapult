@@ -14,6 +14,9 @@ struct SearchWithVerbSource : Source {
     SearchWithVerbSource() : Source(L"SEARCHWITHVERB") {        
         m_index[L"Search With"]=SourceResult(L"Search With", L"Search With", L"Search With", this, 0, 0, m_index[L"Search With"].bonus);
     }
+    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
+        return Gdiplus::Bitmap::FromFile(L"icons\\searchwith.png");
+    }
 };
 
 struct WebSearchRule : Rule {

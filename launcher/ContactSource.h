@@ -36,7 +36,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 WritePrivateProfileStringA("QSLLContacts", "accessToken", accessToken, CStringA(curDir)+"\\settings.ini");
                 WritePrivateProfileStringA("QSLLContacts", "refreshToken", refreshToken, CStringA(curDir)+"\\settings.ini");
                 
-                MessageBox(0, L"Everything should be ok, type quit and restart to load your contacts. It's still a beta right ?", L"Qtapult", MB_OK);
+                g_pUI->InvalidateIndex();
             }
         return TRUE;
     }
@@ -108,7 +108,7 @@ struct ContactSource : DBSource {
             sqlite3_finalize(stmt);
         }
         rc = sqlite3_exec(db, "END;", 0, 0, &zErrMsg);
-
+        
         WritePrivateProfileStringA("QSLLContacts", "updated-min", doc.child("feed").child_value("updated"), CStringA(curDir)+"\\settings.ini");
     }
     void crawl() {
