@@ -1,18 +1,14 @@
 struct TextSource : Source {
     TextSource() : Source(L"TEXT") {
         m_ignoreemptyquery=true;
+        m_prefix=L'\'';
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &r, int def) {
-        if(CString(query).Find(L'\'')==0 || CString(query).Find(L'.')==0) {
-            r.push_back(SourceResult(L"", CString(query).Mid(1), CString(query).Mid(1), this, 1, 0, 0));            
-        } else if(m_pArgs->size()!=0) {
-            r.push_back(SourceResult(L"", query, query, this, 0, 0, 0));
-        }
+        int id=CString(query)[0]==_T('\''); // clear the ranking if this is prefixed
+        r.push_back(SourceResult(query, query, query, this, id, 0, 0));
     }
     void rate(SourceResult *r) {
-        if(r->id==1)
-            r->rank=100;
-        else
+        if(r->id==0)
             r->rank=0;
     }
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
@@ -24,8 +20,22 @@ struct TextSource : Source {
         StringFormat sfcenter;
         sfcenter.SetAlignment(StringAlignmentNear);    
         sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
-        Gdiplus::Font f(L"Arial", 12.0f); 
+        Gdiplus::Font f(GetSettingsString(L"general",L"font",L"Arial"), 10.0f); 
 
-        g.DrawString(sr->display, sr->display.GetLength(), &f, r1, &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
+        CString str(sr->display);
+        if(str[0]==m_prefix)
+            str=str.Mid(1);
+
+        g.DrawString(str, -1, &f, r1, &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
+    }
+    CString getString(SourceResult &sr,const TCHAR *val_) {
+        CString val(val_);
+        CString str(sr.display);
+        if(val==L"text") {            
+            if(str[0]==m_prefix)
+                str=str.Mid(1);
+            return str;
+        }
+        return L"";
     }
 };

@@ -1,7 +1,5 @@
 #pragma once
 #include "FindFileRecursively.h"
-#include "sqlite3/sqlite3.h"
-#include "md5.h"
 
 inline CString GetSpecialFolder(int csidl) {
     CString tmp;
@@ -9,54 +7,12 @@ inline CString GetSpecialFolder(int csidl) {
     return tmp;
 }
 
-
-CStringW UTF8toUTF16(const CStringA& utf8)
-{
-    CStringW utf16;
-    int len = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
-    if (len>1)
-    { 
-        wchar_t *ptr = utf16.GetBuffer(len-1);
-        if (ptr) MultiByteToWideChar(CP_UTF8, 0, utf8, -1, ptr, len);
-        utf16.ReleaseBuffer();
+CString fuzzyfyArg(const CString &arg) {
+    CString tmp=L"%";
+    for(int i=0;i<arg.GetLength();i++) {
+        tmp+=CString(arg[i])+L"%";
     }
-    return utf16;
-}
-CStringA UTF16toUTF8(const CStringW& utf16)
-{
-    CStringA utf8;
-    int len = WideCharToMultiByte(CP_UTF8, 0, utf16, -1, NULL, 0, 0, 0);
-    if (len>1)
-    { 
-        char *ptr = utf8.GetBuffer(len-1);
-        if (ptr) WideCharToMultiByte(CP_UTF8, 0, utf16, -1, ptr, len, 0, 0);
-        utf8.ReleaseBuffer();
-    }
-    return utf8;
-}
-
- static int getResultsCB(void *NotUsed, int argc, char **argv, char **azColName) {
-     Info *pinfo=(Info*)NotUsed;
-     pinfo->results->push_back(SourceResult(UTF8toUTF16(argv[0]),         // key
-                                            UTF8toUTF16(argv[1]),         // display
-                                            UTF8toUTF16(argv[2]),          // expand
-                                            pinfo->source,   // source
-                                            atoi(argv[3]?argv[3]:"0"),               // id
-                                            0,               // data
-                                            atoi(argv[4]?argv[4]:"0"))); // bonus
-    return 0;
-}
-
-
-static int getStringCB(void *NotUsed, int argc, char **argv, char **azColName) {
-     *((CString*)NotUsed)=argv[0];
-     //*((CString*)NotUsed)=UTF8toUTF16(argv[0]);
-    return 0;
-}
-
-static int getIntCB(void *NotUsed, int argc, char **argv, char **azColName) {
-     *((int*)NotUsed)=atoi(argv[0]?argv[0]:"0");
-    return 0;
+    return tmp;
 }
 
 int SaveSearchFolders(HWND hListView) {
@@ -64,7 +20,9 @@ int SaveSearchFolders(HWND hListView) {
     GetCurrentDirectory(MAX_PATH, curDir);
 
     int itemcount=ListView_GetItemCount(hListView);
-    WritePrivateProfileString(L"SearchFolders", L"count", ItoS(itemcount), CString(curDir)+L"\\settings.ini");
+    pugi::xml_node settingsnode=settings.select_single_node("settings").node();
+    settingsnode.remove_child("searchFolders");
+    pugi::xml_node searchfolders=settingsnode.append_child("searchFolders");
     for(int i=0;i<itemcount;i++) {
         TCHAR path[MAX_PATH]={0};
         LVITEM lvi;
@@ -74,9 +32,10 @@ int SaveSearchFolders(HWND hListView) {
         lvi.iItem=i;
         lvi.mask=LVFIF_TEXT;
         ListView_GetItem(hListView, &lvi);
-
-        WritePrivateProfileString(L"SearchFolders", ItoS(i), path, CString(curDir)+L"\\settings.ini");
+        if(CString(path)!=L"")
+            searchfolders.append_child("folder").append_child(pugi::node_pcdata).set_value(UTF16toUTF8(path));
     }
+    settings.save_file("settings.xml");
     return itemcount;
 }
 
@@ -94,9 +53,7 @@ BOOL CALLBACK SearchFolderDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 
             GetClientRect(hListView, &r);
 
-            WCHAR szText[256];     // Temporary buffer.
             LVCOLUMN lvc;
-            int iCol;
             lvc.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
             lvc.pszText=L"Path";
             lvc.cx=r.Width()-60;
@@ -114,16 +71,16 @@ BOOL CALLBACK SearchFolderDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
             WCHAR curDir[MAX_PATH];
             GetCurrentDirectory(MAX_PATH, curDir);
 
-            int i;
-            int itemcount=GetPrivateProfileInt(L"SearchFolders", L"count", 0, CString(curDir)+L"\\settings.ini");
-            for(i=0; i<itemcount; i++) {
-                TCHAR path[MAX_PATH];
-                GetPrivateProfileString(L"SearchFolders", ItoS(i), L"", path, sizeof(path), CString(curDir)+L"\\settings.ini");
-                if(_tcslen(path)==0)
+            int i=0;
+
+            pugi::xpath_node_set ns=settings.select_nodes("settings/searchFolders/folder");
+            for(pugi::xpath_node_set::const_iterator it=ns.begin(); it!=ns.end(); it++,i++) {
+                CStringW path=UTF8toUTF16(it->node().child_value());
+                if(path==L"")
                     break;
                 LVITEM lvi;
                 memset(&lvi, 0, sizeof(lvi));
-                lvi.pszText=path;
+                lvi.pszText=(LPWSTR)path.GetString();
                 lvi.mask=LVFIF_TEXT;
                 lvi.iItem=i;
                 int iitem=ListView_InsertItem(hListView, &lvi);
@@ -187,36 +144,35 @@ struct StartMenuSource : Source {
         
         char *zErrMsg = 0;
 
-        sqlite3_exec(db, "CREATE TABLE startmenu(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, verb TEXT, bonus INTEGER, mark INTEGER)", 0, 0, &zErrMsg);        
-        sqlite3_exec(db, "CREATE TABLE startmenu_verbs(key TEXT PRIMARY KEY ASC, startmenu_key TEXT KEY, label TEXT, icon TEXT, id INTEGER, bonus INTEGER)", 0, 0, &zErrMsg);        
+        sqlite3_exec(db, "CREATE TABLE startmenu(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, verb TEXT, bonus INTEGER, mark INTEGER)", 0, 0, &zErrMsg);
+        sqlite3_free(zErrMsg);
+        sqlite3_exec(db, "CREATE TABLE startmenu_verbs(key TEXT PRIMARY KEY ASC, startmenu_key TEXT KEY, label TEXT, icon TEXT, id INTEGER, bonus INTEGER)", 0, 0, &zErrMsg);
+        sqlite3_free(zErrMsg);
         sqlite3_exec(db, "CREATE INDEX startmenu_verbs_index ON startmenu_verbs(startmenu_key)", 0, 0, &zErrMsg);
+        sqlite3_free(zErrMsg);
     }
     ~StartMenuSource() {
         sqlite3_close(db);
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
         // could probably be done in subclass as well as the callback since sourceresult will not change 
+        CString q(query);
+        q.Replace(L"_",L"\\_");
+        q.Replace(L"%",L"\\%");
+        q.Replace(L"'",L"\\'");
+        q.Replace(L"\"",L"\\\"");
         Info info;
         info.results=&results;
         info.source=this;
         char *zErrMsg = 0;
         WCHAR buff[4096];
         if(uselev)
-            wsprintf(buff, L"SELECT key, display, expand, 0, 0 FROM startmenu;", query);
+            wsprintf(buff, L"SELECT key, display, expand, 0, 0 FROM startmenu;", q);
         else
-            wsprintf(buff, L"SELECT key, display, expand, 0, bonus FROM startmenu WHERE display LIKE \"%%%s%%\";", query);
+            wsprintf(buff, L"SELECT key, display, expand, 0, bonus FROM startmenu WHERE display LIKE \"%s\";", fuzzyfyArg(q));
         
-        /*sqlite3_stmt *stmt=0;
-        const char *unused=0;
-        int rc;        
-        rc = sqlite3_prepare_v2(db,
-                                "SELECT key, display, expand, 0, bonus FROM startmenu WHERE display LIKE ?;\n",
-                                -1, &stmt, &unused);
-        rc = sqlite3_bind_text16(stmt, 5, query, -1, SQLITE_STATIC);
-        rc = sqlite3_step(stmt);
-        sqlite3_finalize(stmt);*/
-
         sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
+        sqlite3_free(zErrMsg);
     }
     void crawl() {
         std::vector<CString> lnks;
@@ -227,18 +183,15 @@ struct StartMenuSource : Source {
         WCHAR curDir[MAX_PATH];
         GetCurrentDirectory(MAX_PATH, curDir);
         int i;
-        for(i=0;;i++) {
-            TCHAR path[MAX_PATH];
-            GetPrivateProfileString(L"SearchFolders", ItoS(i), L"", path, sizeof(path), CString(curDir)+L"\\settings.ini");
-            if(_tcslen(path)==0)
-                break;
 
-            FindFilesRecursively(path, L"*.*", lnks, 3);
+        pugi::xpath_node_set ns=settings.select_nodes("/settings/searchFolders");
+        for(pugi::xpath_node_set::const_iterator it=ns.begin(); it!=ns.end(); it++) {
+            lnks.push_back(UTF8toUTF16(it->node().child_value("folder")));
+            FindFilesRecursively(lnks.back(), L"*.*", lnks, 3);
         }
 
         CStringA q; // 82 bug
         q+="BEGIN;\n";
-        WCHAR buff[0xFFFF];
         char *zErrMsg=0;
 
         sqlite3_stmt *stmt=0;
@@ -248,8 +201,10 @@ struct StartMenuSource : Source {
         // there can only exists one single mark
         int mark;
         sqlite3_exec(db, "SELECT mark FROM startmenu LIMIT 1;", getIntCB, &mark, &zErrMsg);
+        sqlite3_free(zErrMsg);
 
         rc = sqlite3_exec(db, "BEGIN;", 0, 0, &zErrMsg);
+        sqlite3_free(zErrMsg);
 
         for(uint i=0;i<lnks.size();i++) {
             CString str(lnks[i]);
@@ -282,6 +237,7 @@ struct StartMenuSource : Source {
         }
 
         rc = sqlite3_exec(db, "END;", 0, 0, &zErrMsg);
+        sqlite3_free(zErrMsg);
 
         // delete disappeared results
         sqlite3_prepare_v2(db, "DELETE FROM startmenu WHERE mark != ?", -1, &stmt, &unused);
@@ -297,48 +253,32 @@ struct StartMenuSource : Source {
         // FIXME : bonus should be nb_use to allow fixing various coefficient to it
         wsprintf(buff, L"UPDATE startmenu SET bonus = MIN(bonus + 5,40) WHERE key=\"%s\"\n", r->key);        
         int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
+        sqlite3_free(zErrMsg);
     }
 
     // getvalue name, buff, bufflen
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return ::getIcon(getString(r->key+L"/path"),flags);
-    }
-    // may be I should just have threaded the results ???
-    virtual bool getSubResults(const TCHAR *query, const TCHAR *itemquery, std::vector<SourceResult> &results) {
-        CString q(itemquery);
-        CString key=q.Left(q.ReverseFind('/'));
-        CString val=q.Mid(q.ReverseFind('/')+1);
-
-        Info info;
-        info.results=&results;
-        info.source=this;
-        char *zErrMsg = 0;
-        WCHAR buff[4096];            
-        wsprintf(buff, L"SELECT key, label, label, id, bonus FROM startmenu_verbs WHERE startmenu_key = \"%s\" AND label LIKE \"%%%s%%\";", key, query);
-        sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
-
-        return true;
+        return ::getIcon(getString(*r,L"path"),flags);
     }
     // itemkey/name : itemkey/verb/open/icon < get subresults ???
-    virtual CString getString(const TCHAR *itemquery) {
+    virtual CString getString(SourceResult &sr,const TCHAR *val_) {
         CString str;
 
-        CString q(itemquery);
-        CString key=q.Left(q.ReverseFind('/'));
-        CString val=q.Mid(q.ReverseFind('/')+1);
+        CString val(val_);
         
-        if(key.Find(L"/verb/")!=-1) {            
-            WCHAR buff[4096];
-            char *zErrMsg = 0;
-            wsprintf(buff, L"SELECT %s FROM startmenu_verbs WHERE key = \"%s\";", val, key);
-            sqlite3_exec(db, CStringA(buff), getStringCB, &str, &zErrMsg);
+        if(val==L"directory") {
+            CString fp(getString(sr,L"path"));
+            str=fp.Left(fp.ReverseFind(L'\\'));
+        } else if(val==L"filename") {
+            CString fp(getString(sr,L"path"));
+            str=fp.Mid(fp.ReverseFind(L'\\')+1);
         } else {
             WCHAR buff[4096];
             char *zErrMsg = 0;
-            wsprintf(buff, L"SELECT %s FROM startmenu WHERE key = \"%s\";", val, key);
+            wsprintf(buff, L"SELECT %s FROM startmenu WHERE key = \"%s\";", val, sr.key);
             sqlite3_exec(db, CStringA(buff), getStringCB, &str, &zErrMsg);
+            sqlite3_free(zErrMsg);
         }
-
         return str; 
     }
     virtual int getInt(const TCHAR *itemquery) {

@@ -1,16 +1,9 @@
 
 bool sendEmail(const TCHAR *to, const TCHAR *subject, const TCHAR *body, const TCHAR *attach) {
-    WCHAR curDir[MAX_PATH];
-    GetCurrentDirectory(MAX_PATH, curDir);
-
-    TCHAR from[1024];
-    GetPrivateProfileString(L"QSLLContacts", L"email", L"", from, sizeof(from), CString(curDir)+"\\settings.ini");
-    TCHAR username[1024];
-    GetPrivateProfileString(L"QSLLContacts", L"username", L"", username, sizeof(username), CString(curDir)+"\\settings.ini");
-    TCHAR password[1024];
-    GetPrivateProfileString(L"QSLLContacts", L"password", L"", password, sizeof(password), CString(curDir)+"\\settings.ini");
-    TCHAR server[1024];
-    GetPrivateProfileString(L"QSLLContacts", L"server", L"", server, sizeof(server), CString(curDir)+"\\settings.ini");
+    CString from=GetSettingsString(L"gmailContacts", L"email");
+    CString username=GetSettingsString(L"gmailContacts", L"username");
+    CString password=GetSettingsString(L"gmailContacts", L"password");
+    CString server=GetSettingsString(L"gmailContacts", L"server");
 
     TCHAR buff[4096];
     if(attach)

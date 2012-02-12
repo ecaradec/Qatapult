@@ -9,10 +9,15 @@ struct QuitVerbSource : Source {
     }
 };
 
+// commented for use with textitemsource
 struct QuitRule : Rule {
-    QuitRule() : Rule(L"QUITVERB") {}
+    QuitRule() {}
     virtual bool execute(std::vector<SourceResult> &args) {
-        PostQuitMessage(0);
+        if(args[0].display==L"Quit (Q)")
+            PostQuitMessage(0);
+        else if(args[0].display==L"Reload (Q)")
+            g_pUI->Reload();
+
         return true;
     }
 };

@@ -27,8 +27,12 @@ inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh, long flags) {
     //SHGetImageList(SHIL_EXTRALARGE, clsid, (void**)&pil);   
     if(flags==ICON_SIZE_SMALL)
         SHGetImageList(SHIL_LARGE, clsid, (void**)&pil);   
-    else
+    else {
         SHGetImageList(SHIL_JUMBO, clsid, (void**)&pil);   
+        // XP support
+        if(pil==0)
+            SHGetImageList(SHIL_LARGE, clsid, (void**)&pil); 
+    }
     
     HICON hicon;
     HRESULT hr=pil->GetIcon(sh.iIcon, ILD_ASYNC|ILD_TRANSPARENT|ILD_PRESERVEALPHA, &hicon);
@@ -81,8 +85,7 @@ inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh, long flags) {
     return icon;
 }
 
-inline Gdiplus::Bitmap *getIcon(const CString &path, long flags=ICON_SIZE_LARGE) {
-    
+inline Gdiplus::Bitmap *getIcon(const CString &path, long flags=ICON_SIZE_LARGE) {    
     // get hicon
     SHFILEINFO sh;
     SHGetFileInfo(path, FILE_ATTRIBUTE_NORMAL, &sh, sizeof(sh), SHGFI_SYSICONINDEX);        

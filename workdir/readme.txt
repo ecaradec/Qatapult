@@ -63,4 +63,10 @@ http://www.iconfinder.com/icondetails/10409/128/clock_red_icon
 searchwith (Free for commercial use )
 http://www.iconfinder.com/icondetails/34229/128/find_magnifier_search_zoom_icon
 
+networklocal (Free for commercial use - LGPL)
+http://www.iconfinder.com/icondetails/3539/128/hosting_local_network_icon
+
+window : (free for commercial use )
+http://www.iconfinder.com/icondetails/61506/128/42_icon
+
 Thanks to iconfinder as well for it's awesome  selection

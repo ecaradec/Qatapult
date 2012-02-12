@@ -19,6 +19,9 @@
     <None Include="res\launcher.rc2">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="res\launcher.ico">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -112,6 +115,24 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FileVerbRule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="premultAlpha.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="simpleini.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CurrentSelectionSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utf8.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CriticalSection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

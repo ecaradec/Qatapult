@@ -2,14 +2,11 @@
 #include "Source.h"
 #include "getItemVerbs.h"
 
-struct Info {
-    Source                    *source;
-    std::vector<SourceResult> *results;
-};
-
 struct FileVerbSource : Source {
     FileVerbSource() : Source(L"FILEVERB") {
-        int b=10;
+        int itemcount=GetSettingsInt(L"FileVerbs", L"count", 0);
+
+        int b=itemcount+10;
         m_index[L"Open"]=SourceResult(L"Open", L"Open", L"Open", this, 0, 0, b--);
         m_index[L"Edit"]=SourceResult(L"Edit", L"Edit", L"Edit", this, 0, 0, b--);
         m_index[L"RunAs"]=SourceResult(L"RunAs", L"RunAs", L"RunAs", this, 0, 0, b--);
@@ -34,4 +31,13 @@ struct FileVerbSource : Source {
         }
         return bmp;
     }
+    CString getString(SourceResult &sr,const TCHAR *val_) {
+        return sr.key;
+    }
+    struct Extra {
+        CString command;
+        CString args;
+        CString workdir;
+    };
+    std::map<CString, Extra> m_extras;
 };
