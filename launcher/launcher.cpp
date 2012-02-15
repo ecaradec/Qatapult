@@ -27,6 +27,9 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             if(msg.message==WM_KEYDOWN && (msg.wParam==VK_TAB)) {
                 translate=false;
             }
+            if(msg.message==WM_KEYDOWN && (msg.wParam==VK_RIGHT)) {
+                translate=false;
+            }
 
             gui.OnKeyboardMessage(msg.message, msg.wParam, msg.lParam);
             if(!translate)

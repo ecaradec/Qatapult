@@ -27,7 +27,7 @@ struct FileVerbRule : Rule {
             str[l+1]=0; // add extra 0
             sffo.wFunc=FO_DELETE;
             sffo.pFrom=str;
-            sffo.fFlags=FOF_ALLOWUNDO;            
+            sffo.fFlags=FOF_ALLOWUNDO;
             SHFileOperation(&sffo);
         } else {
             if((GetFileAttributes(fp)&FILE_ATTRIBUTE_DIRECTORY)!=0) {

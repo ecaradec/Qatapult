@@ -1,8 +1,7 @@
 BOOL WINAPI EnumerateFunc(LPNETRESOURCE lpnr, std::vector<CString> &lnks);
 
 struct NetworkSource : Source {
-    NetworkSource() : Source(L"Network",L"FILE") {
-        type=L"FILE";
+    NetworkSource() : Source(L"FILE",L"Network (Catalog )") {
         m_ignoreemptyquery=true;
         int rc = sqlite3_open("databases\\network.db", &db);
         
@@ -113,6 +112,10 @@ struct NetworkSource : Source {
             return sr.key;
         }
         return L"";
+    }
+    Source *getSource(SourceResult &r, CString &query) {
+        query=r.display+L"\\";
+        return (Source*)-1;
     }
     sqlite3 *db;
 };

@@ -3,7 +3,7 @@
 #include "getItemVerbs.h"
 
 struct FileVerbSource : Source {
-    FileVerbSource() : Source(L"FILEVERB") {
+    FileVerbSource() : Source(L"FILEVERB", L"File verbs (Catalog )") {
         int itemcount=GetSettingsInt(L"FileVerbs", L"count", 0);
 
         int b=itemcount+10;
@@ -18,7 +18,7 @@ struct FileVerbSource : Source {
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
         CString q(query); q.MakeUpper();
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
-            if(CString(it->second.display).MakeUpper().Find(q)!=-1) {
+            if(FuzzyMatch(it->second.display,q)) {
                 results.push_back(it->second);
             }
         }

@@ -44,7 +44,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 // those kind of sources could have a simplified load and save ?
 struct ContactSource : DBSource {    
-    ContactSource() : DBSource(L"contacts", L"CONTACT") {
+    ContactSource() : DBSource(L"CONTACT",L"Contacts (Catalog )", L"contacts") {
         char *zErrMsg = 0;
         sqlite3_exec(db, "CREATE TABLE contacts(key TEXT PRIMARY KEY ASC, display TEXT, email TEXT, bonus INTEGER)", 0, 0, &zErrMsg);       
         sqlite3_free(zErrMsg);

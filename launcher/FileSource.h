@@ -4,9 +4,7 @@
 #include "FileVerbSource.h"
 
 struct FileSource : Source {
-    FileSource() : Source(L"File",L"FILE") {
-        type=L"FILE";
-
+    FileSource() : Source(L"FILE",L"Filesystem (Catalog )") {
         int rc = sqlite3_open("databases\\files.db", &db);
         
         char *zErrMsg = 0;
@@ -87,7 +85,7 @@ struct FileSource : Source {
                 CString noslash=q.Left(q.ReverseFind(L'\\'));
                 CString foldername=noslash.Mid(noslash.ReverseFind(L'\\')+1);
 
-                if(CString(foldername).MakeUpper().Find(f)!=-1 && f==L"") {
+                if(FuzzyMatch(foldername,f)!=-1 && f==L"") {
                     SourceResult r;
                     r.key=noslash+L"\\";
                     r.display=foldername;
@@ -104,7 +102,7 @@ struct FileSource : Source {
                 else
                     expand = CString(d+L"\\"+w32fd.cFileName);
 
-                if(CString(w32fd.cFileName).MakeUpper().Find(f)!=-1) {
+                if(FuzzyMatch(w32fd.cFileName,f)) {
                     SourceResult r;
                     r.key=expand;
                     r.display=w32fd.cFileName;

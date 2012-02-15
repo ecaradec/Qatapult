@@ -69,4 +69,7 @@ http://www.iconfinder.com/icondetails/3539/128/hosting_local_network_icon
 window : (free for commercial use )
 http://www.iconfinder.com/icondetails/61506/128/42_icon
 
+source.png : (Free for commercial use - LGPL)
+http://www.iconfinder.com/icondetails/17904/128/cabinet_drawer_file_filing_manager_icon
+
 Thanks to iconfinder as well for it's awesome  selection

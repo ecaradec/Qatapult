@@ -137,7 +137,7 @@ int uselev;
 // http://stackoverflow.com/questions/1744902/how-might-i-obtain-the-icontextmenu-that-is-displayed-in-an-ishellview-context-m
 struct StartMenuSource : Source {
     sqlite3 *db;
-    StartMenuSource(HWND hwnd) : Source(L"FILE", L"STARTMENU"), m_hwnd(hwnd) {        
+    StartMenuSource(HWND hwnd) : Source(L"FILE", L"Indexed files (Catalog )"), m_hwnd(hwnd) {        
         m_ignoreemptyquery=true;
         
         int rc = sqlite3_open("databases\\startmenu.db", &db);
@@ -184,7 +184,7 @@ struct StartMenuSource : Source {
         GetCurrentDirectory(MAX_PATH, curDir);
         int i;
 
-        pugi::xpath_node_set ns=settings.select_nodes("/settings/searchFolders");
+        pugi::xpath_node_set ns=settingsWT.select_nodes("/settings/searchFolders");
         for(pugi::xpath_node_set::const_iterator it=ns.begin(); it!=ns.end(); it++) {
             lnks.push_back(UTF8toUTF16(it->node().child_value("folder")));
             FindFilesRecursively(lnks.back(), L"*.*", lnks, 3);

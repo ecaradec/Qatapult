@@ -144,6 +144,18 @@ void drawEmphased(Graphics &g, CString text, CString query, RectF &rect, int fla
 
 UI *g_pUI; // very lazy way to give access to the ui to the ui window proc
 
+
+bool FuzzyMatch(const CString &w_,const CString &q_) {
+    CString W(w_); W.MakeUpper();
+    CString Q(q_); Q.MakeUpper();
+    int q=0;
+    for(int i=0;i<W.GetLength()&&q!=Q.GetLength();i++) {
+        if(Q[q]==W[i])
+            q++;
+    }
+    return q==Q.GetLength();
+}
+
 struct Source {
     Source(const CString& t)
         :itemlistFont(GetSettingsString(L"general",L"font",L"Arial"), 8.0f, FontStyleBold, UnitPoint),
@@ -224,7 +236,7 @@ struct Source {
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
         CString q(query); q.MakeUpper();
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
-            if(CString(it->second.display).MakeUpper().Find(q)!=-1) {
+            if(FuzzyMatch(it->second.display,q)) {
                 results.push_back(it->second);
             }
         }
@@ -246,7 +258,7 @@ struct Source {
 
     // unused yet
     // get named data of various types
-    virtual bool getSubResults(const TCHAR *query, const TCHAR *itemquery, std::vector<SourceResult> &results) { return false; }
+    virtual Source *getSource(SourceResult &sr, CString &q) { return 0; }
     virtual CString getString(SourceResult &sr, const TCHAR *val) { return L""; }
     virtual int getInt(const TCHAR *itemquery) { return false; }
 

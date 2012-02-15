@@ -22,6 +22,9 @@
     <None Include="res\launcher.ico">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\workdir\settings.xml">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">

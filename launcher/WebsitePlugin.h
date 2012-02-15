@@ -1,7 +1,7 @@
 
 // those kind of sources could have a simplified load and save ?
 struct WebsiteSource : DBSource {
-    WebsiteSource() : DBSource(L"websites", L"WEBSITE") {
+    WebsiteSource() : DBSource(L"WEBSITE",L"Websites (Catalog )", L"websites") {
         char *zErrMsg = 0;
         sqlite3_exec(db, "CREATE TABLE websites(key TEXT PRIMARY KEY ASC, display TEXT, href TEXT, searchHref TEXT, icon TEXT, bonus INTEGER)", 0, 0, &zErrMsg);        
         sqlite3_free(zErrMsg);

@@ -1,5 +1,5 @@
 struct TextSource : Source {
-    TextSource() : Source(L"TEXT") {
+    TextSource() : Source(L"TEXT",L"Text (Catalog )") {
         m_ignoreemptyquery=true;
         m_prefix=L'\'';
     }

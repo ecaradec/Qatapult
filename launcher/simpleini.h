@@ -6,6 +6,7 @@ inline CString ItoS(int i) {
 CString settingsini;
 
 pugi::xml_document settings;
+pugi::xml_document settingsWT; // settings for the working thread
 
 CStringA GetSettingsStringA(const CHAR *key, const CHAR *value, const CHAR *defval="") {
     CStringA q; q.Format("settings/%s/%s",key,value);

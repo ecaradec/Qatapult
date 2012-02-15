@@ -141,7 +141,7 @@ int DelayLoadExceptionFilter(unsigned int code, struct _EXCEPTION_POINTERS *ep) 
     return EXCEPTION_CONTINUE_EXECUTION;
 }
 struct ClockSource : Source {
-    ClockSource() : Source(L"CLOCK") {
+    ClockSource() : Source(L"CLOCK",L"Clock (Catalog )") {
         m_ignoreemptyquery=true;
         m_index[L"Clock"]=SourceResult(L"Clock", L"Clock", L"Clock", this, 0, 0, 0);
         m_refreshPeriod=1000;
@@ -219,6 +219,7 @@ struct ClockRule : Rule {
 #define WM_PROGRESS (WM_USER+3)
 #define WM_RELOAD (WM_USER+4)
 #define WM_STOPWORKERTHREAD (WM_USER+5)
+#define WM_RELOADSETTINGS (WM_USER+6)
 
 void CenterWindow(HWND hwnd) {
     CRect workarea;
@@ -298,7 +299,7 @@ struct TextItemSource : Source {
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
         CString q(query); q.MakeUpper();
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
-            if(CString(it->second.display).MakeUpper().Find(q)!=-1) {
+            if(FuzzyMatch(it->second.display,q)) {
                 results.push_back(it->second);
             }
         }
@@ -312,7 +313,7 @@ struct TextItemSource : Source {
 };
 
 struct WindowSource : Source {
-    WindowSource() : Source(L"WINDOW") {
+    WindowSource() : Source(L"WINDOW",L"Windows (Catalog )") {
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
         return Gdiplus::Bitmap::FromFile(L"icons\\window.png");
@@ -322,9 +323,11 @@ struct WindowSource : Source {
         std::vector<HWND> windowList;
         EnumWindows(CollectWindows,(LPARAM)&windowList);
         for(std::vector<HWND>::iterator it=windowList.begin(); it!=windowList.end(); it++) {
-            TCHAR title[MAX_PATH];
+            if(!::IsWindowVisible(*it))
+                continue;
+            TCHAR title[MAX_PATH]={0};
             GetWindowText(*it,title,sizeof(title));
-            if(CString(title).Find(q)!=-1) {
+            if(FuzzyMatch(title,q)) {
                 results.push_back(SourceResult(title,title,title,this,0,*it,0));
             }
         }
@@ -393,6 +396,33 @@ struct CommandRule : Rule {
     CString m_workdir;
 };
 
+struct SourceOfSources : Source {
+    SourceOfSources(std::map<CString, std::vector<Source*> > &sources) : Source(L"SOURCE",L"Source of sources"), m_sources(sources) {
+    }
+    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
+        return Gdiplus::Bitmap::FromFile(L"icons\\source.png");
+    }
+    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+        CString q(query); q.MakeUpper();
+        for(std::map<CString, std::vector<Source*> >::iterator it=m_sources.begin(); it!=m_sources.end(); it++) {
+            for(uint i=0;i<it->second.size();i++) {
+                if(FuzzyMatch(it->second[i]->m_name,q)) {
+                    SourceResult r;
+                    r.expand=r.display=it->second[i]->m_name;
+                    r.source=this;
+                    r.data=it->second[i];
+                    results.push_back(r);
+                }
+            }        
+        }
+    }
+    virtual Source *getSource(SourceResult &sr, CString &q) {
+        q=L"";
+        return (Source*)sr.data;
+    }
+    std::map<CString, std::vector<Source*> > m_sources;
+};
+
 // SHGetImageList
 struct AlphaGUI : IWindowlessGUI, UI {
     AlphaGUI():m_input(this), m_invalidatepending(false) {
@@ -405,7 +435,6 @@ struct AlphaGUI : IWindowlessGUI, UI {
 
         WCHAR curDir[MAX_PATH];
         GetCurrentDirectory(MAX_PATH, curDir);
-        settingsini=CString(curDir)+L"\\settings.ini";
 
         g_pUI=this;
 
@@ -419,11 +448,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
         
         CreateDirectory(L"databases", 0);
         
-        pugi::xml_parse_result result = settings.load_file("settings.xml");
-
-        // hotkey
-        hotkeycode=GetSettingsInt(L"hotKeys", L"toggleKey",VK_SPACE);
-        hotkeymodifiers=GetSettingsInt(L"hotKeys", L"toggleModifier",MOD_SHIFT);        
+        pugi::xml_parse_result result = settings.load_file("settings.xml");  
 
         // bitmaps
         m_textbackground.Load(L"textbackground.png");
@@ -447,36 +472,39 @@ struct AlphaGUI : IWindowlessGUI, UI {
         CreateSettingsDlg();
 
         // repaint dialog
-        Invalidate(); 
-
-        // define hotkey
-        RegisterHotKey(g_pUI->getHWND(), 1, hotkeymodifiers, hotkeycode);
-
+        Invalidate();        
 
         Init();
-
-        m_mainThreadId=GetCurrentThreadId();
     }
-    ~AlphaGUI() {
+    ~AlphaGUI() {        
         Reset();
     }
     HANDLE m_workerthread;
-    void Init() {        
+    void Init() {
+        settings.load_file("settings.xml");
+
+        // the sources can't be unloaded and reloaded easily as they use threads
         // sources 
-        addSource(new FileSource);
+        Source *filesystem=new FileSource;
+        addSource(filesystem);
         addSource(new StartMenuSource(m_hwnd));
         addSource(new CurrentSelectionSource);
-        addSource(new NetworkSource);       
+        addSource(new NetworkSource);
         addSource(new TextSource);        
         addSource(new ContactSource);
         addSource(new ClockSource);
         addSource(new FileVerbSource);
         addSource(new WebsiteSource);
-        addSource(new WindowSource);        
         
-        addRule(L"CLOCK", new ClockRule);
-        addRule(L"FILE", L"FILEVERB", new FileVerbRule);     
-        
+        SourceOfSources *sourceofsources=new SourceOfSources(m_sources);
+        addSource(sourceofsources);
+
+        // add items to the source of sources
+        Source *ws=new WindowSource;
+        ws->m_pArgs=&m_args;
+        ws->m_pUI=this;
+        sourceofsources->m_sources[ws->type].push_back(ws);
+                
         TextItemSource *t;
 
         t=new TextItemSource(L"EMAILFILEVERB");
@@ -500,10 +528,18 @@ struct AlphaGUI : IWindowlessGUI, UI {
         t->addItem(L"Reload (Q)",L"icons\\reload.png");
         addRule(t->type,new QuitRule);
 
+        addRule(L"SOURCE",new Rule);
+
         t=new TextItemSource(L"EMPTY");
         m_sources[t->type].push_back(t);
-        m_nullresult.source=t;
-        
+        m_nullresult.source=t;         
+
+        // hotkey
+        hotkeycode=GetSettingsInt(L"hotKeys", L"toggleKey",VK_SPACE);
+        hotkeymodifiers=GetSettingsInt(L"hotKeys", L"toggleModifier",MOD_SHIFT);      
+
+        // define hotkey
+        RegisterHotKey(g_pUI->getHWND(), 1, hotkeymodifiers, hotkeycode);
 
         LoadRules(settings);
 
@@ -526,12 +562,19 @@ struct AlphaGUI : IWindowlessGUI, UI {
 
         OnQueryChange(L"");
 
+
         // we shouldn't create a thread for each source, this is inefficient
         // crawl should be called with an empty index for each source
         //_beginthread((void (*)(void*))crawlProc, 0, this);
         //m_workerthread=CreateThread(0, 0, (LPTHREAD_START_ROUTINE)crawlProc, this, 0, &m_crawlThreadId);
-
         m_workerthread = (HANDLE)_beginthreadex(0, 0, (uint (__stdcall *)(void*))crawlProc, this, 0, (uint*)&m_crawlThreadId );
+
+        m_mainThreadId=GetCurrentThreadId();
+
+        BOOL b=PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
+
+        PostThreadMessage(m_crawlThreadId, WM_RELOADSETTINGS, 0, 0);        
+        //PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
     }
     void LoadRules(pugi::xml_document &settings) {
         pugi::xpath_node_set ns=settings.select_nodes("/settings/rules/rule");
@@ -560,11 +603,18 @@ struct AlphaGUI : IWindowlessGUI, UI {
             }
         }
     }
-    void Reset() {
-        PostThreadMessage(m_crawlThreadId, WM_STOPWORKERTHREAD, 0, 0);
+    void Reset() {        
+        bool b=PostThreadMessage(m_crawlThreadId,WM_STOPWORKERTHREAD,0,0);
         WaitForSingleObject(m_workerthread,INFINITE);
 
-        ClearResults(m_results);
+        UnregisterHotKey(m_hwnd,1);
+
+        ClearResults(m_results);        
+        for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++) {
+            delete *it;
+        }        
+        m_rules.clear();
+
         for(int i=0;i<m_args.size();i++) {
             if(m_args[i].source)
                 m_args[i].source->clear(m_args[i]);
@@ -575,11 +625,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
             for(uint i=0;i<it->second.size();i++)
                 delete it->second[i];
         }
-        for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++) {
-            delete *it;
-        }
         m_sources.clear();
-        m_rules.clear();
     }
     void Reload() {
         PostMessage(getHWND(),WM_RELOAD,0,0);
@@ -609,31 +655,43 @@ struct AlphaGUI : IWindowlessGUI, UI {
     DWORD m_crawlThreadId;
     DWORD m_mainThreadId;
     static uint __stdcall crawlProc(AlphaGUI *thiz) {        
+        // personal copy of the settings file for the thread
+        settingsWT.load_file("settings.xml");
         MSG msg;
         msg.message=WM_INVALIDATEINDEX; // create a fake message on first pass
-        do {        
+        do {            
             switch(msg.message)  {
                 case WM_INVALIDATEINDEX:
-                    {
+                    {                        
                         BOOL b=PostMessage(thiz->m_hwnd, WM_PROGRESS, 0, 0);
                         float nbsources=float(thiz->m_sources.size());
                         float isources=0;
                         for(std::map<CString, std::vector<Source*> >::iterator it=thiz->m_sources.begin(); it!=thiz->m_sources.end();it++) {                        
-                            for(uint i=0;i<it->second.size();i++)
+                            for(uint i=0;i<it->second.size();i++) {
+                                // if a stop thread message is available stop everything
+                                if(PeekMessage(&msg,0,WM_STOPWORKERTHREAD,WM_STOPWORKERTHREAD,PM_NOREMOVE)) {
+                                    b=PostMessage(thiz->m_hwnd, WM_PROGRESS, 100, 0);
+                                    goto stop;
+                                }
                                 it->second[i]->crawl();
+                            }
 
                             isources++;
                             b=PostMessage(thiz->m_hwnd, WM_PROGRESS, WPARAM(100.0f*isources/nbsources), 0);
                         }
                     }
+                    break;
                 case WM_STOPWORKERTHREAD:
                     goto stop;
+                    break;
+                case WM_RELOADSETTINGS:
+                    settingsWT.load_file("settings.xml");
                     break;
             }
             
             //TranslateMessage(&msg);
             //DispatchMessage(&msg);
-        } while(GetMessage(&msg, 0, WM_INVALIDATEINDEX, WM_INVALIDATEINDEX+1)!=0);
+        } while(GetMessage(&msg, 0, 0, 0)!=0);
 
         stop:
         _endthread();
@@ -694,40 +752,44 @@ struct AlphaGUI : IWindowlessGUI, UI {
         tviis.item.lParam=(LPARAM)hwndSF;
         HTREEITEM htreeSF=TreeView_InsertItem(hTreeView, &tviis);
 
-        //tviis.item.pszText = L"Email";
-        //tviis.item.lParam=(LPARAM)hwndEmail;
-        //HTREEITEM htreeEmail=TreeView_InsertItem(hTreeView, &tviis);
-
         tviis.item.pszText = L"Gmail contacts";
         tviis.item.lParam=(LPARAM)hwndGmail;
         HTREEITEM htreeGmail=TreeView_InsertItem(hTreeView, &tviis);
 
         BOOL b=TreeView_SelectItem(hTreeView, htreeG);
     }
+    std::vector<Source*> m_customsources;
     void CollectItems(const CString &q, const uint pane, std::vector<SourceResult> &args, std::vector<SourceResult> &results, int def) {
         // collect all active rules (match could have an args that tell how much to match )
         // i should probably ignore the current pane for the match or just match until pane-1 ?
-        std::vector<Rule *> activerules;
-        for(uint i=0;i<m_rules.size();i++)
-            if(m_rules[i]->match(args, pane)>0)
-               activerules.push_back(m_rules[i]); 
-
-        // collect all active sources at this level
-        std::map<CString,bool> activesources;
-        for(uint i=0;i<activerules.size();i++)
-            if(activerules[i]->m_types.size()>pane)
-                activesources[activerules[i]->m_types[pane].m_type]=true;
-
+        
         // collect displayable items
         ClearResults(results);
-        //results.clear();        
-        for(std::map<CString,bool>::iterator it=activesources.begin(); it!=activesources.end(); it++) {
-            for(uint i=0;i<m_sources[it->first].size();i++) {
-                if(pane==0 && q==L""/*m_sources[it->first][i]->m_ignoreemptyquery == true && q==L""*/)
-                    ;
-                else
-                    m_sources[it->first][i]->collect(q, results, def);
+        if(pane>=m_customsources.size() || m_customsources[pane]==0) {
+
+            std::vector<Rule *> activerules;
+            for(uint i=0;i<m_rules.size();i++)
+                if(m_rules[i]->match(args, pane)>0)
+                   activerules.push_back(m_rules[i]); 
+
+            // collect all active sources at this level            
+            std::map<CString,bool> activesources;
+            for(uint i=0;i<activerules.size();i++)
+                if(activerules[i]->m_types.size()>pane)
+                    activesources[activerules[i]->m_types[pane].m_type]=true;
+
+            //results.clear();        
+            for(std::map<CString,bool>::iterator it=activesources.begin(); it!=activesources.end(); it++) {
+                for(uint i=0;i<m_sources[it->first].size();i++) {
+                    if(pane==0 && q==L"")
+                        ;
+                    else
+                        m_sources[it->first][i]->collect(q, results, def);
+                }
             }
+        
+        } else {
+            m_customsources[pane]->collect(q,results,def);
         }
 
         uselev=0;
@@ -1007,7 +1069,13 @@ struct AlphaGUI : IWindowlessGUI, UI {
             return FALSE;
         }
         else if(msg == WM_KEYDOWN && wParam == VK_ESCAPE)
-        {            
+        {
+            if(m_pane<m_customsources.size() && m_customsources[m_pane]!=0) {
+                m_customsources[m_pane]=0;
+                m_input.SetText(L"");
+                return FALSE;
+            }
+
             if(IsWindowVisible(m_listhosthwnd)) {
                 CRect r;
                 GetWindowRect(m_hwnd, &r);
@@ -1087,6 +1155,10 @@ struct AlphaGUI : IWindowlessGUI, UI {
             if(m_editmode==1) {
                 bool bCtrl=GetKeyState(VK_CONTROL)&0x8000;
                 m_input.moveCaretLeft(bCtrl);
+            } else if(m_pane<m_customsources.size()) {
+                m_customsources[m_pane]=0;
+                m_input.SetText(L"");
+                Invalidate();
             }
             return FALSE;
         }
@@ -1097,7 +1169,20 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 m_input.moveCaretRight(bCtrl);
             } else {
                 SourceResult *r=GetSelectedItem();
-                m_input.SetText(r->expand);       
+                CString q;
+                Source *s=r->source->getSource(*r,q);
+                if(s!=0) {
+                    if(m_customsources.size()<=m_pane);
+                        m_customsources.resize(m_pane+1);
+                    if(s==(Source*)-1)
+                        m_customsources[m_pane]=0;
+                    else
+                        m_customsources[m_pane]=r->source->getSource(*r,q);
+                    m_input.SetText(q);
+                    Invalidate();
+                } else {
+                    m_input.SetText(r->expand);
+                }
             }
             return FALSE;
         }
@@ -1167,7 +1252,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
                         HANDLE htext=GetClipboardData(CF_TEXT);
                         LPVOID lpvoid=GlobalLock(htext);
                         CString clip((CHAR*)lpvoid);
-                        GlobalUnlock(lpvoid);                    
+                        GlobalUnlock(lpvoid);
                         CloseClipboard();
 
                         m_input.appendAtCaret(clip);
@@ -1235,12 +1320,13 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 //OutputDebugStringA("click");
             }
         } else if(msg==WM_HOTKEY && wParam==1) {
-            g_foregroundWnd=GetForegroundWindow();
+            g_foregroundWnd=GetForegroundWindow();            
             if(IsWindowVisible(m_hwnd)) {
                 m_pane=0;
                 m_args.clear();
                 m_queries.clear();
                 m_input.SetText(L"");
+                m_customsources.clear();
 
                 ShowWindow(m_hwnd, SW_HIDE);
                 ShowWindow(m_listhosthwnd, SW_HIDE);

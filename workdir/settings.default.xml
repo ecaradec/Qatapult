@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<settings>
+	<general>
+		<font>Arial</font>
+	</general>
+	<gmailContacts>
+		<accessToken></accessToken>
+		<refreshToken></refreshToken>
+		<email />
+		<username />
+		<password />
+		<server></server>
+		<updated-min></updated-min>
+	</gmailContacts>
+	<hotKeys>
+		<toggleKey>32</toggleKey>
+		<toggleModifier>4</toggleModifier>
+	</hotKeys>
+    <rules>
+		<rule>
+			<arg>FILE</arg>
+			<arg>
+				<item>
+					<lbl>Explore here</lbl>
+					<ico>icons\defaultverb.png</ico>
+				</item>
+				<item>
+					<lbl>Test</lbl>
+					<ico>icons\defaultverb.png</ico>
+				</item>
+			</arg>
+			<cmd>explorer.exe</cmd>
+			<args>/e,/root,"$0.path"</args>
+		</rule>
+		<rule>
+			<arg>FILE</arg>
+			<arg>
+				<item>
+					<lbl>Cmd here</lbl>
+					<ico>icons\command.png</ico>
+				</item>
+			</arg>
+			<cmd>cmd.exe</cmd>
+			<args>/e,/root,"$0.path"</args>
+			<workdir>$0.directory</workdir>
+		</rule>
+    </rules>
+	<searchFolders>
+		<folder></folder>
+	</searchFolders>
+</settings>
