@@ -605,7 +605,8 @@ struct AlphaGUI : IWindowlessGUI, UI {
     }
     void Reset() {        
         bool b=PostThreadMessage(m_crawlThreadId,WM_STOPWORKERTHREAD,0,0);
-        WaitForSingleObject(m_workerthread,INFINITE);
+        if(WaitForSingleObject(m_workerthread,1000)==WAIT_TIMEOUT)
+            TerminateThread(m_workerthread,0);
 
         UnregisterHotKey(m_hwnd,1);
 
