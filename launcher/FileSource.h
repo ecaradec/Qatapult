@@ -139,12 +139,15 @@ struct FileSource : Source {
         int rc;
 
         CString path=r->source->getString(*r,L"path");
+        path.TrimRight(L"\\");
+        if((GetFileAttributes(path)&FILE_ATTRIBUTE_DIRECTORY)!=0)
+            path+="\\";
 
         CString filename(path);
         if(filename.Right(4)==L".lnk") {
             PathRemoveExtension(filename.GetBuffer()); filename.ReleaseBuffer();
         }
-        filename=PathFindFileName(filename.GetBuffer()); filename.ReleaseBuffer();  
+        filename=PathFindFileName(filename.GetBuffer()); filename.ReleaseBuffer();
 
         CString key=md5(path);
             
@@ -153,7 +156,7 @@ struct FileSource : Source {
                                 -1, &stmt, &unused);
         rc = sqlite3_bind_text16(stmt, 1, key.GetString(), -1, SQLITE_STATIC);
         rc = sqlite3_bind_text16(stmt, 2, filename.TrimRight('\\').GetString(), -1, SQLITE_STATIC);
-        rc = sqlite3_bind_text16(stmt, 3, path.TrimRight('\\').GetString(), -1, SQLITE_STATIC);
+        rc = sqlite3_bind_text16(stmt, 3, path.GetString(), -1, SQLITE_STATIC);
         rc = sqlite3_bind_text16(stmt, 4, path.GetString(), -1, SQLITE_STATIC);
         rc = sqlite3_bind_text16(stmt, 5, key.GetString(), -1, SQLITE_STATIC);
         rc = sqlite3_bind_int(stmt, 6, 0);
