@@ -1,8 +1,8 @@
 set YYYYMMDD=%DATE:~6,4%%DATE:~3,2%%DATE:~0,2%
-set HMS=%TIME:~0,2%%TIME:~3,2%%TIME:~6,2%
+set TIMETMP=%TIME: =0%
+set HMS=%TIMETMP:~0,2%%TIMETMP:~3,2%%TIMETMP:~6,2%
 
 set setupdir=setup\%YYYYMMDD%%HMS%
-rem set setupdir=setup\tmp
 
 mkdir setup
 mkdir "%setupdir%"

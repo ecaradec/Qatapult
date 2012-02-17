@@ -11,7 +11,7 @@
 // [X] deplacer mon blog sur emmanuelcaradec
 
 #ifdef DEBUG
-#include "vld.h"
+//#include "vld.h"
 #endif
 
 #include "resource.h"
@@ -423,12 +423,26 @@ struct SourceOfSources : Source {
     std::map<CString, std::vector<Source*> > m_sources;
 };
 
+struct SourceRule : Rule {
+    SourceRule(UI *pUI):m_pUI(pUI) {
+    }
+    bool execute(std::vector<SourceResult> &args) {
+        CString q;
+        Source *s=(*m_pArgs)[0].source->getSource((*m_pArgs)[0],q);
+        m_pUI->SetCurrentSource(0,s,q);
+        m_pUI->Show();
+        return true;
+    }
+    UI *m_pUI;
+};
+
 // SHGetImageList
 struct AlphaGUI : IWindowlessGUI, UI {
     AlphaGUI():m_input(this), m_invalidatepending(false) {
 #ifdef DEBUG
-        VLDMarkAllLeaksAsReported();
+        //VLDMarkAllLeaksAsReported();
 #endif
+        m_hwnd=0;
 
         m_pane=0;
         m_editmode=0;
@@ -447,63 +461,83 @@ struct AlphaGUI : IWindowlessGUI, UI {
         }
         
         CreateDirectory(L"databases", 0);
+
+        CreateDirectory(L"skins", 0);
         
-        pugi::xml_parse_result result = settings.load_file("settings.xml");  
-
-        // bitmaps
-        m_textbackground.Load(L"textbackground.png");
-        PremultAlpha(m_textbackground);
-
-        m_background.Load(L"background.png");
-        PremultAlpha(m_background);
-        
-        m_background3.Load(L"background3.png");
-        PremultAlpha(m_background3);
-
-        m_focus.Load(L"focus.png");
-        PremultAlpha(m_focus);
-
-        m_knob.Load(L"ui-radio-button.png");
-        PremultAlpha(m_knob);
-
-        premult.Create(m_background3.GetWidth(), m_background.GetHeight(), 32, CImage::createAlphaChannel);        
-
         // create dialogs
         CreateSettingsDlg();
 
-        // repaint dialog
-        Invalidate();        
-
         Init();
+
+        // repaint dialog
+        Invalidate();
     }
     ~AlphaGUI() {        
         Reset();
     }
     HANDLE m_workerthread;
     void Init() {
+   
         settings.load_file("settings.xml");
+        
+        CString skin=L"skins/"+GetSettingsString(L"general",L"skin",L"default");
+                // bitmaps
+        m_textbackground.Load(skin+L"/textbackground.png");
+        PremultAlpha(m_textbackground);
+
+        m_background.Load(skin+L"/background.png");
+        PremultAlpha(m_background);
+        
+        m_background3.Load(skin+L"/background3.png");
+        PremultAlpha(m_background3);
+
+        m_focus.Load(skin+L"/focus.png");
+        PremultAlpha(m_focus);
+
+        m_knob.Load(skin+L"/ui-radio-button.png");
+        PremultAlpha(m_knob);
+
+        premult.Create(m_background3.GetWidth(), m_background.GetHeight(), 32, CImage::createAlphaChannel);     
+
+        if(m_hwnd==0) {
+            m_hwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", /*WS_VISIBLE|*/WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
+            ::SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG)_WndProc);
+            ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);        
+            
+            m_listhosthwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_TOPMOST, L"STATIC", L"", WS_POPUP|WS_THICKFRAME, 0, 0, 300, 10*40+GetSystemMetrics(SM_CYFRAME)*2, 0, 0, 0, 0); // fix parent
+            CRect rc;
+            GetClientRect(m_listhosthwnd,&rc);
+            m_listhwnd=CreateWindow(L"ListBox", L"", WS_VISIBLE|WS_CHILD|LBS_NOTIFY|LBS_HASSTRINGS|WS_VSCROLL|LBS_OWNERDRAWFIXED, 0, 0, rc.Width(), rc.Height(), m_listhosthwnd, 0, 0, 0); // fix parent
+            ::SetWindowLongPtr(m_listhosthwnd, GWLP_WNDPROC, (LONG)_ListBoxWndProc);
+            ::SetWindowLongPtr(m_listhosthwnd, GWLP_USERDATA, (LONG)this);
+            ::SendMessage(m_listhwnd, LB_SETITEMHEIGHT, 0, 40);
+        }
 
         // the sources can't be unloaded and reloaded easily as they use threads
         // sources 
         Source *filesystem=new FileSource;
         addSource(filesystem);
-        addSource(new StartMenuSource(m_hwnd));
-        addSource(new CurrentSelectionSource);
-        addSource(new NetworkSource);
-        addSource(new TextSource);        
+        addSource(new StartMenuSource(m_hwnd));        
+        addSource(new NetworkSource);        
         addSource(new ContactSource);
         addSource(new ClockSource);
-        addSource(new FileVerbSource);
         addSource(new WebsiteSource);
         
         SourceOfSources *sourceofsources=new SourceOfSources(m_sources);
         addSource(sourceofsources);
+
+        addSource(new TextSource);
+        addSource(new CurrentSelectionSource);
+        addSource(new FileVerbSource);
 
         // add items to the source of sources
         Source *ws=new WindowSource;
         ws->m_pArgs=&m_args;
         ws->m_pUI=this;
         sourceofsources->m_sources[ws->type].push_back(ws);
+
+        addRule(L"CLOCK", new ClockRule);
+        addRule(L"FILE", L"FILEVERB", new FileVerbRule); 
                 
         TextItemSource *t;
 
@@ -528,7 +562,10 @@ struct AlphaGUI : IWindowlessGUI, UI {
         t->addItem(L"Reload (Q)",L"icons\\reload.png");
         addRule(t->type,new QuitRule);
 
-        addRule(L"SOURCE",new Rule);
+        t=new TextItemSource(L"SOURCEVERB");
+        m_sources[t->type].push_back(t);
+        t->addItem(L"Open",L"icons\\open.png");
+        addRule(L"SOURCE",t->type,new SourceRule(this));
 
         t=new TextItemSource(L"EMPTY");
         m_sources[t->type].push_back(t);
@@ -576,6 +613,39 @@ struct AlphaGUI : IWindowlessGUI, UI {
         PostThreadMessage(m_crawlThreadId, WM_RELOADSETTINGS, 0, 0);        
         //PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
     }
+    void Reset() {        
+        bool b=PostThreadMessage(m_crawlThreadId,WM_STOPWORKERTHREAD,0,0);
+        if(WaitForSingleObject(m_workerthread,1000)==WAIT_TIMEOUT)
+            TerminateThread(m_workerthread,0);
+
+        // bitmaps
+        m_textbackground.Destroy();
+        m_background.Destroy();
+        m_background3.Destroy();
+        m_focus.Destroy();
+        m_knob.Destroy();
+        premult.Destroy();
+
+        UnregisterHotKey(m_hwnd,1);
+
+        ClearResults(m_results);        
+        for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++) {
+            delete *it;
+        }        
+        m_rules.clear();
+
+        for(int i=0;i<m_args.size();i++) {
+            if(m_args[i].source)
+                m_args[i].source->clear(m_args[i]);
+        }
+        m_args.clear();
+
+        for(std::map<CString, std::vector<Source*> >::iterator it=m_sources.begin(); it!=m_sources.end(); it++) {
+            for(uint i=0;i<it->second.size();i++)
+                delete it->second[i];
+        }
+        m_sources.clear();
+    }
     void LoadRules(pugi::xml_document &settings) {
         pugi::xpath_node_set ns=settings.select_nodes("/settings/rules/rule");
         for(pugi::xpath_node_set::const_iterator it=ns.begin(); it!=ns.end(); it++) {
@@ -602,31 +672,6 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 }
             }
         }
-    }
-    void Reset() {        
-        bool b=PostThreadMessage(m_crawlThreadId,WM_STOPWORKERTHREAD,0,0);
-        if(WaitForSingleObject(m_workerthread,1000)==WAIT_TIMEOUT)
-            TerminateThread(m_workerthread,0);
-
-        UnregisterHotKey(m_hwnd,1);
-
-        ClearResults(m_results);        
-        for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++) {
-            delete *it;
-        }        
-        m_rules.clear();
-
-        for(int i=0;i<m_args.size();i++) {
-            if(m_args[i].source)
-                m_args[i].source->clear(m_args[i]);
-        }
-        m_args.clear();
-
-        for(std::map<CString, std::vector<Source*> >::iterator it=m_sources.begin(); it!=m_sources.end(); it++) {
-            for(uint i=0;i<it->second.size();i++)
-                delete it->second[i];
-        }
-        m_sources.clear();
     }
     void Reload() {
         PostMessage(getHWND(),WM_RELOAD,0,0);
@@ -711,18 +756,6 @@ struct AlphaGUI : IWindowlessGUI, UI {
         }
     }
     void CreateSettingsDlg() {
-        m_hwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", WS_VISIBLE|WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
-        ::SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG)_WndProc);
-        ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);        
-            
-        m_listhosthwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_TOPMOST, L"STATIC", L"", WS_POPUP|WS_THICKFRAME, 0, 0, m_background.GetWidth(), 10*40+GetSystemMetrics(SM_CYFRAME)*2, 0, 0, 0, 0); // fix parent
-        CRect rc;
-        GetClientRect(m_listhosthwnd,&rc);
-        m_listhwnd=CreateWindow(L"ListBox", L"", WS_VISIBLE|WS_CHILD|LBS_NOTIFY|LBS_HASSTRINGS|WS_VSCROLL|LBS_OWNERDRAWFIXED, 0, 0, rc.Width(), rc.Height(), m_listhosthwnd, 0, 0, 0); // fix parent
-        ::SetWindowLongPtr(m_listhosthwnd, GWLP_WNDPROC, (LONG)_ListBoxWndProc);
-        ::SetWindowLongPtr(m_listhosthwnd, GWLP_USERDATA, (LONG)this);
-        ::SendMessage(m_listhwnd, LB_SETITEMHEIGHT, 0, 40);
-
         m_hwndsettings=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_SETTINGS), 0, (DLGPROC)SettingsDlgProc);  //CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GET_GMAILAUTHCODE), 0, DlgProc);
         HWND hTreeView=GetDlgItem(m_hwndsettings, IDC_TREE);
 
@@ -998,11 +1031,28 @@ struct AlphaGUI : IWindowlessGUI, UI {
         BOOL b=::UpdateLayeredWindow(m_hwnd, 0, &p1, &s, hdc, &p2, 0, &bf, ULW_ALPHA);
         
         premult.ReleaseDC(); 
-        
 
+
+        // fit the detail pane at the best place 
         CRect r;
         GetWindowRect(m_hwnd, &r);
-        SetWindowPos(m_listhosthwnd, 0, r.left+157*m_pane, r.bottom, 0, 0, SWP_NOSIZE|SWP_NOACTIVATE);   
+
+        CRect rc;
+        GetWindowRect(m_listhosthwnd,&rc);
+        
+        int pos=157*m_pane+157/2-rc.Width()/2;
+        pos=max(0,pos);
+        pos=min(m_curWidth-rc.Width(),pos);
+        
+        SetWindowPos(m_listhosthwnd, 0, r.left+pos, r.bottom, 0, 0, SWP_NOSIZE|SWP_NOACTIVATE);   /*r.left+157*m_pane*/
+
+        // CRect r;
+        // GetWindowRect(m_hwnd, &r);
+        // SetWindowPos(m_listhosthwnd, 0, r.left, r.bottom, m_curWidth, 10*40+GetSystemMetrics(SM_CYFRAME)*2, SWP_NOACTIVATE);   /*r.left+157*m_pane*/
+
+        // CRect rc;
+        // GetClientRect(m_listhosthwnd,&rc);
+        // SetWindowPos(m_listhwnd, 0, 0, 0, rc.Width(), rc.Height(), SWP_NOACTIVATE);   
     }    
     CString getQuery() {
         if(m_displayPane==m_queries.size())
@@ -1028,6 +1078,25 @@ struct AlphaGUI : IWindowlessGUI, UI {
         }
         results.clear();
     }
+    void SetCurrentSource(int pane,Source *s,CString &q) {
+        if(m_customsources.size()<=pane);
+            m_customsources.resize(pane+1);
+        if(s==(Source*)-1)
+            m_customsources[pane]=0;
+        else
+            m_customsources[pane]=s;
+        m_input.SetText(q);
+        Invalidate();
+    }
+    void Show() {
+        ShowWindow(m_hwnd, SW_SHOW);
+        SetForegroundWindow(m_hwnd);
+    }
+    void Hide() {
+        ShowWindow(m_hwnd, SW_HIDE);
+        KillTimer(m_hwnd, 1);
+        ShowWindow(m_listhosthwnd, SW_HIDE);
+    }
     LRESULT OnKeyboardMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
         if(msg == WM_KEYDOWN && wParam == VK_RETURN)
         {
@@ -1049,8 +1118,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
             for(uint i=0;i<m_rules.size();i++)
                 if(m_rules[i]->match(m_args, m_args.size())>1) {
                     // found one rule
-                    ShowWindow(m_hwnd, SW_HIDE);
-                    ShowWindow(m_listhosthwnd, SW_HIDE);                       
+                    Hide();
 
                     if(m_rules[i]->execute(m_args)) {                                                
                         for(uint a=0;a<m_args.size(); a++) {
@@ -1173,14 +1241,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 CString q;
                 Source *s=r->source->getSource(*r,q);
                 if(s!=0) {
-                    if(m_customsources.size()<=m_pane);
-                        m_customsources.resize(m_pane+1);
-                    if(s==(Source*)-1)
-                        m_customsources[m_pane]=0;
-                    else
-                        m_customsources[m_pane]=r->source->getSource(*r,q);
-                    m_input.SetText(q);
-                    Invalidate();
+                    SetCurrentSource(m_pane,s,q);
                 } else {
                     m_input.SetText(r->expand);
                 }
@@ -1291,11 +1352,15 @@ struct AlphaGUI : IWindowlessGUI, UI {
         if(!OnKeyboardMessage(msg,wParam,lParam))
             return S_OK;
 
-        if(msg==WM_INVALIDATEDISPLAY) {
+        if(msg==WM_CLOSE) {
+            DestroyWindow(hwnd);
+            return S_OK;
+        } else if(msg==WM_INVALIDATEDISPLAY) {
             Update();
         } else if(msg==WM_RELOAD) {
             Reset();
-            Init();            
+            Init();
+            ShowWindow(m_hwnd, SW_SHOW);
         } else if(msg==WM_COMMAND) {
             if(wParam==0)
                 PostQuitMessage(0);
@@ -1329,13 +1394,9 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 m_input.SetText(L"");
                 m_customsources.clear();
 
-                ShowWindow(m_hwnd, SW_HIDE);
-                ShowWindow(m_listhosthwnd, SW_HIDE);
+                Hide();
             } else {
-                ShowWindow(m_hwnd, SW_SHOW);
-                SetForegroundWindow(m_hwnd);
-                //h1=SetActiveWindow(m_hwnd);
-                //h2=SetFocus(m_hwnd);
+                Show();
             }
         } else if(msg==WM_UPDATEINDEX) {
             //((std::map<CString,SourceResult> *)wParam)->begin()->second.source->updateIndex(((std::map<CString,SourceResult> *)wParam));
@@ -1371,15 +1432,17 @@ struct AlphaGUI : IWindowlessGUI, UI {
         }
         else if(msg == WM_KILLFOCUS) {
             if((HWND)wParam!=m_listhosthwnd) {
-                ShowWindow(m_hwnd, SW_HIDE);
-                ShowWindow(m_listhosthwnd, SW_HIDE);
+                Hide();
             }
         }
 
         return ::DefWindowProc(hwnd, msg, wParam, lParam);
     }
     LRESULT ListBoxWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {           
-        if(msg==WM_COMMAND && HIWORD(wParam)==LBN_SELCHANGE)
+        if(msg==WM_CLOSE) {
+            DestroyWindow(hwnd);
+            return S_OK;
+        } else if(msg==WM_COMMAND && HIWORD(wParam)==LBN_SELCHANGE)
             OnSelChange(GetSelectedItem());
         else if(msg==WM_DRAWITEM) {
             DRAWITEMSTRUCT *dis=(DRAWITEMSTRUCT*)lParam;

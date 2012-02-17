@@ -63,6 +63,8 @@ struct UI {
     // settings dialog    
     virtual void InvalidateIndex() = 0;
     virtual void Reload() = 0;
+    virtual void SetCurrentSource(int pane, Source *s,CString &q) = 0;
+    virtual void Show() = 0;
 };
 
 

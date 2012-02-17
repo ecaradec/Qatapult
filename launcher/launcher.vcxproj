@@ -115,7 +115,9 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="..\workdir\settings.xml" />
+    <None Include="..\workdir\settings.xml">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="ReadMe.txt" />
     <None Include="res\launcher.ico" />
     <None Include="res\launcher.rc2" />
