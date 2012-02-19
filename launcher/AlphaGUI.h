@@ -351,6 +351,7 @@ struct WindowSource : Source {
 // file,copyto,file => copy $p0.path $p2.path
 // text,clip => clip $p0.text
 // parseur : chercher les *, renvoyer la chaine, 
+
 struct CommandRule : Rule {
     CommandRule(const CString &cmd,const CString &args, const CString &workdir):m_command(cmd),m_args(args),m_workdir(workdir) {
         m_command.Trim();
@@ -441,7 +442,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
     AlphaGUI():m_input(this), m_invalidatepending(false) {
 #ifdef DEBUG
         //VLDMarkAllLeaksAsReported();
-#endif
+#endif        
         m_hwnd=0;
 
         m_pane=0;

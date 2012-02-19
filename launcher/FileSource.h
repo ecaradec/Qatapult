@@ -2,6 +2,9 @@
 #include "geticon.h"
 #include "sqlite3/sqlite3.h"
 #include "FileVerbSource.h"
+#include "ShellLink.h"
+
+// history should be a source as well
 
 struct FileSource : Source {
     FileSource() : Source(L"FILE",L"Filesystem (Catalog )") {
@@ -192,9 +195,14 @@ struct FileSource : Source {
             CString fp(getString(sr,L"path"));
             return fp.Left(fp.ReverseFind(L'\\'));
         } else if(CString(val)==L"filename") {
-            CString fp(getString(sr,L"path"));
-            fp.TrimRight(L"\\");
+            CString fp(getString(sr,L"path"));            
+            fp.TrimRight(L"\\");            
             return fp.Mid(fp.ReverseFind(L'\\')+1);
+        } else if(CString(val)==L"path") {
+            CString path(getItemString(sr.key,L"path"));
+            if(path.Right(4)==L".lnk")
+                return getShortcutPath(path);
+            return path;
         }
 
         CString str=getItemString(sr.key,val);

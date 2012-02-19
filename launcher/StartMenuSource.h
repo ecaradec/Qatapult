@@ -1,5 +1,6 @@
 #pragma once
 #include "FindFileRecursively.h"
+#include "ShellLink.h"
 
 inline CString GetSpecialFolder(int csidl) {
     CString tmp;
@@ -132,6 +133,7 @@ BOOL CALLBACK SearchFolderDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPa
 }
 
 int uselev;
+
 
 // might be useful
 // http://stackoverflow.com/questions/1744902/how-might-i-obtain-the-icontextmenu-that-is-displayed-in-an-ishellview-context-m
@@ -273,11 +275,19 @@ struct StartMenuSource : Source {
             CString fp(getString(sr,L"path"));
             str=fp.Mid(fp.ReverseFind(L'\\')+1);
         } else {
+            CString v(val);
+            // when you want to get the linked path use lpath
+            if(v==L"lpath") {
+                v=L"path";
+            }
             WCHAR buff[4096];
             char *zErrMsg = 0;
-            wsprintf(buff, L"SELECT %s FROM startmenu WHERE key = \"%s\";", val, sr.key);
+            wsprintf(buff, L"SELECT %s FROM startmenu WHERE key = \"%s\";", v, sr.key);
             sqlite3_exec(db, CStringA(buff), getStringCB, &str, &zErrMsg);
             sqlite3_free(zErrMsg);
+        }
+        if(val==L"path" && str.Right(4)==L".lnk") {
+            return getShortcutPath(str);
         }
         return str; 
     }

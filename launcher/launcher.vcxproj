@@ -150,6 +150,7 @@
     <ClInclude Include="Rule.h" />
     <ClInclude Include="SearchWithVerbSource.h" />
     <ClInclude Include="SendEmail.h" />
+    <ClInclude Include="ShellLink.h" />
     <ClInclude Include="simpleini.h" />
     <ClInclude Include="Source.h" />
     <ClInclude Include="SourceResult.h" />
