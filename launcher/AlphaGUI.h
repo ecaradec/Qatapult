@@ -523,6 +523,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
         addSource(new ContactSource);
         addSource(new ClockSource);
         addSource(new WebsiteSource);
+        addSource(new FileHistorySource);
         
         SourceOfSources *sourceofsources=new SourceOfSources(m_sources);
         addSource(sourceofsources);

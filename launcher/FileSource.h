@@ -25,36 +25,6 @@ struct FileSource : Source {
 
         // not a root name ? search from history
         if(q.Find(L":\\")!=1 && q.Find(L"\\\\")==-1) {
-            CString q(query);
-            q.Replace(L"_",L"\\_");
-            q.Replace(L"%",L"\\%");
-            q.Replace(L"'",L"\\'");
-            q.Replace(L"\"",L"\\\"");
-
-            char *zErrMsg = 0;
-            
-            sqlite3_stmt *stmt=0;
-            const char *unused=0;
-            int rc;
-
-            rc = sqlite3_prepare_v2(db,
-                                    "SELECT key, display, expand, 0, bonus FROM files WHERE display LIKE ?;",
-                                    -1, &stmt, &unused);
-            rc = sqlite3_bind_text16(stmt, 1, CString(L"%")+q.GetString()+L"%", -1, SQLITE_STATIC);
-            int i=0;
-            while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
-                results.push_back(SourceResult(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),        // key
-                                               UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),        // display
-                                               UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),        // expand
-                                               this,                         // source
-                                               sqlite3_column_int(stmt,3),   // id
-                                               0,                            // data
-                                               sqlite3_column_int(stmt,4))); // bonus
-            }
-
-            const char *errmsg=sqlite3_errmsg(db) ;
-            sqlite3_finalize(stmt);
-
             return;
         }
 
@@ -211,9 +181,122 @@ struct FileSource : Source {
 
         //  if value is path but the db query didn't return anything (this could ultimatly be stored in the extra data member )
         if(val==L"path") {
+            if(sr.key.Right(4)==L".lnk")
+                return getShortcutPath(sr.key);
             return sr.key;
         }
         return L"";
+    }
+
+    sqlite3 *db;
+};
+
+struct FileHistorySource : Source {
+    FileHistorySource() : Source(L"FILE",L"File History (Catalog )") {
+        int rc = sqlite3_open("databases\\files.db", &db);
+        
+        char *zErrMsg = 0;
+        sqlite3_exec(db, "CREATE TABLE files(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, verb TEXT, bonus INTEGER, mark INTEGER)", 0, 0, &zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+    ~FileHistorySource() {
+        sqlite3_close(db);
+    }
+    void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags) {
+        CString q(query);
+
+        //if(q.GetLength()==0)
+        //    return;
+
+        // not a root name ? search from history
+        if(q.Find(L":\\")!=1 && q.Find(L"\\\\")==-1) {
+            CString q(query);
+            q.Replace(L"_",L"\\_");
+            q.Replace(L"%",L"\\%");
+            q.Replace(L"'",L"\\'");
+            q.Replace(L"\"",L"\\\"");
+
+            char *zErrMsg = 0;
+            
+            sqlite3_stmt *stmt=0;
+            const char *unused=0;
+            int rc;
+
+            rc = sqlite3_prepare_v2(db,
+                                    "SELECT key, display, expand, 0, bonus FROM files WHERE display LIKE ?;",
+                                    -1, &stmt, &unused);
+            rc = sqlite3_bind_text16(stmt, 1, CString(L"%")+q.GetString()+L"%", -1, SQLITE_STATIC);
+            int i=0;
+            while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
+                results.push_back(SourceResult(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),        // key
+                                               UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),        // display
+                                               UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),        // expand
+                                               this,                         // source
+                                               sqlite3_column_int(stmt,3),   // id
+                                               0,                            // data
+                                               sqlite3_column_int(stmt,4))); // bonus
+            }
+
+            const char *errmsg=sqlite3_errmsg(db) ;
+            sqlite3_finalize(stmt);
+
+            return;
+        }
+    }
+    virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
+        if(sr->icon)
+            g.DrawImage(sr->icon, RectF(r.X+10, r.Y+10, 128, 128));
+
+        StringFormat sfcenter;
+        sfcenter.SetAlignment(StringAlignmentCenter);    
+        sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
+
+        CString q(m_pUI->getQuery());
+        CString d=q.Left(q.ReverseFind(L'\\'));
+        CString f=q.Mid(q.ReverseFind(L'\\')+1);
+
+        drawEmphased(g, sr->display, f, RectF(r.X+10, r.Y+r.Height-17, r.Width-20, 20));
+
+        m_pUI->setStatus(getString(*sr,L"path"));
+    }
+    void crawl() {
+        // should scan the history and remove non available items
+    }
+    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
+        CString path=r->source->getString(*r,L"path");
+        return ::getIcon(path,flags);
+    }
+    CString getItemString(const TCHAR *key, const TCHAR *val) {
+        // if that key exists get the path from the base
+        sqlite3_stmt *stmt=0;
+        const char *unused=0;
+        int rc;
+
+        char buff[4096];
+        sprintf(buff, "SELECT %s FROM files WHERE key = ?;\n", CStringA(val));
+        rc = sqlite3_prepare_v2(db, buff, -1, &stmt, &unused);
+        rc = sqlite3_bind_text16(stmt, 1, key, -1, SQLITE_STATIC);            
+        rc=sqlite3_step(stmt);
+
+        CString str=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));            
+        sqlite3_finalize(stmt);
+        return str;
+    }
+    CString getString(SourceResult &sr, const TCHAR *val) {        
+        if(CString(val)==L"directory") {
+            CString fp(getString(sr,L"path"));
+            return fp.Left(fp.ReverseFind(L'\\'));
+        } else if(CString(val)==L"filename") {
+            CString fp(getString(sr,L"path"));            
+            fp.TrimRight(L"\\");            
+            return fp.Mid(fp.ReverseFind(L'\\')+1);
+        } else if(CString(val)==L"path") {
+            CString path(getItemString(sr.key,L"path"));
+            if(path.Right(4)==L".lnk")
+                return getShortcutPath(path);
+            return path;
+        }
+        return getItemString(sr.key,val);
     }
 
     sqlite3 *db;
