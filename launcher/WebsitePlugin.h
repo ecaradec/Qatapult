@@ -24,7 +24,7 @@ struct WebSearchRule : Rule {
     WebSearchRule() /*: Rule(Type(L"TEXT"), Type(L"Search With",L"icons\\searchwith.png"), Type(L"WEBSITE"))*/ {}
     virtual bool execute(std::vector<SourceResult> &args) {
         CString searchURL=args[2].source->getString(args[2],L"searchHref");        
-        searchURL.Replace(L"%q", args[0].display);            
+        searchURL.Replace(L"%q", args[0].source->getString(args[0],L"text"));            
         ShellExecute(0, 0, searchURL, 0, 0, SW_SHOWDEFAULT);
         return true;
     }

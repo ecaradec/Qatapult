@@ -3,7 +3,7 @@ struct FileVerbRule : Rule {
     FileVerbRule() {
     }
     bool execute(std::vector<SourceResult> &args) {
-        CString path=(*m_pArgs)[0].source->getString(args[0],L"lpath");
+        CString path=(*m_pArgs)[0].source->getString(args[0],L"path");
 
         // fullpath, director, filename should came from the source
         // but this also means that there will be more requirements for a source

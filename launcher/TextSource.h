@@ -13,10 +13,7 @@ struct TextSource : Source {
     }
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
         RectF r1(r);
-        r1.Y+=5;
-        r1.X+=5;
-        r1.Width-=10;
-        r1.Height-=10;
+        
         StringFormat sfcenter;
         sfcenter.SetAlignment(StringAlignmentNear);    
         sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
@@ -25,6 +22,8 @@ struct TextSource : Source {
         CString str(sr->display);
         if(str[0]==m_prefix)
             str=str.Mid(1);
+
+        r1.Height = int(r1.Height/f.GetHeight(&g))*f.GetHeight(&g);
 
         g.DrawString(str, -1, &f, r1, &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
     }

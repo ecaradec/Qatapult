@@ -143,33 +143,35 @@ struct ContactSource : DBSource {
         }
     }
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
-        if(sr->icon)
-            g.DrawImage(sr->icon, RectF(r.X+25, r.Y+45, 100, 100));
+        StringAlignment alignment;
+        float fontsize=10.0f;
 
-        RectF r1(r);
-        r1.Y+=5;
-        r1.X+=5;
-        r1.Width-=10;
-        r1.Height-=10;
+        Gdiplus::Font f(GetSettingsString(L"general",L"font",L"Arial"),fontsize);
+        Gdiplus::Font f2(GetSettingsString(L"general",L"font",L"Arial"), 7.0f);         
+
+        float textheight=f.GetHeight(&g);
+        bool h=(float(r.Width)/r.Height)>2;
+
+        RectF ricon=getStdIconPos(r,h,f.GetHeight(&g)+f2.GetHeight(&g));
+        RectF rtext0=getStdTextPos(r,h,f.GetHeight(&g));
+        RectF rtext=getStdTitlePos(r,h,f.GetHeight(&g)+f2.GetHeight(&g));
+        RectF rtext2=getStdSubTitlePos(r,h,f2.GetHeight(&g));
+
         StringFormat sfcenter;
-        sfcenter.SetAlignment(StringAlignmentNear);    
+        sfcenter.SetAlignment(getStdAlignment(h));
+        sfcenter.SetFormatFlags(StringFormatFlagsNoWrap);        
         sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
-        Gdiplus::Font f(L"Comic Sans MS", 12.0f); 
 
-        RectF rOut;
-        RectF rclip(r1);
-        rclip.Width=9999;
-        g.MeasureString(sr->display, sr->display.GetLength(), &f, rclip, &rOut);
-        r1.Height=rclip.Height;
-        //g.DrawString(sr->display, sr->display.GetLength(), &f, r1, &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));                
+        if(sr->icon)
+            g.DrawImage(sr->icon, ricon);
         
-        drawEmphased(g, sr->display, m_pUI->getQuery(), r1, DE_UNDERLINE,StringAlignmentNear, 12.0f);
-
-        Gdiplus::Font f2(GetSettingsString(L"general",L"font",L"Arial"), 7.0f); 
-        r1.Y+=rOut.Height;
         CString email=getString(*sr,L"email");        
-        //r1.X+=20;
-        g.DrawString(email, email.GetLength(), &f2, r1, &sfcenter, &SolidBrush(Color(0x88FFFFFF)));
+        if(email==L"") {
+            drawEmphased(g, sr->display, m_pUI->getQuery(), rtext0, DE_UNDERLINE,StringAlignmentNear, fontsize);
+        } else {
+            drawEmphased(g, sr->display, m_pUI->getQuery(), rtext, DE_UNDERLINE,StringAlignmentNear, fontsize);
+            g.DrawString(email, email.GetLength(), &f2, rtext2, &sfcenter, &SolidBrush(Color(0x88FFFFFF)));
+        }
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
         if(GetFileAttributes("photos\\"+r->key+".jpg")!=INVALID_FILE_ATTRIBUTES)

@@ -65,6 +65,7 @@ struct UI {
     virtual void Reload() = 0;
     virtual void SetCurrentSource(int pane, Source *s,CString &q) = 0;
     virtual void Show() = 0;
+    virtual int  GetCurPane() = 0;
 };
 
 
@@ -76,8 +77,7 @@ void drawEmphased(Graphics &g, CString text, CString query, RectF &rect, int fla
     Gdiplus::Font hifont(GetSettingsString(L"general",L"font",L"Arial"), fontSize, Gdiplus::FontStyleUnderline);
     Gdiplus::Font lofont(GetSettingsString(L"general",L"font",L"Arial"), fontSize);
     Gdiplus::SolidBrush hibrush(Gdiplus::Color(255,255,255,255));
-    Gdiplus::SolidBrush lobrush(Gdiplus::Color(128,255,255,255));
-
+    Gdiplus::SolidBrush lobrush(Gdiplus::Color(128,255,255,255));    
 
     Gdiplus::StringFormat sfmt(Gdiplus::StringFormat::GenericTypographic());  
     sfmt.SetFormatFlags(StringFormatFlagsMeasureTrailingSpaces|StringFormatFlagsNoWrap|StringFormatFlagsNoClip|StringFormatFlagsNoFitBlackBox);
@@ -186,16 +186,42 @@ struct Source {
         return Gdiplus::Bitmap::FromFile(r->iconname);
     }
     // draw
+    RectF getStdIconPos(RectF &r, bool h, float textheight=0) {
+        if(h)
+            return RectF(r.X, r.Y, r.Height, r.Height);
+        return RectF(r.X+textheight/2, r.Y, r.Width-textheight, r.Width-textheight);
+    }
+    RectF getStdTextPos(RectF &r, bool h, float textheight) {
+        if(h)
+            return RectF(r.X+r.Height+r.Height/4, r.Y+r.Height/2-textheight/2, r.Width-r.Height, r.Height);
+        return RectF(r.X, r.Y+r.Height-textheight, r.Width, 0);
+    }
+    RectF getStdTitlePos(RectF &r, bool h, float textheight) {
+        if(h)
+            return RectF(r.X+r.Height+r.Height/4, r.Y+0.1f*textheight, r.Width-r.Height-r.Height/4, r.Height);
+        return RectF(r.X, r.Y+r.Height-textheight, r.Width, 0);
+    }
+    RectF getStdSubTitlePos(RectF &r, bool h, float textheight) {
+        if(h)
+            return RectF(r.X+r.Height+r.Height/4, r.Y+r.Height-1.1f*textheight, r.Width-r.Height-r.Height/4, r.Height);
+        return RectF(r.X, r.Y+r.Height-textheight, r.Width, 0);
+    }
+    StringAlignment getStdAlignment(bool h) {
+        return h?StringAlignmentNear:StringAlignmentCenter;
+    }
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
+        Gdiplus::Font fn(GetSettingsString(L"general",L"font",L"Arial"),8.0f);
+        float textheight=fn.GetHeight(&g);
+        bool h=(float(r.Width)/r.Height)>2;
+
+        StringAlignment alignment=getStdAlignment(h);
+        RectF ricon=getStdIconPos(r,h);
+        RectF rtext=getStdTextPos(r,h,textheight);
+        
         if(sr->icon)
-            g.DrawImage(sr->icon, RectF(r.X+10, r.Y+10, 128, 128));
-
-        StringFormat sfcenter;
-        sfcenter.SetAlignment(StringAlignmentCenter);    
-        sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
-
-        Gdiplus::Font f(GetSettingsString(L"general",L"font",L"Arial"), 8.0f);
-        drawEmphased(g, sr->display, m_pUI->getQuery(), RectF(r.X+10, r.Y+r.Height-17, r.Width-20, 20));        
+            g.DrawImage(sr->icon, ricon);        
+        
+        drawEmphased(g, sr->display, m_pUI->getQuery(), rtext, DE_UNDERLINE, alignment);
     }
     virtual void drawListItem(Graphics &g, DRAWITEMSTRUCT *dis, RectF &r) {        
         if(dis->itemData==0)
@@ -214,7 +240,6 @@ struct Source {
             g.DrawImage(sr->smallicon, RectF(r.X+10, r.Y, r.Height, r.Height)); // height not a bug, think a minute
         
         REAL x=r.X+r.Height+5+10;
-        
         
         CString str(sr->display);
         if(str[0]==m_prefix)

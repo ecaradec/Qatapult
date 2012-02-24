@@ -72,11 +72,15 @@ inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh, long flags) {
     Gdiplus::Graphics g3(icon);
     HDC hdc3=g3.GetHDC();
 
-    for(int y=0;y<cx;y++)
+    for(int y=0;y<cx;y++) {
         for(int x=0;x<cy;x++) {
             DWORD pixel=pixels[x+y*bmColor.bmWidth];
             icon->SetPixel(x,y,pixel);
+            //CString tmp; tmp.Format(L"%2x",pixel>>24);
+            //OutputDebugString(tmp);
         }
+        //OutputDebugString(L"\n");
+    }
 
     g3.ReleaseHDC(hdc3);
 

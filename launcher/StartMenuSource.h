@@ -268,16 +268,22 @@ struct StartMenuSource : Source {
 
         CString val(val_);
         
-        if(val==L"directory") {
+        if(val==L"rdirectory") {
+            CString fp(getString(sr,L"rpath"));
+            str=fp.Left(fp.ReverseFind(L'\\'));
+        } else if(val==L"directory") {
             CString fp(getString(sr,L"path"));
             str=fp.Left(fp.ReverseFind(L'\\'));
+        } else if(val==L"rfilename") {
+            CString fp(getString(sr,L"rpath"));
+            str=fp.Mid(fp.ReverseFind(L'\\')+1);
         } else if(val==L"filename") {
             CString fp(getString(sr,L"path"));
             str=fp.Mid(fp.ReverseFind(L'\\')+1);
         } else {
             CString v(val);
             // when you want to get the linked path use lpath
-            if(v==L"lpath") {
+            if(v==L"rpath") {
                 v=L"path";
             }
             WCHAR buff[4096];
@@ -286,7 +292,7 @@ struct StartMenuSource : Source {
             sqlite3_exec(db, CStringA(buff), getStringCB, &str, &zErrMsg);
             sqlite3_free(zErrMsg);
         }
-        if(val==L"path" && str.Right(4)==L".lnk") {
+        if(val==L"rpath" && str.Right(4)==L".lnk") {
             return getShortcutPath(str);
         }
         return str; 

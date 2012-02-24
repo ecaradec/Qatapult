@@ -15,6 +15,7 @@
 #endif
 
 #include "resource.h"
+//#include <atlrx.h>
 #include "premultAlpha.h"
 #include "sqlite3/sqlite3.h"
 #include "md5.h"
@@ -155,8 +156,11 @@ struct ClockSource : Source {
         m_hasGdipDrawImageFX = !!GetProcAddress(gdiplus, "GdipDrawImageFX");
     }
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
+        bool h=(float(r.Width)/r.Height)>2;
+        RectF ricon=getStdIconPos(r,h);
+        
         if(sr->icon)
-            g.DrawImage(sr->icon, RectF(r.X+10, r.Y+10, 128, 128));
+            g.DrawImage(sr->icon, ricon);
 
         SYSTEMTIME st;
         GetSystemTime(&st);
@@ -164,32 +168,34 @@ struct ClockSource : Source {
         Gdiplus::Matrix m;
         
         if(m_hasGdipDrawImageFX) {
+            int w=ricon.Width/10; // with of aiguilles
+
             m.Reset();
-            m.Translate(r.X+10+128/2,r.Y+10+128/2);
+            m.Translate(ricon.X+ricon.Width/2,ricon.Y+ricon.Height/2);
             m.Rotate(((float)st.wHour+(float)st.wMinute/60)/24*360+180);
-            m.Translate(-4,-4);
-            g.DrawImage(hours, &RectF(0, 0, 8, 40), &m, 0, 0, Gdiplus::UnitPixel);
+            m.Translate(-w/2,-w/2);
+            g.DrawImage(hours, &RectF(0, 0, w, ricon.Width/2), &m, 0, 0, Gdiplus::UnitPixel);
 
             m.Reset();
-            m.Translate(r.X+10+128/2,r.Y+10+128/2);
+            m.Translate(ricon.X+ricon.Width/2,r.Y+ricon.Height/2);
             m.Rotate(((float)st.wMinute+(float)st.wSecond/60)/60*360+180);
-            m.Translate(-4,-4);
-            g.DrawImage(minutes, &RectF(0, 0, 8, 40), &m, 0, 0, Gdiplus::UnitPixel);
+            m.Translate(-w/2,-w/2);
+            g.DrawImage(minutes, &RectF(0, 0, w, ricon.Width/2), &m, 0, 0, Gdiplus::UnitPixel);
 
             m.Reset();
-            m.Translate(r.X+10+128/2,r.Y+10+128/2);
+            m.Translate(ricon.X+ricon.Width/2,ricon.Y+ricon.Height/2);
             m.Rotate((float)st.wSecond/60*360+180);
-            m.Translate(-2,-4);
-            g.DrawImage(seconds, &RectF(0, 0, 8, 40), &m, 0, 0, Gdiplus::UnitPixel);
+            m.Translate(-w/4,-w/2);
+            g.DrawImage(seconds, &RectF(0, 0, w, ricon.Width/2), &m, 0, 0, Gdiplus::UnitPixel);
         }
 
         StringFormat sfcenter;
-        sfcenter.SetAlignment(StringAlignmentCenter);    
+        sfcenter.SetAlignment(getStdAlignment(h));    
         sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
 
         Gdiplus::Font f(GetSettingsString(L"general",L"font",L"Arial"), 8.0f);
         //g.DrawString(sr->display, sr->display.GetLength(), &f, RectF(r.X, r.Y+r.Height-15, r.Width, 20), &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
-        drawEmphased(g, sr->display, m_pUI->getQuery(), RectF(r.X, r.Y+r.Height-20, r.Width, 20));
+        drawEmphased(g, sr->display, m_pUI->getQuery(), getStdTextPos(r,h,f.GetHeight(&g)),DE_UNDERLINE,getStdAlignment(h));
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
         return Gdiplus::Bitmap::FromFile(L"icons\\clock.png");
@@ -290,17 +296,25 @@ struct TextItemSource : Source {
     TextItemSource(const TCHAR *name) : Source(name) {
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return Gdiplus::Bitmap::FromFile(m_index[r->key].iconname);
+        return Gdiplus::Bitmap::FromFile(m_index[r->key].sr.iconname);
     }
     void addItem(const TCHAR *str,const TCHAR *iconname) {
-        m_index[str]=SourceResult(str,str,str, this, 0, 0, m_index[str].bonus);
-        m_index[str].iconname=iconname;
+        m_index[str].sr=SourceResult(str,str,str, this, 0, 0, m_index[str].sr.bonus);
+        m_index[str].sr.iconname=iconname;
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
         CString q(query); q.MakeUpper();
-        for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
-            if(FuzzyMatch(it->second.display,q)) {
-                results.push_back(it->second);
+        for(std::map<CString, Test>::iterator it=m_index.begin(); it!=m_index.end();it++) {
+            // (*m_pArgs)[g_pUI->GetCurPane()-1].display
+
+            if(FuzzyMatch(it->second.sr.display,q)) {
+                //CString path=(*m_pArgs)[0].source->getString((*m_pArgs)[0],L"lpath");
+
+                /*CAtlRegExp<> re;            
+                re.Parse(L"{[0-9]?[0-9]}:{[0-9][0-9]}");
+
+                if(path.Right(4)==L".lnk")*/
+                results.push_back(it->second.sr);
             }
         }
     } 
@@ -310,6 +324,10 @@ struct TextItemSource : Source {
         }
         return L"";
     }
+    struct Test {
+        SourceResult sr;
+    };
+    std::map<CString, Test> m_index;
 };
 
 struct WindowSource : Source {
@@ -437,6 +455,10 @@ struct SourceRule : Rule {
     UI *m_pUI;
 };
 
+bool FileExists(const CString &f) {
+    return GetFileAttributes(f)!=INVALID_FILE_ATTRIBUTES;
+}
+
 // SHGetImageList
 struct AlphaGUI : IWindowlessGUI, UI {
     AlphaGUI():m_input(this), m_invalidatepending(false) {
@@ -477,28 +499,60 @@ struct AlphaGUI : IWindowlessGUI, UI {
         Reset();
     }
     HANDLE m_workerthread;
-    void Init() {
-   
+    int GetCurPane() {
+        return m_pane;
+    }
+    struct Pane {
+        RectF   r;
+        CString background;
+        CRect   margin;
+    };
+    CString m_skin;
+    std::vector<Pane> m_panepositions;
+    void Init() {   
         settings.load_file("settings.xml");
         
-        CString skin=L"skins/"+GetSettingsString(L"general",L"skin",L"default");
-                // bitmaps
-        m_textbackground.Load(skin+L"/textbackground.png");
+        m_skin=L"skins/"+GetSettingsString(L"general",L"skin",L"default");               
+        
+        // bitmaps
+        m_textbackground.Load(m_skin+L"/textbackground.png");
         PremultAlpha(m_textbackground);
 
-        m_background.Load(skin+L"/background.png");
-        PremultAlpha(m_background);
+        //m_background.Load(m_skin+L"/background.png");
+        //PremultAlpha(m_background);
         
-        m_background3.Load(skin+L"/background3.png");
-        PremultAlpha(m_background3);
+        /*m_background3.Load(m_skin+L"/background3.png");
+        PremultAlpha(m_background3);*/
 
-        m_focus.Load(skin+L"/focus.png");
-        PremultAlpha(m_focus);
+        m_focus.Load(m_skin+L"/focus.png");
+        if(!m_focus.IsNull())
+            PremultAlpha(m_focus);
 
-        m_knob.Load(skin+L"/ui-radio-button.png");
+        m_knob.Load(m_skin+L"/ui-radio-button.png");
         PremultAlpha(m_knob);
 
-        premult.Create(m_background3.GetWidth(), m_background.GetHeight(), 32, CImage::createAlphaChannel);     
+        pugi::xml_document skindesc;
+        skindesc.load_file(m_skin+L"/skin.xml");
+
+        pugi::xpath_node_set panes=skindesc.select_nodes("skin/pane");
+        for(pugi::xpath_node_set::const_iterator it=panes.begin(); it!=panes.end(); it++) {
+            Pane p;
+            
+            p.r.X=atoi(it->node().attribute("x").value());
+            p.r.Y=atoi(it->node().attribute("y").value());
+            p.r.Width=atoi(it->node().attribute("width").value());
+            p.r.Height=atoi(it->node().attribute("height").value());
+            p.background=it->node().attribute("background").value();
+            p.margin.top=atoi(it->node().attribute("margintop").value());
+            p.margin.left=atoi(it->node().attribute("marginleft").value());
+            p.margin.right=atoi(it->node().attribute("marginright").value());
+            p.margin.bottom=atoi(it->node().attribute("marginbottom").value());
+
+            m_panepositions.push_back(p);
+        }
+
+        //premult.Create(m_background3.GetWidth(), m_background.GetHeight(), 32, CImage::createAlphaChannel);     
+        premult.Create(640, 400, 32, CImage::createAlphaChannel);     
 
         if(m_hwnd==0) {
             m_hwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", /*WS_VISIBLE|*/WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -620,6 +674,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
         if(WaitForSingleObject(m_workerthread,1000)==WAIT_TIMEOUT)
             TerminateThread(m_workerthread,0);
 
+        m_panepositions.clear();
         // bitmaps
         m_textbackground.Destroy();
         m_background.Destroy();
@@ -668,6 +723,8 @@ struct AlphaGUI : IWindowlessGUI, UI {
                     for(pugi::xpath_node_set::const_iterator itelt=elts.begin(); itelt!=elts.end(); itelt++) {
                         CString lbl=UTF8toUTF16(itelt->node().child_value("lbl"));
                         CString ico=UTF8toUTF16(itelt->node().child_value("ico"));
+                        //CString regex=UTF8toUTF16(itelt->node().child_value("regex"));
+                        //CString regexval=UTF8toUTF16(itelt->node().child_value("regexval"));
                         t->addItem(lbl.GetString(),ico.GetString());                        
                     }
                     r->m_types.push_back(Type(t->type));
@@ -967,35 +1024,68 @@ struct AlphaGUI : IWindowlessGUI, UI {
             m_input.Draw(hdc, RectF(27.0f,27.0f, REAL(m_curWidth-54.0f), m_textbackground.GetHeight()-54.0f), sf, m_args[m_pane].source->m_prefix );
         } else {
             StringFormat sfcenter;
-            sfcenter.SetAlignment(StringAlignmentCenter);    
+            sfcenter.SetAlignment(StringAlignmentCenter);
             sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
         
-            if(m_args.size()==3) {
+            // it could be easier to have different background for size
+            // and different focus bitmap for panes
+            CString str;
+            CString str1=m_skin+L"\\background_"+ItoS(m_args.size())+L"_"+ItoS(m_pane+1)+L".png";
+            CString str2=m_skin+L"\\background_"+ItoS(m_args.size())+L".png";
+            CString str3=m_skin+L"\\background.png";
+
+            if(FileExists(str1)) {
+                str=str1;
+            } else if(FileExists(str2)) {
+                str=str2;
+            } else if(FileExists(str3)) {
+                str=str3;
+            }
+
+            m_background.Destroy();
+            m_background.Load(str);
+            PremultAlpha(m_background);
+
+            m_background.AlphaBlend(hdc, 0, 0);
+
+            m_curWidth=m_background.GetWidth();
+
+            /*if(m_args.size()==3) {
                 m_background3.AlphaBlend(hdc, 0, 0);
                 m_curWidth=m_background3.GetWidth();
             } else {
                 m_background.AlphaBlend(hdc, 0, 0);
                 m_curWidth=m_background.GetWidth();
+            }*/
+
+            // draw icon on screen
+            if(!m_focus.IsNull()) {
+                for(int i=0;i<max(m_args.size(),2);i++){
+                    int ipos=min(i,m_panepositions.size());
+                    m_focus.AlphaBlend(hdc, m_panepositions[ipos].r.X, m_panepositions[ipos].r.Y);
+                }
+                int ipos=min(m_pane,m_panepositions.size());
+                m_focus.AlphaBlend(hdc, m_panepositions[ipos].r.X, m_panepositions[ipos].r.Y);
             }
 
-            // draw icon on screen        
-            m_focus.AlphaBlend(hdc, 22+157*0, 22);
-
-            m_focus.AlphaBlend(hdc, 22+157*1, 22);
-
-            m_knob.AlphaBlend(hdc, m_curWidth-20, 5);
-
-            if(m_args.size()==3)
-                m_focus.AlphaBlend(hdc, 22+157*2, 22);
-
-            m_focus.AlphaBlend(hdc, 22+157*m_pane, 22);
+            m_knob.AlphaBlend(hdc, m_curWidth-20, 5);            
 
             m_status.resize(m_args.size());
 
             for(uint i=0;i<m_args.size(); i++) {
                 m_status[i]="";
                 m_displayPane=i;
-                m_args[i].source->drawItem(g, &m_args[i], RectF(22+157*REAL(i), 22, 150, 154));            
+            
+                int ipos=min(i,m_panepositions.size());
+                RectF r(m_panepositions[ipos].r);
+                CRect margin=m_panepositions[ipos].margin;
+                r.X+=margin.left;
+                r.Y+=margin.top;
+                r.Width-=margin.left+margin.right;
+                r.Height-=margin.top+margin.bottom;
+
+                m_args[i].source->drawItem(g, &m_args[i], r);
+                //m_args[i].source->drawItem(g, &m_args[i], RectF(22+157*REAL(i), 22, 150, 154));            
             }        
 
             Gdiplus::Font f(GetSettingsString(L"general",L"font",L"Arial"), 8);
@@ -1042,7 +1132,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
         CRect rc;
         GetWindowRect(m_listhosthwnd,&rc);
         
-        int pos=157*m_pane+157/2-rc.Width()/2;
+        int pos=m_panepositions[m_pane].r.X+m_panepositions[m_pane].r.Width/2-rc.Width()/2;
         pos=max(0,pos);
         pos=min(m_curWidth-rc.Width(),pos);
         

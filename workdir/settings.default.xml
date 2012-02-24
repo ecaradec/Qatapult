@@ -2,7 +2,7 @@
 <settings>
 	<general>
 		<font>Arial</font>
-		<skin>default</skin>
+		<skin>inline</skin>
 	</general>
 	<gmailContacts>
 		<accessToken></accessToken>
@@ -27,7 +27,7 @@
 				</item>
 			</arg>
 			<cmd>explorer.exe</cmd>
-			<args>/e,/root,"$0.directory"</args>
+			<args>/e,/root,"$0.rdirectory"</args>
 		</rule>
 		<rule>
 			<arg>FILE</arg>
@@ -38,9 +38,9 @@
 				</item>
 			</arg>
 			<cmd>cmd.exe</cmd>
-			<workdir>$0.directory</workdir>
+			<workdir>$0.rdirectory</workdir>
 		</rule>
-    </rules>
+ </rules>
 	<searchFolders>
 		<folder></folder>
 	</searchFolders>
