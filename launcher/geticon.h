@@ -2,7 +2,7 @@
 #include <CommonControls.h>
 #include <Commctrl.h>
 
-int getNextHigherIconSize(int v) {    
+inline int getNextHigherIconSize(int v) {    
     if(v<=16)
         return 16;
     if(v<=24)

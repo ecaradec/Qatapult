@@ -167,12 +167,11 @@ struct StartMenuSource : Source {
                                             0,                            // data
                                             sqlite3_column_int(stmt,4))); // bonus
 
-            FileObject *fo=new FileObject;
-            fo->key=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));            
-            fo->values[L"text"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));
-            fo->values[L"expand"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,2));
-            fo->values[L"path"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,3));
-            results.back().object=fo;
+            results.back().object=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+                                                 this,
+                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
+                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
+                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,3)));
         }
 
         const char *errmsg=sqlite3_errmsg(db) ;
@@ -251,7 +250,7 @@ struct StartMenuSource : Source {
         WCHAR buff[4096];
         char *zErrMsg = 0;
         // FIXME : bonus should be nb_use to allow fixing various coefficient to it
-        wsprintf(buff, L"UPDATE startmenu SET bonus = MIN(bonus + 5,40) WHERE key=\"%s\"\n", r->key);        
+        wsprintf(buff, L"UPDATE startmenu SET bonus = MIN(bonus + 5,40) WHERE key=\"%s\"\n", r->object->key);        
         int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
     }

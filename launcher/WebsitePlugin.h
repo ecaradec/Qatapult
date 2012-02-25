@@ -2,12 +2,43 @@
 // those kind of sources could have a simplified load and save ?
 struct WebsiteSource : DBSource {
     WebsiteSource() : DBSource(L"WEBSITE",L"Websites (Catalog )", L"websites") {
+        m_icon=L"icons\\website.png";
         char *zErrMsg = 0;
         sqlite3_exec(db, "CREATE TABLE websites(key TEXT PRIMARY KEY ASC, display TEXT, href TEXT, searchHref TEXT, icon TEXT, bonus INTEGER)", 0, 0, &zErrMsg);        
         sqlite3_free(zErrMsg);
-        sqlite3_exec(db, "INSERT OR REPLACE INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Google', 'Google', 'http://google.com', 'https://www.google.com/#q=%q', 'google', coalesce((SELECT bonus FROM websites WHERE key=\"Google\"), 0));\n\
-                          INSERT OR REPLACE INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Amazon', 'Amazon', 'http://amazon.com', 'http://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=%q', 'amazon', coalesce((SELECT bonus FROM websites WHERE key=\"Amazon\"), 0));\n", 0, 0, &zErrMsg);
+        sqlite3_exec(db, "INSERT OR REPLACE INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Google', 'Google', 'http://google.com', 'https://www.google.com/#q=%q', 'icons\\google.png', coalesce((SELECT bonus FROM websites WHERE key=\"Google\"), 0));\n\
+                          INSERT OR REPLACE INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Amazon', 'Amazon', 'http://amazon.com', 'http://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=%q', 'icons\\amazon.png', coalesce((SELECT bonus FROM websites WHERE key=\"Amazon\"), 0));\n", 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
+    }
+    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+        CString q(query);
+        sqlite3_stmt *stmt=0;
+        const char *unused=0;
+        int rc;
+
+        rc = sqlite3_prepare_v2(db,"SELECT key, display, href, searchHref, icon FROM websites WHERE display LIKE ?;",-1, &stmt, &unused);
+        rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q), -1, SQLITE_STATIC);
+        int i=0;
+        while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
+            results.push_back(SourceResult(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),        // key
+                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),        // display
+                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),        // expand
+                                            this,                         // source
+                                            sqlite3_column_int(stmt,3),   // id
+                                            0,                            // data
+                                            sqlite3_column_int(stmt,4))); // bonus
+
+            Object *fo=new Object(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+                                  this,
+                                  UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
+            fo->values[L"href"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,2));
+            fo->values[L"searchHref"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,3));
+            fo->icon=UTF8toUTF16((char*)sqlite3_column_text(stmt,4));
+            results.back().object=fo;   
+        }
+
+        const char *errmsg=sqlite3_errmsg(db) ;
+        sqlite3_finalize(stmt);
     }
 };
 

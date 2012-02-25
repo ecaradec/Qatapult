@@ -11,7 +11,7 @@
 // [X] deplacer mon blog sur emmanuelcaradec
 
 #ifdef DEBUG
-//#include "vld.h"
+#include "vld.h"
 #endif
 
 #include "resource.h"
@@ -23,10 +23,19 @@
 #include "CriticalSection.h"
 #include "pugixml.hpp"
 
+
+CString fuzzyfyArg(const CString &arg) {
+    CString tmp=L"%";
+    for(int i=0;i<arg.GetLength();i++) {
+        tmp+=CString(arg[i])+L"%";
+    }
+    return tmp;
+}
+
 #include "simpleini.h"
 #include "geticon.h"
-#include "SourceResult.h"
 #include "ShellLink.h"
+#include "SourceResult.h"
 #include "FileObject.h"
 
 #include "Source.h"
@@ -49,6 +58,11 @@
 #include "WebsitePlugin.h"
 #include "QuitPlugin.h"
 #include "LevhensteinDistance.h"
+
+UI *g_pUI; // very lazy way to give access to the ui to the ui window proc
+CString settingsini;
+pugi::xml_document settings;
+pugi::xml_document settingsWT; // settings for the working thread
 
 WNDPROC OldHotKeyEditProc;
 int hotkeymodifiers=0;
@@ -146,6 +160,8 @@ int DelayLoadExceptionFilter(unsigned int code, struct _EXCEPTION_POINTERS *ep) 
 }
 struct ClockSource : Source {
     ClockSource() : Source(L"CLOCK",L"Clock (Catalog )") {
+        m_icon=L"icons\\clock.png";
+
         m_ignoreemptyquery=true;
         m_index[L"Clock"]=SourceResult(L"Clock", L"Clock", L"Clock", this, 0, 0, 0);
         m_refreshPeriod=1000;
@@ -199,12 +215,6 @@ struct ClockSource : Source {
         Gdiplus::Font f(GetSettingsString(L"general",L"font",L"Arial"), 8.0f);
         //g.DrawString(sr->display, sr->display.GetLength(), &f, RectF(r.X, r.Y+r.Height-15, r.Width, 20), &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
         drawEmphased(g, sr->display, m_pUI->getQuery(), getStdTextPos(r,h,f.GetHeight(&g)),DE_UNDERLINE,getStdAlignment(h));
-    }
-    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return Gdiplus::Bitmap::FromFile(L"icons\\clock.png");
-    }
-    CString getString(SourceResult &sr,const TCHAR *val) {
-        return L"";
     }
 
     bool    m_hasGdipDrawImageFX;
@@ -299,38 +309,32 @@ struct TextItemSource : Source {
     TextItemSource(const TCHAR *name) : Source(name) {
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return Gdiplus::Bitmap::FromFile(m_index[r->key].sr.iconname);
+        if(!r->object)
+            return 0;
+        return Gdiplus::Bitmap::FromFile(m_index[r->object->key].iconname);
     }
     void addItem(const TCHAR *str,const TCHAR *iconname) {
-        m_index[str].sr=SourceResult(str,str,str, this, 0, 0, m_index[str].sr.bonus);
-        m_index[str].sr.iconname=iconname;
+        m_index[str]=SourceResult(str,str,str, this, 0, 0, m_index[str].bonus);
+        m_index[str].iconname=iconname;
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
         CString q(query); q.MakeUpper();
-        for(std::map<CString, Test>::iterator it=m_index.begin(); it!=m_index.end();it++) {
+        for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
             // (*m_pArgs)[g_pUI->GetCurPane()-1].display
-
-            if(FuzzyMatch(it->second.sr.display,q)) {
+            if(FuzzyMatch(it->second.display,q)) {
                 //CString path=(*m_pArgs)[0].source->getString((*m_pArgs)[0],L"lpath");
-
                 /*CAtlRegExp<> re;            
                 re.Parse(L"{[0-9]?[0-9]}:{[0-9][0-9]}");
-
                 if(path.Right(4)==L".lnk")*/
-                results.push_back(it->second.sr);
+
+                results.push_back(it->second);
+                Object *o=new Object(it->second.expand, this, it->second.expand);
+                o->icon=it->second.iconname;
+                results.back().object=o;
             }
         }
-    } 
-    CString getString(SourceResult &sr,const TCHAR *val_) {
-        if(CString(val_)==L"text") {
-            return sr.display;
-        }
-        return L"";
     }
-    struct Test {
-        SourceResult sr;
-    };
-    std::map<CString, Test> m_index;
+    std::map<CString, SourceResult> m_index;
 };
 
 struct WindowSource : Source {
@@ -350,16 +354,12 @@ struct WindowSource : Source {
             GetWindowText(*it,title,sizeof(title));
             if(FuzzyMatch(title,q)) {
                 results.push_back(SourceResult(title,title,title,this,0,*it,0));
+                Object *o=new Object(ItoS((int)*it),this,title);
+                o->values[L"title"]=title;
+                o->values[L"hwnd"]=ItoS((int)*it);
+                results.back().object=o;
             }
         }
-    } 
-    CString getString(SourceResult &sr,const TCHAR *val_) {
-        if(CString(val_)==L"title") {
-            return sr.display;
-        } else if(CString(val_)==L"hwnd") {
-            return ItoS((int)sr.data);
-        }
-        return L"";
     }
     static BOOL __stdcall CollectWindows(HWND hwnd, LPARAM lparam) {
         std::vector<HWND> *hwndlist=(std::vector<HWND>*)lparam;
@@ -434,6 +434,7 @@ struct SourceOfSources : Source {
                     r.source=this;
                     r.data=it->second[i];
                     results.push_back(r);
+                    results.back().object=new Object(it->first,this,it->second[i]->m_name);
                 }
             }        
         }
@@ -466,7 +467,7 @@ bool FileExists(const CString &f) {
 struct AlphaGUI : IWindowlessGUI, UI {
     AlphaGUI():m_input(this), m_invalidatepending(false) {
 #ifdef DEBUG
-        //VLDMarkAllLeaksAsReported();
+        VLDMarkAllLeaksAsReported();
 #endif        
         m_hwnd=0;
 
@@ -628,7 +629,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
 
         t=new TextItemSource(L"EMPTY");
         m_sources[t->type].push_back(t);
-        m_nullresult.source=t;         
+        m_nullresult.source=t;
 
         // hotkey
         hotkeycode=GetSettingsInt(L"hotKeys", L"toggleKey",VK_SPACE);
@@ -1087,7 +1088,8 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 r.Width-=margin.left+margin.right;
                 r.Height-=margin.top+margin.bottom;
 
-                m_args[i].source->drawItem(g, &m_args[i], r);
+                if(m_args[i].object)
+                    m_args[i].object->drawItem(g, &m_args[i], r);
                 //m_args[i].source->drawItem(g, &m_args[i], RectF(22+157*REAL(i), 22, 150, 154));            
             }        
 
@@ -1338,7 +1340,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 if(s!=0) {
                     SetCurrentSource(m_pane,s,q);
                 } else {
-                    m_input.SetText(r->expand);
+                    m_input.SetText(r->object->getString(L"expand"));
                 }
             }
             return FALSE;

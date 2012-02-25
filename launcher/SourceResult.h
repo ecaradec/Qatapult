@@ -1,16 +1,12 @@
+#pragma once
+
 struct Source;
-struct SourceResult;
-struct Object {
-    virtual ~Object() = 0 {};
-    virtual Object *clone() = 0;
-    virtual Gdiplus::Bitmap *getIcon(long flags) = 0;
-    virtual CString getString(const TCHAR *val) = 0;
-};
+struct Object;
 
 struct SourceResult {
     SourceResult() { object=0; rank=0; bonus=0; icon=0; smallicon=0; source=0; data=0; dirty=false; }
     SourceResult(const CString &_key, const CString &_display, const CString &_expand, Source *_s, int _id, void *_data, int _bonus) { 
-        key=_key;
+        //key=_key;
         object=0; 
         rank=0;
         bonus=_bonus;
@@ -30,7 +26,7 @@ struct SourceResult {
     // must save
     Source  *source;
     Object  *object;
-    CString  key;    
+    //CString  key;    
     CString  display;        
     CString  expand;
     int      bonus;

@@ -20,19 +20,17 @@ struct FileVerbSource : Source {
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
             if(FuzzyMatch(it->second.display,q)) {
                 results.push_back(it->second);
+                results.back().object=new Object(it->first,this,it->second.display);
             }
         }
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        Gdiplus::Bitmap *bmp=Gdiplus::Bitmap::FromFile(L"icons\\"+r->key+L".png");
+        Gdiplus::Bitmap *bmp=Gdiplus::Bitmap::FromFile(L"icons\\"+r->object->key+L".png");
         if(bmp->GetLastStatus()!=Gdiplus::Ok) {
             delete bmp;
             bmp=Gdiplus::Bitmap::FromFile(L"icons\\defaultverb.png");
         }
         return bmp;
-    }
-    CString getString(SourceResult &sr,const TCHAR *val_) {
-        return sr.key;
     }
     struct Extra {
         CString command;

@@ -12,15 +12,15 @@ struct FileVerbRule : Rule {
         CString d=fp.Left(fp.ReverseFind(L'\\'));
         CString f=fp.Mid(fp.ReverseFind(L'\\')+1);
         
-        if((*m_pArgs)[1].key == L"Open") {
+        if((*m_pArgs)[1].object->key == L"Open") {
             ShellExecute(0, 0, path, 0, 0, SW_SHOWDEFAULT); // null is better than open (otherwise it won't work on items that don't have the open verb )
-        } else if((*m_pArgs)[1].key == L"Edit") {
+        } else if((*m_pArgs)[1].object->key == L"Edit") {
             ShellExecute(0, L"edit", path, 0, 0, SW_SHOWDEFAULT);
-        } else if((*m_pArgs)[1].key == L"RunAs") {
+        } else if((*m_pArgs)[1].object->key == L"RunAs") {
             ShellExecute(0, L"runas", path, 0, 0, SW_SHOWDEFAULT);
-        } else if((*m_pArgs)[1].key == L"Properties") {
+        } else if((*m_pArgs)[1].object->key == L"Properties") {
             ShellExecute(0, L"properties", path, 0, 0, SW_SHOWDEFAULT);
-        } else if((*m_pArgs)[1].key == L"Delete") {
+        } else if((*m_pArgs)[1].object->key == L"Delete") {
             SHFILEOPSTRUCT sffo={0};
             int l=path.GetLength();
             TCHAR *str=path.GetBufferSetLength(l+1);

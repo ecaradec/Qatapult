@@ -143,6 +143,7 @@
     <ClInclude Include="IWindowlessGUI.h" />
     <ClInclude Include="LevhensteinDistance.h" />
     <ClInclude Include="NetworkSource.h" />
+    <ClInclude Include="Object.h" />
     <ClInclude Include="premultAlpha.h" />
     <ClInclude Include="pugiconfig.hpp" />
     <ClInclude Include="pugixml.hpp" />
@@ -173,10 +174,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Object.cpp" />
     <ClCompile Include="pugixml.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Source.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

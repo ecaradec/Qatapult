@@ -1,5 +1,5 @@
 #pragma once
-CString getShortcutPath(const CString &lnk) {
+inline CString getShortcutPath(const CString &lnk) {
 
     HRESULT hres;
     CComPtr<IShellLink> pSL;

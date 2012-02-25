@@ -42,6 +42,21 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return FALSE;
 }
 
+struct ContactObject : Object {
+    ContactObject(const CString &k, Source *s, const CString &text, const CString &email):Object(k,s,text) {
+        values[L"expand"]=text;
+        values[L"email"]=email;
+    }
+    ContactObject *clone() {
+        return new ContactObject(*this);
+    }
+    Gdiplus::Bitmap *getIcon(long flags) {
+        if(GetFileAttributes("photos\\"+key+".jpg")!=INVALID_FILE_ATTRIBUTES)
+            return Gdiplus::Bitmap::FromFile(L"photos\\"+key+".jpg");
+        return Gdiplus::Bitmap::FromFile(L"icons\\contact.png");
+    }
+};
+
 // those kind of sources could have a simplified load and save ?
 struct ContactSource : DBSource {    
     ContactSource() : DBSource(L"CONTACT",L"Contacts (Catalog )", L"contacts") {
@@ -158,9 +173,11 @@ struct ContactSource : DBSource {
         RectF rtext2=getStdSubTitlePos(r,h,f2.GetHeight(&g));
 
         StringFormat sfcenter;
-        sfcenter.SetAlignment(getStdAlignment(h));
+        sfcenter.SetAlignment(StringAlignmentNear);
         sfcenter.SetFormatFlags(StringFormatFlagsNoWrap);        
         sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
+
+        ricon.Y+=10;
 
         if(sr->icon)
             g.DrawImage(sr->icon, ricon);
@@ -173,9 +190,34 @@ struct ContactSource : DBSource {
             g.DrawString(email, email.GetLength(), &f2, rtext2, &sfcenter, &SolidBrush(Color(0x88FFFFFF)));
         }
     }
+    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+        CString q(query);
+        sqlite3_stmt *stmt=0;
+        const char *unused=0;
+        int rc;
+
+        rc = sqlite3_prepare_v2(db,"SELECT key, display, email, bonus FROM contacts WHERE display LIKE ?;",-1, &stmt, &unused);
+        rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q), -1, SQLITE_STATIC);
+        int i=0;
+        while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
+            results.push_back(SourceResult(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),        // key
+                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),        // display
+                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),        // expand
+                                            this,                         // source
+                                            sqlite3_column_int(stmt,3),   // id
+                                            0,                            // data
+                                            sqlite3_column_int(stmt,4))); // bonus
+
+            results.back().object=new ContactObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+                                                    this,
+                                                    UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
+                                                    UTF8toUTF16((char*)sqlite3_column_text(stmt,2)));
+        }
+
+        const char *errmsg=sqlite3_errmsg(db) ;
+        sqlite3_finalize(stmt);         
+    }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        if(GetFileAttributes("photos\\"+r->key+".jpg")!=INVALID_FILE_ATTRIBUTES)
-            return Gdiplus::Bitmap::FromFile(L"photos\\"+r->key+".jpg");
-        return Gdiplus::Bitmap::FromFile(L"icons\\contact.png");
+        return r->object->getIcon(flags);
     }
 };

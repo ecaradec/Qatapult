@@ -139,19 +139,13 @@ struct FileSource : Source {
         // if we are matching exactly a directory without a ending slash add it
         if((q.Right(1)==L":" || q.Right(2)==L":\\") && q.GetLength()<=3) {
             SourceResult r;
-            r.key=d+L"\\";
             r.display=d;
             r.expand=d+L"\\";
             r.source=this;
             r.bonus=100;
             results.push_back(r);
 
-            FileObject *fo=new FileObject;
-            fo->key=d+L"\\"; 
-            fo->values[L"text"]=d;
-            fo->values[L"expand"]=d+L"\\";
-            fo->values[L"path"]=d+L"\\";
-            results.back().object=fo;
+            results.back().object=new FileObject(d+L"\\",this,d,d+L"\\",d+L"\\");
         }
 
         HANDLE h;
@@ -166,20 +160,14 @@ struct FileSource : Source {
                 CString foldername=noslash.Mid(noslash.ReverseFind(L'\\')+1);
 
                 if(FuzzyMatch(foldername,f)!=-1 && f==L"") {
-                    SourceResult r;
-                    r.key=noslash+L"\\";
+                    SourceResult r;                    
                     r.display=foldername;
                     r.expand=noslash+L"\\";
                     r.source=this;
                     r.bonus=1000;
                     results.push_back(r);
 
-                    FileObject *fo=new FileObject;
-                    fo->key=noslash+L"\\";
-                    fo->values[L"text"]=foldername;
-                    fo->values[L"expand"]=noslash+L"\\";
-                    fo->values[L"path"]=noslash+L"\\";
-                    results.back().object=fo;
+                    results.back().object=new FileObject(noslash+L"\\",this,foldername,noslash+L"\\",noslash+L"\\");
                 }
             } else if(CString(w32fd.cFileName)==L"..") {
             } else {
@@ -191,19 +179,13 @@ struct FileSource : Source {
 
                 if(FuzzyMatch(w32fd.cFileName,f)) {
                     SourceResult r;
-                    r.key=expand;
                     r.display=w32fd.cFileName;
                     r.expand=expand;
                     r.source=this;
                     r.rank=10;
                     results.push_back(r);
 
-                    FileObject *fo=new FileObject;
-                    fo->key=expand;
-                    fo->values[L"text"]=w32fd.cFileName;
-                    fo->values[L"expand"]=expand;
-                    fo->values[L"path"]=expand;
-                    results.back().object=fo;
+                    results.back().object=new FileObject(expand,this,w32fd.cFileName,expand,expand);
                 }
             }
             b=!!FindNextFile(h, &w32fd);
@@ -324,12 +306,11 @@ struct FileHistorySource : Source {
                                                0,                            // data
                                                sqlite3_column_int(stmt,4))); // bonus
 
-                FileObject *fo=new FileObject;
-                fo->key=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));            
-                fo->values[L"text"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));
-                fo->values[L"expand"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,2));
-                fo->values[L"path"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,3));
-                results.back().object=fo;
+                results.back().object=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+                                                     this,
+                                                     UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
+                                                     UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
+                                                     UTF8toUTF16((char*)sqlite3_column_text(stmt,3)));
             }
 
             const char *errmsg=sqlite3_errmsg(db) ;
@@ -337,30 +318,6 @@ struct FileHistorySource : Source {
 
             return;
         }
-    }
-    virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
-        Gdiplus::Font fn(GetSettingsString(L"general",L"font",L"Arial"),8.0f);
-        float textheight=fn.GetHeight(&g);
-        bool h=(float(r.Width)/r.Height)>2;
-
-        StringAlignment alignment=getStdAlignment(h);
-        RectF ricon=getStdIconPos(r,h);
-        RectF rtext=getStdTextPos(r,h,textheight);
-
-        if(sr->icon)
-            g.DrawImage(sr->icon, ricon);
-
-        StringFormat sfcenter;
-        sfcenter.SetAlignment(StringAlignmentCenter);    
-        sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
-
-        CString q(m_pUI->getQuery());
-        CString d=q.Left(q.ReverseFind(L'\\'));
-        CString f=q.Mid(q.ReverseFind(L'\\')+1);
-
-        drawEmphased(g, sr->display, f, rtext);
-
-        m_pUI->setStatus(getString(*sr,L"path"));
     }
     void crawl() {
         // should scan the history and remove non available items

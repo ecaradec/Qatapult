@@ -110,7 +110,6 @@ CString getExplorerSelection(HWND hwndFind)
     return currentSelection;
 }
 
-
 struct CurrentSelectionSource : Source {
     CurrentSelectionSource() : Source(L"FILE", L"Current selection (Catalog )") {
         m_ignoreemptyquery=true;
@@ -118,17 +117,17 @@ struct CurrentSelectionSource : Source {
     }
     ~CurrentSelectionSource() {
     }
-    /*virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
-        return Source::collect(query,results,def);
-    }*/
-    CString getString(SourceResult &sr,const TCHAR *val) {
-        if(CString(val)==L"path") {
-            return getExplorerSelection(g_foregroundWnd);
+    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+        CString q(query); q.MakeUpper();
+        for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
+            if(FuzzyMatch(it->second.display,q)) {
+                results.push_back(it->second);               
+                results.back().object=new FileObject(it->second.display,
+                                                     this,
+                                                     it->second.display,
+                                                     it->second.display,
+                                                     getExplorerSelection(g_foregroundWnd));
+            }
         }
-        return L"";
-    }
-    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        CString path=r->source->getString(*r,L"path");
-        return ::getIcon(path,flags);
     }
 };

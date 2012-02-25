@@ -1,14 +1,16 @@
+#pragma once
+#include "utf8.h"
+    
 inline CString ItoS(int i) {
     CString tmp; tmp.Format(L"%d",i);
     return tmp;
 }
 
-CString settingsini;
+extern CString settingsini;
+extern pugi::xml_document settings;
+extern pugi::xml_document settingsWT; // settings for the working thread
 
-pugi::xml_document settings;
-pugi::xml_document settingsWT; // settings for the working thread
-
-CStringA GetSettingsStringA(const CHAR *key, const CHAR *value, const CHAR *defval="") {
+inline CStringA GetSettingsStringA(const CHAR *key, const CHAR *value, const CHAR *defval="") {
     CStringA q; q.Format("settings/%s/%s",key,value);
     CStringA tmp=settings.select_single_node(q).node().child_value();
     if(tmp.GetLength()==0)
@@ -16,7 +18,7 @@ CStringA GetSettingsStringA(const CHAR *key, const CHAR *value, const CHAR *defv
     return tmp;
 }
 
-CString GetSettingsString(const TCHAR *key, const TCHAR *value, const TCHAR *defval=_T("")) {
+inline CString GetSettingsString(const TCHAR *key, const TCHAR *value, const TCHAR *defval=_T("")) {
     CString q; q.Format(L"/settings/%s/%s",key,value);
     CStringA tmp=settings.select_single_node(UTF16toUTF8(q)).node().child_value();
     if(tmp.GetLength()==0)
@@ -24,7 +26,7 @@ CString GetSettingsString(const TCHAR *key, const TCHAR *value, const TCHAR *def
     return UTF8toUTF16(tmp);
 }
 
-void SetSettingsStringA(const CHAR *key, const CHAR *value, const CHAR *v) {
+inline void SetSettingsStringA(const CHAR *key, const CHAR *value, const CHAR *v) {
     CStringA q; q.Format("settings/%s/%s",key,value);
     pugi::xml_node node=settings.select_single_node(q).node();
     pugi::xml_node firstchild = node.first_child();    
@@ -35,7 +37,7 @@ void SetSettingsStringA(const CHAR *key, const CHAR *value, const CHAR *v) {
     settings.save_file("settings.xml");
 }
 
-void SetSettingsString(const TCHAR *key, const TCHAR *value, const TCHAR *v) {
+inline void SetSettingsString(const TCHAR *key, const TCHAR *value, const TCHAR *v) {
     CString q; q.Format(L"settings/%s/%s",key,value);
     pugi::xml_node node=settings.select_single_node(UTF16toUTF8(q)).node();
     pugi::xml_node firstchild = node.first_child();
@@ -46,13 +48,13 @@ void SetSettingsString(const TCHAR *key, const TCHAR *value, const TCHAR *v) {
     settings.save_file("settings.xml");
 }
 
-int GetSettingsInt(const TCHAR *key, const TCHAR *value, int defval) {
+inline int GetSettingsInt(const TCHAR *key, const TCHAR *value, int defval) {
     CString tmp=GetSettingsString(key,value);
     if(tmp.GetLength()!=0)
         return _ttoi(tmp);
     return defval;
 }
 
-void SetSettingsInt(const TCHAR *key, const TCHAR *value, int v) {
+inline void SetSettingsInt(const TCHAR *key, const TCHAR *value, int v) {
     SetSettingsString(key,value,ItoS(v));
 }

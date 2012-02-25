@@ -1,15 +1,8 @@
 BOOL WINAPI EnumerateFunc(LPNETRESOURCE lpnr, std::vector<CString> &lnks);
 
-CString fuzzyfyArg(const CString &arg) {
-    CString tmp=L"%";
-    for(int i=0;i<arg.GetLength();i++) {
-        tmp+=CString(arg[i])+L"%";
-    }
-    return tmp;
-}
-
 struct NetworkSource : Source {
     NetworkSource() : Source(L"FILE",L"Network (Catalog )") {
+        m_icon=L"icons\\networklocal.png";
         m_ignoreemptyquery=true;
         int rc = sqlite3_open("databases\\network.db", &db);
         
@@ -40,13 +33,11 @@ struct NetworkSource : Source {
                                             0,                            // data
                                             sqlite3_column_int(stmt,4))); // bonus
             
-            FileObject *fo=new FileObject;
-            fo->key=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));
-            fo->icon=L"icons\\networklocal.png";
-            fo->values[L"text"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));
-            fo->values[L"expand"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,2));
-            fo->values[L"path"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,3));            
-            results.back().object=fo;
+            results.back().object=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+                                                    this,
+                                                    UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
+                                                    UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
+                                                    UTF8toUTF16((char*)sqlite3_column_text(stmt,3)));
         }
 
         const char *errmsg=sqlite3_errmsg(db) ;
