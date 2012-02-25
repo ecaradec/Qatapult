@@ -8,14 +8,6 @@ inline CString GetSpecialFolder(int csidl) {
     return tmp;
 }
 
-CString fuzzyfyArg(const CString &arg) {
-    CString tmp=L"%";
-    for(int i=0;i<arg.GetLength();i++) {
-        tmp+=CString(arg[i])+L"%";
-    }
-    return tmp;
-}
-
 int SaveSearchFolders(HWND hListView) {
     WCHAR curDir[MAX_PATH];
     GetCurrentDirectory(MAX_PATH, curDir);

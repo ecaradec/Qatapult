@@ -1,5 +1,13 @@
 BOOL WINAPI EnumerateFunc(LPNETRESOURCE lpnr, std::vector<CString> &lnks);
 
+CString fuzzyfyArg(const CString &arg) {
+    CString tmp=L"%";
+    for(int i=0;i<arg.GetLength();i++) {
+        tmp+=CString(arg[i])+L"%";
+    }
+    return tmp;
+}
+
 struct NetworkSource : Source {
     NetworkSource() : Source(L"FILE",L"Network (Catalog )") {
         m_ignoreemptyquery=true;
@@ -27,7 +35,7 @@ struct NetworkSource : Source {
         info.source=this;
         char *zErrMsg = 0;
         WCHAR buff[4096];
-        wsprintf(buff, L"SELECT key, display, expand, 0, bonus FROM files WHERE display LIKE \"%%%s%%\";", q);        
+        wsprintf(buff, L"SELECT key, display, expand, 0, bonus FROM files WHERE display LIKE \"%%%s%%\";", sqlEscapeStringW(fuzzyfyArg(q)));
 
         sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
         sqlite3_free(zErrMsg);
@@ -82,7 +90,7 @@ struct NetworkSource : Source {
         int rc;
 
         char buff[4096];
-        sprintf(buff, "SELECT %s FROM files WHERE key = ?;\n", CStringA(val));
+        sprintf(buff, "SELECT %s FROM files WHERE key = ?;\n", sqlEscapeString(val));
         rc = sqlite3_prepare_v2(db, buff, -1, &stmt, &unused);
         rc = sqlite3_bind_text16(stmt, 1, key, -1, SQLITE_STATIC);            
         rc=sqlite3_step(stmt);
