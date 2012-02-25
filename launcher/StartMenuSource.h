@@ -151,22 +151,32 @@ struct StartMenuSource : Source {
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
         // could probably be done in subclass as well as the callback since sourceresult will not change 
         CString q(query);
-        q.Replace(L"_",L"\\_");
-        q.Replace(L"%",L"\\%");
-        q.Replace(L"'",L"\\'");
-        q.Replace(L"\"",L"\\\"");
-        Info info;
-        info.results=&results;
-        info.source=this;
-        char *zErrMsg = 0;
-        WCHAR buff[4096];
-        if(uselev)
-            wsprintf(buff, L"SELECT key, display, expand, 0, 0 FROM startmenu;", q);
-        else
-            wsprintf(buff, L"SELECT key, display, expand, 0, bonus FROM startmenu WHERE display LIKE \"%s\";", fuzzyfyArg(q));
-        
-        sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
-        sqlite3_free(zErrMsg);
+        sqlite3_stmt *stmt=0;
+        const char *unused=0;
+        int rc;
+
+        rc = sqlite3_prepare_v2(db,"SELECT key, display, expand, path, 0, bonus FROM startmenu WHERE display LIKE ?;",-1, &stmt, &unused);
+        rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q), -1, SQLITE_STATIC);
+        int i=0;
+        while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
+            results.push_back(SourceResult(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),        // key
+                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),        // display
+                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),        // expand
+                                            this,                         // source
+                                            sqlite3_column_int(stmt,3),   // id
+                                            0,                            // data
+                                            sqlite3_column_int(stmt,4))); // bonus
+
+            FileObject *fo=new FileObject;
+            fo->key=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));            
+            fo->values[L"text"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));
+            fo->values[L"expand"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,2));
+            fo->values[L"path"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,3));
+            results.back().object=fo;
+        }
+
+        const char *errmsg=sqlite3_errmsg(db) ;
+        sqlite3_finalize(stmt);
     }
     void crawl() {
         std::vector<CString> lnks;
@@ -224,10 +234,6 @@ struct StartMenuSource : Source {
             rc = sqlite3_step(stmt);
             const char *errmsg=sqlite3_errmsg(db);
             sqlite3_finalize(stmt);
-
-            //CString progress;
-            //progress.Format(L"%d/%d\n", i, lnks.size());
-            //OutputDebugString(progress);
         }
 
         rc = sqlite3_exec(db, "END;", 0, 0, &zErrMsg);
@@ -252,42 +258,11 @@ struct StartMenuSource : Source {
 
     // getvalue name, buff, bufflen
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return ::getIcon(getString(*r,L"path"),flags);
+        return r->object->getIcon(flags);
     }
     // itemkey/name : itemkey/verb/open/icon < get subresults ???
     virtual CString getString(SourceResult &sr,const TCHAR *val_) {
-        CString str;
-
-        CString val(val_);
-        
-        if(val==L"rdirectory") {
-            CString fp(getString(sr,L"rpath"));
-            str=fp.Left(fp.ReverseFind(L'\\'));
-        } else if(val==L"directory") {
-            CString fp(getString(sr,L"path"));
-            str=fp.Left(fp.ReverseFind(L'\\'));
-        } else if(val==L"rfilename") {
-            CString fp(getString(sr,L"rpath"));
-            str=fp.Mid(fp.ReverseFind(L'\\')+1);
-        } else if(val==L"filename") {
-            CString fp(getString(sr,L"path"));
-            str=fp.Mid(fp.ReverseFind(L'\\')+1);
-        } else {
-            CString v(val);
-            // when you want to get the linked path use lpath
-            if(v==L"rpath") {
-                v=L"path";
-            }
-            WCHAR buff[4096];
-            char *zErrMsg = 0;
-            wsprintf(buff, L"SELECT %s FROM startmenu WHERE key = \"%s\";", v, sr.key);
-            sqlite3_exec(db, CStringA(buff), getStringCB, &str, &zErrMsg);
-            sqlite3_free(zErrMsg);
-        }
-        if(val==L"rpath" && str.Right(4)==L".lnk") {
-            return getShortcutPath(str);
-        }
-        return str; 
+        return sr.object->getString(val_);
     }
     virtual int getInt(const TCHAR *itemquery) {
         return false; 
@@ -298,41 +273,41 @@ struct StartMenuSource : Source {
 
 
 
-        // dumb code to scan the control panel, leaks included
-        // ugly but works
-        // I have an issue considering how to store various kinds of data for reusing later
-        // here for icons it's ok if I store a itemidlist but how to persist it ??? and such others
-        // issues
-        // saving, loading, deleting, getting icons has to pass through the source. Should I get
-        // args from the source as well ???? its possible via a getarg(id, value*) ???
-        // where value is anything
-        /*CComPtr<IShellFolder> pSF;
-        SHGetDesktopFolder(&pSF);
-        ULONG eaten=0;
-        LPITEMIDLIST pidl=0;
-        DWORD attr=0;
-        pSF->ParseDisplayName(0, 0, L"::{26EE0668-A00A-44D7-9371-BEB064C98683}", &eaten, &pidl, &attr);
-        CComPtr<IShellFolder> pCPSF;
-        //pSF->GetUIObjectOf(0, 1, (LPCITEMIDLIST*)&pidl, IID_IShellFolder, 0, (void**)&pCPSF);
-        pSF->BindToObject(pidl, 0, IID_IShellFolder, (void**)&pCPSF);
+// dumb code to scan the control panel, leaks included
+// ugly but works
+// I have an issue considering how to store various kinds of data for reusing later
+// here for icons it's ok if I store a itemidlist but how to persist it ??? and such others
+// issues
+// saving, loading, deleting, getting icons has to pass through the source. Should I get
+// args from the source as well ???? its possible via a getarg(id, value*) ???
+// where value is anything
+/*CComPtr<IShellFolder> pSF;
+SHGetDesktopFolder(&pSF);
+ULONG eaten=0;
+LPITEMIDLIST pidl=0;
+DWORD attr=0;
+pSF->ParseDisplayName(0, 0, L"::{26EE0668-A00A-44D7-9371-BEB064C98683}", &eaten, &pidl, &attr);
+CComPtr<IShellFolder> pCPSF;
+//pSF->GetUIObjectOf(0, 1, (LPCITEMIDLIST*)&pidl, IID_IShellFolder, 0, (void**)&pCPSF);
+pSF->BindToObject(pidl, 0, IID_IShellFolder, (void**)&pCPSF);
 
-        CComPtr<IEnumIDList> pEIDL;
-        pCPSF->EnumObjects(0, SHCONTF_FOLDERS|SHCONTF_NONFOLDERS, &pEIDL);
+CComPtr<IEnumIDList> pEIDL;
+pCPSF->EnumObjects(0, SHCONTF_FOLDERS|SHCONTF_NONFOLDERS, &pEIDL);
 
-        LPITEMIDLIST pidl2;
-        ULONG fetched=0;
-        STRRET name;
-        while(pEIDL->Next(1, &pidl2, &fetched)==S_OK) {         
-            // TODO leak
-            // TODO make absolute pidl 
-            pCPSF->GetDisplayNameOf(pidl2, SHGDN_NORMAL, &name);
+LPITEMIDLIST pidl2;
+ULONG fetched=0;
+STRRET name;
+while(pEIDL->Next(1, &pidl2, &fetched)==S_OK) {         
+    // TODO leak
+    // TODO make absolute pidl 
+    pCPSF->GetDisplayNameOf(pidl2, SHGDN_NORMAL, &name);
             
-            CComPtr<IPersistFolder2> pSF2;
-            pCPSF->BindToObject(pidl2, 0, IID_IPersistFolder2, (void**)&pSF2);
+    CComPtr<IPersistFolder2> pSF2;
+    pCPSF->BindToObject(pidl2, 0, IID_IPersistFolder2, (void**)&pSF2);
             
-            LPITEMIDLIST pidlCF=0;
-            pSF2->GetCurFolder(&pidlCF);
+    LPITEMIDLIST pidlCF=0;
+    pSF2->GetCurFolder(&pidlCF);
 
-            m_results.push_back(SourceResult(CStringW(name.pOleStr), L"", this, 0, 0));
-            m_results.back().icon=::getIcon(pidlCF);
-        }*/
+    m_results.push_back(SourceResult(CStringW(name.pOleStr), L"", this, 0, 0));
+    m_results.back().icon=::getIcon(pidlCF);
+}*/

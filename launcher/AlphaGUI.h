@@ -26,6 +26,9 @@
 #include "simpleini.h"
 #include "geticon.h"
 #include "SourceResult.h"
+#include "ShellLink.h"
+#include "FileObject.h"
+
 #include "Source.h"
 #include "DBSource.h"
 #include "Rule.h"

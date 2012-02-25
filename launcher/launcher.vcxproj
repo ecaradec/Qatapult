@@ -131,6 +131,7 @@
     <ClInclude Include="EmailFileVerbRule.h" />
     <ClInclude Include="EmailVerbRule.h" />
     <ClInclude Include="EmailVerbSource.h" />
+    <ClInclude Include="FileObject.h" />
     <ClInclude Include="FileSource.h" />
     <ClInclude Include="FileVerbRule.h" />
     <ClInclude Include="FileVerbSource.h" />

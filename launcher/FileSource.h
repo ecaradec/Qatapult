@@ -145,6 +145,13 @@ struct FileSource : Source {
             r.source=this;
             r.bonus=100;
             results.push_back(r);
+
+            FileObject *fo=new FileObject;
+            fo->key=d+L"\\"; 
+            fo->values[L"text"]=d;
+            fo->values[L"expand"]=d+L"\\";
+            fo->values[L"path"]=d+L"\\";
+            results.back().object=fo;
         }
 
         HANDLE h;
@@ -166,6 +173,13 @@ struct FileSource : Source {
                     r.source=this;
                     r.bonus=1000;
                     results.push_back(r);
+
+                    FileObject *fo=new FileObject;
+                    fo->key=noslash+L"\\";
+                    fo->values[L"text"]=foldername;
+                    fo->values[L"expand"]=noslash+L"\\";
+                    fo->values[L"path"]=noslash+L"\\";
+                    results.back().object=fo;
                 }
             } else if(CString(w32fd.cFileName)==L"..") {
             } else {
@@ -183,6 +197,13 @@ struct FileSource : Source {
                     r.source=this;
                     r.rank=10;
                     results.push_back(r);
+
+                    FileObject *fo=new FileObject;
+                    fo->key=expand;
+                    fo->values[L"text"]=w32fd.cFileName;
+                    fo->values[L"expand"]=expand;
+                    fo->values[L"path"]=expand;
+                    results.back().object=fo;
                 }
             }
             b=!!FindNextFile(h, &w32fd);
@@ -249,56 +270,10 @@ struct FileSource : Source {
         // should scan the history and remove non available items
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        CString path=r->source->getString(*r,L"path");
-        return ::getIcon(path,flags);
-    }
-    CString getItemString(const TCHAR *key, const TCHAR *val) {
-        // if that key exists get the path from the base
-        sqlite3_stmt *stmt=0;
-        const char *unused=0;
-        int rc;
-
-        char buff[4096];
-        sprintf(buff, "SELECT %s FROM files WHERE key = ?;\n", CStringA(val));
-        rc = sqlite3_prepare_v2(db, buff, -1, &stmt, &unused);
-        rc = sqlite3_bind_text16(stmt, 1, key, -1, SQLITE_STATIC);            
-        rc=sqlite3_step(stmt);
-
-        CString str=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));            
-        sqlite3_finalize(stmt);
-        return str;
+        return r->object->getIcon(flags);
     }
     CString getString(SourceResult &sr, const TCHAR *val) {        
-        if(CString(val)==L"rdirectory") {
-            CString fp(getString(sr,L"rpath"));
-            return fp.Left(fp.ReverseFind(L'\\'));
-        } else if(CString(val)==L"directory") {
-            CString fp(getString(sr,L"path"));
-            return fp.Left(fp.ReverseFind(L'\\'));
-        } else if(CString(val)==L"rfilename") {
-            CString fp(getString(sr,L"rpath"));
-            fp.TrimRight(L"\\");            
-            return fp.Mid(fp.ReverseFind(L'\\')+1);
-        } else if(CString(val)==L"filename") {
-            CString fp(getString(sr,L"path"));            
-            fp.TrimRight(L"\\");            
-            return fp.Mid(fp.ReverseFind(L'\\')+1);
-        } else if(CString(val)==L"rpath") {
-            CString path(getItemString(sr.key,L"path"));
-            if(path.Right(4)==L".lnk")
-                return getShortcutPath(path);
-            return path;
-        }
-
-        CString str=getItemString(sr.key,val);
-        if(str!="")
-            return str;
-
-        //  if value is path but the db query didn't return anything (this could ultimatly be stored in the extra data member )
-        if(val==L"path") {
-            return sr.key;
-        }
-        return L"";
+        return sr.object->getString(val);
     }
 
     sqlite3 *db;
@@ -336,7 +311,7 @@ struct FileHistorySource : Source {
             int rc;
 
             rc = sqlite3_prepare_v2(db,
-                                    "SELECT key, display, expand, 0, bonus FROM files WHERE display LIKE ?;",
+                                    "SELECT key, display, expand, path, 0, bonus FROM files WHERE display LIKE ?;",
                                     -1, &stmt, &unused);
             rc = sqlite3_bind_text16(stmt, 1, CString(L"%")+q.GetString()+L"%", -1, SQLITE_STATIC);
             int i=0;
@@ -348,6 +323,13 @@ struct FileHistorySource : Source {
                                                sqlite3_column_int(stmt,3),   // id
                                                0,                            // data
                                                sqlite3_column_int(stmt,4))); // bonus
+
+                FileObject *fo=new FileObject;
+                fo->key=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));            
+                fo->values[L"text"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));
+                fo->values[L"expand"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,2));
+                fo->values[L"path"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,3));
+                results.back().object=fo;
             }
 
             const char *errmsg=sqlite3_errmsg(db) ;
@@ -384,40 +366,10 @@ struct FileHistorySource : Source {
         // should scan the history and remove non available items
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        CString path=r->source->getString(*r,L"path");
-        return ::getIcon(path,flags);
-    }
-    CString getItemString(const TCHAR *key, const TCHAR *val) {
-        // if that key exists get the path from the base
-        sqlite3_stmt *stmt=0;
-        const char *unused=0;
-        int rc;
-
-        char buff[4096];
-        sprintf(buff, "SELECT %s FROM files WHERE key = ?;\n", CStringA(val));
-        rc = sqlite3_prepare_v2(db, buff, -1, &stmt, &unused);
-        rc = sqlite3_bind_text16(stmt, 1, key, -1, SQLITE_STATIC);            
-        rc=sqlite3_step(stmt);
-
-        CString str=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));            
-        sqlite3_finalize(stmt);
-        return str;
+        return r->object->getIcon(flags);
     }
     CString getString(SourceResult &sr, const TCHAR *val) {        
-        if(CString(val)==L"directory") {
-            CString fp(getString(sr,L"path"));
-            return fp.Left(fp.ReverseFind(L'\\'));
-        } else if(CString(val)==L"filename") {
-            CString fp(getString(sr,L"path"));            
-            fp.TrimRight(L"\\");            
-            return fp.Mid(fp.ReverseFind(L'\\')+1);
-        } else if(CString(val)==L"path") {
-            CString path(getItemString(sr.key,L"path"));
-            if(path.Right(4)==L".lnk")
-                return getShortcutPath(path);
-            return path;
-        }
-        return getItemString(sr.key,val);
+        return sr.object->getString(val);
     }
 
     sqlite3 *db;

@@ -42,13 +42,19 @@ inline CString md5(const CString &data) {
 
 CStringA sqlEscapeString(const CStringA &args) {
     CStringA tmp(args);
-    tmp.Replace("\"", "");
+    tmp.Replace("_","\\_");
+    tmp.Replace("%","\\%");
+    tmp.Replace("'","\\'");
+    tmp.Replace("\"","\\\"");
     return tmp;
 }
 
 CStringW sqlEscapeStringW(const CStringW &args) {
     CStringW tmp(args);
-    tmp.Replace(L"\"", L"");
+    tmp.Replace(L"_",L"\\_");
+    tmp.Replace(L"%",L"\\%");
+    tmp.Replace(L"'",L"\\'");
+    tmp.Replace(L"\"",L"\\\"");
     return tmp;
 }
 
@@ -277,10 +283,13 @@ struct Source {
             out->icon=r.icon->Clone(0,0,r.icon->GetWidth(),r.icon->GetHeight(),r.icon->GetPixelFormat());
         if(r.smallicon)
             out->smallicon=r.smallicon->Clone(0,0,r.smallicon->GetWidth(),r.smallicon->GetHeight(),r.smallicon->GetPixelFormat());
+        if(r.object)
+            out->object=r.object->clone();
     }
     virtual void clear(SourceResult &r) {
         delete r.icon; r.icon=0;
         delete r.smallicon; r.smallicon=0;
+        delete r.object;
     }
 
     // unused yet

@@ -23,22 +23,34 @@ struct NetworkSource : Source {
     void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags) {
         // could probably be done in subclass as well as the callback since sourceresult will not change 
         CString q(query);
-        //if(q.Find(L"\\")!=0) // no real need to filter : this is fast
-        //    return;
 
-        q.Replace(L"_",L"\\_");
-        q.Replace(L"%",L"\\%");
-        q.Replace(L"'",L"\\'");
-        q.Replace(L"\"",L"\\\"");
-        Info info;
-        info.results=&results;
-        info.source=this;
-        char *zErrMsg = 0;
-        WCHAR buff[4096];
-        wsprintf(buff, L"SELECT key, display, expand, 0, bonus FROM files WHERE display LIKE \"%%%s%%\";", sqlEscapeStringW(fuzzyfyArg(q)));
+        sqlite3_stmt *stmt=0;
+        const char *unused=0;
+        int rc;
 
-        sqlite3_exec(db, CStringA(buff), getResultsCB, &info, &zErrMsg);
-        sqlite3_free(zErrMsg);
+        rc = sqlite3_prepare_v2(db,"SELECT key, display, expand, path, 0, bonus FROM files WHERE display LIKE ?;",-1, &stmt, &unused);
+        rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q), -1, SQLITE_STATIC);
+        int i=0;
+        while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
+            results.push_back(SourceResult(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),        // key
+                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),        // display
+                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),        // expand
+                                            this,                         // source
+                                            sqlite3_column_int(stmt,3),   // id
+                                            0,                            // data
+                                            sqlite3_column_int(stmt,4))); // bonus
+            
+            FileObject *fo=new FileObject;
+            fo->key=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));
+            fo->icon=L"icons\\networklocal.png";
+            fo->values[L"text"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));
+            fo->values[L"expand"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,2));
+            fo->values[L"path"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,3));            
+            results.back().object=fo;
+        }
+
+        const char *errmsg=sqlite3_errmsg(db) ;
+        sqlite3_finalize(stmt);
     }
     void crawl() {
         std::vector<CString> lnks;
@@ -80,46 +92,10 @@ struct NetworkSource : Source {
         sqlite3_free(zErrMsg);
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        //CString path=r->source->getString(r->key+"/path");
-        return Gdiplus::Bitmap::FromFile(L"icons\\networklocal.png");
-    }
-    CString getItemString(const TCHAR *key, const TCHAR *val) {
-        // if that key exists get the path from the base
-        sqlite3_stmt *stmt=0;
-        const char *unused=0;
-        int rc;
-
-        char buff[4096];
-        sprintf(buff, "SELECT %s FROM files WHERE key = ?;\n", sqlEscapeString(val));
-        rc = sqlite3_prepare_v2(db, buff, -1, &stmt, &unused);
-        rc = sqlite3_bind_text16(stmt, 1, key, -1, SQLITE_STATIC);            
-        rc=sqlite3_step(stmt);
-
-        CString str=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));            
-        sqlite3_finalize(stmt);
-        return str;
+        return r->object->getIcon(flags);
     }
     CString getString(SourceResult &sr,const TCHAR *val_) {
-        CString val(val_);
-
-        if(val==L"directory") {
-            CString fp(getItemString(sr.key,val));
-            return fp.Left(fp.ReverseFind(L'\\'));
-        } else if(val==L"filename") {
-            CString fp(getItemString(sr.key,val));
-            fp.TrimRight(L"\\");
-            return fp.Mid(fp.ReverseFind(L'\\')+1);
-        }
-
-        CString str=getItemString(sr.key,val);
-
-        if(str!="")
-            return str;
-
-        if(val==L"path") {
-            return sr.key;
-        }
-        return L"";
+        return sr.object->getString(val_);
     }
     Source *getSource(SourceResult &r, CString &query) {
         query=r.display+L"\\";
