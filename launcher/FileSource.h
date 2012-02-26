@@ -3,6 +3,7 @@
 #include "sqlite3/sqlite3.h"
 #include "FileVerbSource.h"
 #include "ShellLink.h"
+#include "TextObject.h"
 
 struct FileSource : Source {
     FileSource() : Source(L"FILE",L"Filesystem (Catalog )") {
@@ -15,14 +16,17 @@ struct FileSource : Source {
     ~FileSource() {
         sqlite3_close(db);
     }
-    void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags) {
+    void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags, std::map<CString,bool> &activetypes) {
+        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+            return;
+
         CString q(query);
 
         if(q.GetLength()==0)
             return;
 
         // not a root name ? search from history
-        if(q.Find(L":\\")!=1 && q.Find(L"\\\\")==-1) {
+        if(q.Find(L":")!=1 && q.Find(L"\\\\")==-1) {
             return;
         }
 
@@ -30,7 +34,9 @@ struct FileSource : Source {
 
         // network works for \\FREEBOX\Disque dur\ but not for \\FREEBOX\
         // need a way to enumerate servers and shares
-        
+        if(q.Find(L":")==1 && q.GetLength()==2)
+            q+=L"\\";
+
         CString d=q.Left(q.ReverseFind(L'\\'));
         CString f=q.Mid(q.ReverseFind(L'\\')+1).MakeUpper();        
 
@@ -146,7 +152,11 @@ struct FileHistorySource : Source {
     ~FileHistorySource() {
         sqlite3_close(db);
     }
-    void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags) {
+    void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags, std::map<CString,bool> &activetypes) {        
+        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end()) {
+            return;
+        }
+
         CString q(query);
 
         //if(q.GetLength()==0)

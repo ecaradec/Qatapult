@@ -26,8 +26,7 @@ struct SourceResult {
     // must save
     Source  *source;
     Object  *object;
-    //CString  key;    
-    CString  display;        
+    CString  display;
     CString  expand;
     int      bonus;
     int      id;

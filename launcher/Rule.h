@@ -32,8 +32,8 @@ struct Rule {
 
     int match(std::vector<SourceResult> &args, int l) {
         uint i; 
-        for(i=0;i<args.size();i++) {
-            if(args[i].source && args[i].source->type!=m_types[i].m_type)
+        for(i=0;i<args.size() && i<m_types.size() ;i++) {
+            if(args[i].object && args[i].object->type!=m_types[i].m_type)
                 break;
         }
 

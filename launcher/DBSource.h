@@ -20,7 +20,10 @@ struct DBSource : Source {
         wsprintf(buff, L"UPDATE %s SET bonus = MIN(bonus + 10, 100) WHERE key=\"%s\"\n", CStringW(m_dbname).GetString(), r->object->key);        
         int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
     }
-    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+            return;
+
         CString q(query);
         sqlite3_stmt *stmt=0;
         const char *unused=0;

@@ -92,12 +92,15 @@ struct Source {
     }
     // get results
     // fuse index and bonus from the db
-    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+            return;
+
         CString q(query); q.MakeUpper();
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
             if(FuzzyMatch(it->second.display,q)) {
                 results.push_back(it->second);
-                Object *o=new Object(it->first,this,it->second.display);
+                Object *o=new Object(it->first,type,this,it->second.display);
                 o->values[L"expand"]=it->second.expand;
                 o->values[L"iconname"]=it->second.iconname;
                 results.back().object=o;

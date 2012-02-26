@@ -13,7 +13,10 @@ struct NetworkSource : Source {
     ~NetworkSource() {
         sqlite3_close(db);
     }
-    void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags) {
+    void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags, std::map<CString,bool> &activetypes) {
+        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+            return;
+
         // could probably be done in subclass as well as the callback since sourceresult will not change 
         CString q(query);
 

@@ -43,7 +43,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 struct ContactObject : Object {
-    ContactObject(const CString &k, Source *s, const CString &text, const CString &email):Object(k,s,text) {
+    ContactObject(const CString &k, Source *s, const CString &text, const CString &email):Object(k,L"CONTACT",s,text) {
         values[L"expand"]=text;
         values[L"email"]=email;
     }
@@ -189,7 +189,10 @@ struct ContactSource : DBSource {
             parseGmailContacts(res);
         }
     }
-    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+            return;
+
         CString q(query);
         sqlite3_stmt *stmt=0;
         const char *unused=0;

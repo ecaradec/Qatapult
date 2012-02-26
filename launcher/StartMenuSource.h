@@ -148,7 +148,10 @@ struct StartMenuSource : Source {
     ~StartMenuSource() {
         sqlite3_close(db);
     }
-    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+            return;
+
         // could probably be done in subclass as well as the callback since sourceresult will not change 
         CString q(query);
         sqlite3_stmt *stmt=0;

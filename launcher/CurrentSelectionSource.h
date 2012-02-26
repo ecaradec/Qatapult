@@ -117,7 +117,10 @@ struct CurrentSelectionSource : Source {
     }
     ~CurrentSelectionSource() {
     }
-    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+            return;
+
         CString q(query); q.MakeUpper();
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
             if(FuzzyMatch(it->second.display,q)) {

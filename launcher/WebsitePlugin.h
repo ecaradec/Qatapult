@@ -10,7 +10,10 @@ struct WebsiteSource : DBSource {
                           INSERT OR REPLACE INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Amazon', 'Amazon', 'http://amazon.com', 'http://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=%q', 'icons\\amazon.png', coalesce((SELECT bonus FROM websites WHERE key=\"Amazon\"), 0));\n", 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
     }
-    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+            return;
+
         CString q(query);
         sqlite3_stmt *stmt=0;
         const char *unused=0;
@@ -29,6 +32,7 @@ struct WebsiteSource : DBSource {
                                             sqlite3_column_int(stmt,4))); // bonus
 
             Object *fo=new Object(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+                                  type,
                                   this,
                                   UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
             fo->values[L"href"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,2));

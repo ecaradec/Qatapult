@@ -318,18 +318,20 @@ struct TextItemSource : Source {
         m_index[str]=SourceResult(str,str,str, this, 0, 0, m_index[str].bonus);
         m_index[str].iconname=iconname;
     }
-    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+            return;
+
         CString q(query); q.MakeUpper();
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
             // (*m_pArgs)[g_pUI->GetCurPane()-1].display
+            //CString path=(*m_pArgs)[0].source->getString((*m_pArgs)[0],L"lpath");
+            /*CAtlRegExp<> re;            
+            re.Parse(L"{[0-9]?[0-9]}:{[0-9][0-9]}");
+            if(path.Right(4)==L".lnk")*/
             if(FuzzyMatch(it->second.display,q)) {
-                //CString path=(*m_pArgs)[0].source->getString((*m_pArgs)[0],L"lpath");
-                /*CAtlRegExp<> re;            
-                re.Parse(L"{[0-9]?[0-9]}:{[0-9][0-9]}");
-                if(path.Right(4)==L".lnk")*/
-
                 results.push_back(it->second);
-                Object *o=new Object(it->second.expand, this, it->second.expand);
+                Object *o=new Object(it->second.expand, type, this, it->second.expand);
                 o->icon=it->second.iconname;
                 results.back().object=o;
             }
@@ -344,7 +346,10 @@ struct WindowSource : Source {
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
         return Gdiplus::Bitmap::FromFile(L"icons\\window.png");
     }
-    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+            return;
+
         CString q(query); q.MakeUpper();
         std::vector<HWND> windowList;
         EnumWindows(CollectWindows,(LPARAM)&windowList);
@@ -355,7 +360,7 @@ struct WindowSource : Source {
             GetWindowText(*it,title,sizeof(title));
             if(FuzzyMatch(title,q)) {
                 results.push_back(SourceResult(title,title,title,this,0,*it,0));
-                Object *o=new Object(ItoS((int)*it),this,title);
+                Object *o=new Object(ItoS((int)*it),type,this,title);
                 o->values[L"title"]=title;
                 o->values[L"hwnd"]=ItoS((int)*it);
                 results.back().object=o;
@@ -425,7 +430,10 @@ struct SourceOfSources : Source {
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
         return Gdiplus::Bitmap::FromFile(L"icons\\source.png");
     }
-    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {
+    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+            return;
+
         CString q(query); q.MakeUpper();
         for(std::map<CString, std::vector<Source*> >::iterator it=m_sources.begin(); it!=m_sources.end(); it++) {
             for(uint i=0;i<it->second.size();i++) {
@@ -435,7 +443,7 @@ struct SourceOfSources : Source {
                     r.source=this;
                     r.data=it->second[i];
                     results.push_back(r);
-                    results.back().object=new Object(it->first,this,it->second[i]->m_name);
+                    results.back().object=new Object(it->first,type,this,it->second[i]->m_name);
                 }
             }        
         }
@@ -582,7 +590,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
         addSource(new StartMenuSource(m_hwnd));        
         addSource(new NetworkSource);        
         addSource(new ContactSource);
-        addSource(new ClockSource);
+        //addSource(new ClockSource);
         addSource(new WebsiteSource);
         addSource(new FileHistorySource);
         
@@ -599,7 +607,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
         ws->m_pUI=this;
         sourceofsources->m_sources[ws->type].push_back(ws);
 
-        addRule(L"CLOCK", new ClockRule);
+        //addRule(L"CLOCK", new ClockRule);
         addRule(L"FILE", L"FILEVERB", new FileVerbRule); 
                 
         TextItemSource *t;
@@ -630,9 +638,8 @@ struct AlphaGUI : IWindowlessGUI, UI {
         t->addItem(L"Open",L"icons\\open.png");
         addRule(L"SOURCE",t->type,new SourceRule(this));
 
-        t=new TextItemSource(L"EMPTY");
+        m_emptysource=new TextItemSource(L"EMPTY");
         m_sources[t->type].push_back(t);
-        m_nullresult.source=t;
 
         // hotkey
         hotkeycode=GetSettingsInt(L"hotKeys", L"toggleKey",VK_SPACE);
@@ -662,7 +669,6 @@ struct AlphaGUI : IWindowlessGUI, UI {
 
         OnQueryChange(L"");
 
-
         // we shouldn't create a thread for each source, this is inefficient
         // crawl should be called with an empty index for each source
         //_beginthread((void (*)(void*))crawlProc, 0, this);
@@ -675,6 +681,12 @@ struct AlphaGUI : IWindowlessGUI, UI {
 
         PostThreadMessage(m_crawlThreadId, WM_RELOADSETTINGS, 0, 0);        
         //PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
+    }
+    Source *m_emptysource;
+    SourceResult getEmptyResult() {
+        SourceResult r(L"",L"",L"",m_emptysource,0,0,0);
+        r.object=new Object(L"EMPTY",L"EMPTY",m_emptysource,L"");
+        return r;
     }
     void Reset() {        
         bool b=!!PostThreadMessage(m_crawlThreadId,WM_STOPWORKERTHREAD,0,0);
@@ -872,52 +884,50 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 if(m_rules[i]->match(args, pane)>0)
                    activerules.push_back(m_rules[i]); 
 
+            if(activerules.size()==0) {
+                return;
+            }
+
             // collect all active sources at this level            
             std::map<CString,bool> activesources;
             for(uint i=0;i<activerules.size();i++)
                 if(activerules[i]->m_types.size()>pane)
                     activesources[activerules[i]->m_types[pane].m_type]=true;
 
-
-            for(std::map<CString,bool>::iterator it=activesources.begin(); it!=activesources.end(); it++) {
-                for(uint i=0;i<m_sources[it->first].size();i++) {
-                    if(pane==0 && q==L"")
-                        ;
-                    else
-                        m_sources[it->first][i]->collect(q, results, def);
-                }
+            if(activesources.size()==0) {
+                return;
             }
 
-            //results.clear();        
-            /*for(std::map<CString,bool>::iterator it=activesources.begin(); it!=activesources.end(); it++) {
-                for(uint i=0;i<m_sources[it->first].size();i++) {
+            for(std::map<CString,std::vector<Source*> >::iterator it=m_sources.begin();it!=m_sources.end();it++) {
+                for(uint i=0;i<it->second.size();i++) {
                     if(pane==0 && q==L"")
                         ;
                     else
-                        m_sources[it->first][i]->collect(q, results, def);
+                        m_sources[it->first][i]->collect(q, results, def, activesources);
                 }
-            }*/
+            }
         
         } else {
-            m_customsources[pane]->collect(q,results,def);
+            std::map<CString,bool> activesources;
+            m_customsources[pane]->collect(q,results,def,activesources);
         }
 
         uselev=0;
         CString Q(q); Q.MakeUpper();
         int qlen=max(1, Q.GetLength());
         for(uint i=0;i<results.size();i++) {
-            // pourcentage de chaine correspondante ?            
-            CStringA item=results[i].display;
-            item.MakeUpper();
+            // pourcentage de chaine correspondante ?
+            CString text=results[i].object->getString(L"text");
+            text.MakeUpper();
             if(uselev) {
-                int len=levenshtein_distance(CStringA(Q), item.GetString());                
-                float f = 1 - float(len) / results[i].display.GetLength();
+                int len=levenshtein_distance(CStringA(Q), CStringA(text).GetString());                
+                float f = 1 - float(len) / text.GetLength();
                 results[i].rank = int(100*f + results[i].bonus);
             } else {
-                if(results[i].source->m_prefix!=0 && results[i].display[0]==results[i].source->m_prefix)
+                if(results[i].source->m_prefix!=0 && text[0]==results[i].source->m_prefix)
                     results[i].bonus+=100;
 
-                results[i].rank = int(100*float(qlen) / results[i].display.GetLength() + results[i].bonus);
+                results[i].rank = int(100*float(qlen) / text.GetLength() + results[i].bonus);
             }
             results[i].source->rate(&results[i]);
         }
@@ -953,7 +963,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
         if(m_results.size()>0) {
             OnSelChange(&m_results.front());
         } else {
-            OnSelChange(&m_nullresult);
+            OnSelChange(&getEmptyResult());
         }        
 
         ShowNextArg();
@@ -998,7 +1008,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
     }
     void OnSelChange(SourceResult *r) {        
         if(m_args.size()==0)
-            m_args.push_back(m_nullresult);
+            m_args.push_back(getEmptyResult());
         
         // a copy is not enough if there is deep data because the results are cleaned after the query
         SetArg(m_pane, *r);
@@ -1007,7 +1017,8 @@ struct AlphaGUI : IWindowlessGUI, UI {
 
         Invalidate();
     }
-    void Update() {        
+    void Update() {
+        CString str;
         m_invalidatepending=false;        
 
         // load icons if they aren't 
@@ -1043,21 +1054,23 @@ struct AlphaGUI : IWindowlessGUI, UI {
             StringFormat sfcenter;
             sfcenter.SetAlignment(StringAlignmentCenter);
             sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
-        
-            // it could be easier to have different background for size
-            // and different focus bitmap for panes
-            CString str;
-            CString str1=m_skin+L"\\background_"+ItoS(m_args.size())+L"_"+ItoS(m_pane+1)+L".png";
-            CString str2=m_skin+L"\\background_"+ItoS(m_args.size())+L".png";
-            CString str3=m_skin+L"\\background.png";
-
-            if(FileExists(str1)) {
-                str=str1;
-            } else if(FileExists(str2)) {
-                str=str2;
-            } else if(FileExists(str3)) {
-                str=str3;
+            
+            for(int i=m_args.size();i>0;i--) {
+                // it could be easier to have different background for size
+                // and different focus bitmap for panes
+                CString str1=m_skin+L"\\background_"+ItoS(i)+L"_"+ItoS(m_pane+1)+L".png";
+                CString str2=m_skin+L"\\background_"+ItoS(i)+L".png";
+                if(FileExists(str1)) {
+                    str=str1;
+                    break;
+                } else if(FileExists(str2)) {
+                    str=str2;
+                    break;
+                }
             }
+
+            if(str==L"")
+                str=m_skin+L"\\background.png";
 
             m_background.Destroy();
             m_background.Load(str);
@@ -1066,14 +1079,6 @@ struct AlphaGUI : IWindowlessGUI, UI {
             m_background.AlphaBlend(hdc, 0, 0);
 
             m_curWidth=m_background.GetWidth();
-
-            /*if(m_args.size()==3) {
-                m_background3.AlphaBlend(hdc, 0, 0);
-                m_curWidth=m_background3.GetWidth();
-            } else {
-                m_background.AlphaBlend(hdc, 0, 0);
-                m_curWidth=m_background.GetWidth();
-            }*/
 
             // draw icon on screen
             if(!m_focus.IsNull()) {
@@ -1103,7 +1108,6 @@ struct AlphaGUI : IWindowlessGUI, UI {
 
                 if(m_args[i].object)
                     m_args[i].object->drawItem(g, &m_args[i], r);
-                //m_args[i].source->drawItem(g, &m_args[i], RectF(22+157*REAL(i), 22, 150, 154));            
             }        
 
             Gdiplus::Font f(GetSettingsString(L"general",L"font",L"Arial"), 8);
@@ -1111,25 +1115,15 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 g.DrawString(m_indexing, -1, &f, RectF(5.0f, 5.0f, float(m_curWidth), 20.0f), &sfcenter, &SolidBrush(Color(0x88FFFFFF)));
             }
 
-            //CString text(L"status");
             if(m_pane<m_status.size()) {
                 drawEmphased(g,m_status[m_pane],m_input.m_text,RectF(15,180, REAL(m_curWidth-30), 15),DE_COLOR);
-                //g.DrawString(m_status[m_pane], -1, &f, RectF(15,180, REAL(m_curWidth-30), 15), &sfcenter, &SolidBrush(Color(0x88FFFFFF)));
             }
         }
 
         Gdiplus::Font arial(GetSettingsString(L"general",L"font",L"Arial"), 50);
         Gdiplus::StringFormat sfmt(Gdiplus::StringFormat::GenericTypographic());  
         sfmt.SetFormatFlags(StringFormatFlagsMeasureTrailingSpaces|StringFormatFlagsNoWrap|StringFormatFlagsNoClip|StringFormatFlagsNoFitBlackBox);   
-        sfmt.SetTrimming(StringTrimmingEllipsisCharacter);        
-
-        // if the space is less than 2 hyphen then there is no hyphen
-        /*RectF hyphenbbox;
-        g.MeasureString(L"…", -1, &arial, PointF(0,0), &sfmt, &hyphenbbox);
-        float w=hyphenbbox.Width*2; // 22 is the minimum that trigger an hyphen
-
-        g.FillRectangle(&Gdiplus::SolidBrush(Gdiplus::Color(255,0,0,0)),RectF(20,0,w,100));
-        g.DrawString(L"visualvisualvisualvisual", -1, &arial, RectF(20,0,w,100), &sfmt, &Gdiplus::SolidBrush(Gdiplus::Color(255,255,255,255)));*/
+        sfmt.SetTrimming(StringTrimmingEllipsisCharacter);
 
         CRect workarea;
         ::SystemParametersInfo(SPI_GETWORKAREA, 0, &workarea, 0);
@@ -1433,6 +1427,23 @@ struct AlphaGUI : IWindowlessGUI, UI {
                         m_input.appendAtCaret((TCHAR)wParam);                    
                     if(m_editmode==0)
                         m_input.m_caretpos=m_input.m_text.GetLength();
+                } 
+                else if((wParam == L'/' || wParam == L'\\') && GetSelectedItem()->object && GetSelectedItem()->object->type==L"FILE")
+                {
+                    SourceResult *r=GetSelectedItem();
+                    CString path=r->object->getString(L"expand");
+                    m_input.SetText(path);
+                }
+                else if((wParam == L'?') && GetSelectedItem()->object && GetSelectedItem()->object->type==L"FILE")
+                {
+                    SourceResult *r=GetSelectedItem();
+                    CString t(r->object->getString(L"expand"));
+                    t.TrimRight(L'\\');
+                    CString d=t.Left(t.ReverseFind(L'\\'));
+                    if(d==L"")
+                        m_input.SetText(L"");
+                    else
+                        m_input.SetText(d+L"\\");
                 } else if(wParam<VK_SPACE) {
                     ;
                 } else {
@@ -1600,7 +1611,6 @@ struct AlphaGUI : IWindowlessGUI, UI {
     CImage                     premult;
     uint                       m_pane;
     std::map<CString, std::vector<Source*> > m_sources;
-    SourceResult               m_nullresult;
     std::vector<Rule*>         m_rules;
     std::vector<SourceResult>  m_args;     // validated results
     std::vector<SourceResult>  m_results;  // currently displayed results
