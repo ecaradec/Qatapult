@@ -4,108 +4,6 @@
 #include "FileVerbSource.h"
 #include "ShellLink.h"
 
-// history should be a source as well
-/*
-struct FileType {
-    virtual CString getString(SourceResult &sr, const TCHAR *val) {
-        if(CString(val)==L"rdirectory") {
-            CString fp(getString(sr,L"rpath"));
-            return fp.Left(fp.ReverseFind(L'\\'));
-        } else if(CString(val)==L"directory") {
-            CString fp(getString(sr,L"path"));
-            return fp.Left(fp.ReverseFind(L'\\'));
-        } else if(CString(val)==L"rfilename") {
-            CString fp(getString(sr,L"rpath"));
-            fp.TrimRight(L"\\");            
-            return fp.Mid(fp.ReverseFind(L'\\')+1);
-        } else if(CString(val)==L"filename") {
-            CString fp(getString(sr,L"path"));            
-            fp.TrimRight(L"\\");            
-            return fp.Mid(fp.ReverseFind(L'\\')+1);
-        } else if(CString(val)==L"rpath") {
-            CString path(getItemString(sr.key,L"path"));
-            if(path.Right(4)==L".lnk")
-                return getShortcutPath(path);
-            return path;
-        }
-
-        CString str=getItemString(sr.key,val);
-        if(str!="")
-            return str;
-
-        //  if value is path but the db query didn't return anything (this could ultimatly be stored in the extra data member )
-        if(val==L"path") {
-            return sr.key;
-        }
-        return L"";
-    }
-    virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
-        Gdiplus::Font fn(GetSettingsString(L"general",L"font",L"Arial"),8.0f);
-        float textheight=fn.GetHeight(&g);
-        bool h=(float(r.Width)/r.Height)>2;
-
-        StringAlignment alignment=getStdAlignment(h);
-        RectF ricon=getStdIconPos(r,h);
-        RectF rtext=getStdTextPos(r,h,textheight);
-        
-        if(sr->icon)
-            g.DrawImage(sr->icon, ricon);        
-        
-        drawEmphased(g, sr->display, m_pUI->getQuery(), rtext, DE_UNDERLINE, alignment);
-    }
-    virtual void drawListItem(Graphics &g, DRAWITEMSTRUCT *dis, RectF &r) {        
-        if(dis->itemData==0)
-            return;
-
-        //if(dis->itemState&ODS_SELECTED)
-        //    g.FillRectangle(&SolidBrush(Color(0xFFDDDDFF)), r);
-        //else
-        g.FillRectangle(&SolidBrush(Color(0xFFFFFFFF)), r);
-
-        SourceResult *sr=(SourceResult*)dis->itemData;
-        if(!sr->smallicon)
-            sr->smallicon=getIcon(sr,ICON_SIZE_SMALL);
-        
-        if(sr->smallicon)
-            g.DrawImage(sr->smallicon, RectF(r.X+10, r.Y, r.Height, r.Height)); // height not a bug, think a minute
-        
-        REAL x=r.X+r.Height+5+10;
-        
-        CString str(sr->display);
-        if(str[0]==m_prefix)
-            str=str.Mid(1);
-
-        g.DrawString(str, -1, &itemlistFont, RectF(x, r.Y+5.0f, r.Width-x, 14.0f), &sfitemlist, &SolidBrush(Color(0xFF000000)));
-        
-        StringFormat sfscore;
-        sfscore.SetAlignment(StringAlignmentNear);
-        g.DrawString(ItoS(sr->rank), -1, &itemscoreFont, RectF(r.X+r.Height+5+10, r.Y+25, r.Width, r.Height), &sfscore, &SolidBrush(Color(0xFF000000)));
-
-        Font pathfont(GetSettingsString(L"general",L"font",L"Arial"), 8.0f);
-        StringFormat sfpath;
-        sfpath.SetTrimming(StringTrimmingEllipsisPath);
-        CString path(sr->source->getString(*sr,L"path"));
-        path.TrimRight(L'\\');
-        g.DrawString(path.Left(path.ReverseFind(L'\\')), -1, &pathfont, RectF(r.X+r.Height+5+40, r.Y+25, r.Width-(r.X+r.Height+5+40), 14), &sfpath, &SolidBrush(Color(0xBB000000)));
-    }
-    virtual void validate(SourceResult *r)  {} // ail je ne sais pas de quelle base il s'agit ?
-    virtual void crawl() {}
-    // copy makes a deep copy
-    virtual void copy(const SourceResult &r, SourceResult *out) {
-        *out=r;
-        if(r.icon)
-            out->icon=r.icon->Clone(0,0,r.icon->GetWidth(),r.icon->GetHeight(),r.icon->GetPixelFormat());
-        if(r.smallicon)
-            out->smallicon=r.smallicon->Clone(0,0,r.smallicon->GetWidth(),r.smallicon->GetHeight(),r.smallicon->GetPixelFormat());
-    }
-    virtual void clear(SourceResult &r) {
-        delete r.icon; r.icon=0;
-        delete r.smallicon; r.smallicon=0;
-    }
-};
-*/
-
-
 struct FileSource : Source {
     FileSource() : Source(L"FILE",L"Filesystem (Catalog )") {
         int rc = sqlite3_open("databases\\files.db", &db);
@@ -159,7 +57,7 @@ struct FileSource : Source {
                 CString noslash=q.Left(q.ReverseFind(L'\\'));
                 CString foldername=noslash.Mid(noslash.ReverseFind(L'\\')+1);
 
-                if(FuzzyMatch(foldername,f)!=-1 && f==L"") {
+                if(FuzzyMatch(foldername,f) && f==L"") {
                     SourceResult r;                    
                     r.display=foldername;
                     r.expand=noslash+L"\\";
@@ -191,30 +89,6 @@ struct FileSource : Source {
             b=!!FindNextFile(h, &w32fd);
         }
         FindClose(h);
-    }
-    virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
-        Gdiplus::Font fn(GetSettingsString(L"general",L"font",L"Arial"),8.0f);
-        float textheight=fn.GetHeight(&g);
-        bool h=(float(r.Width)/r.Height)>2;
-
-        StringAlignment alignment=getStdAlignment(h);
-        RectF ricon=getStdIconPos(r,h);
-        RectF rtext=getStdTextPos(r,h,textheight);
-
-        if(sr->icon)
-            g.DrawImage(sr->icon, ricon);
-
-        StringFormat sfcenter;
-        sfcenter.SetAlignment(StringAlignmentCenter);    
-        sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
-
-        CString q(m_pUI->getQuery());
-        CString d=q.Left(q.ReverseFind(L'\\'));
-        CString f=q.Mid(q.ReverseFind(L'\\')+1);
-
-        drawEmphased(g, sr->display, f, rtext, DE_UNDERLINE, alignment);
-
-        m_pUI->setStatus(getString(*sr,L"path"));
     }
     void validate(SourceResult *r) {
 

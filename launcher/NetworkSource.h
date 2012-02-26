@@ -166,7 +166,7 @@ BOOL WINAPI EnumerateFunc(LPNETRESOURCE lpnr, std::vector<CString> &lnks)
 					& RESOURCEUSAGE_CONTAINER))
 					//          if(!EnumerateFunc(hwnd, hdc, &lpnrLocal[i]))
 					if (!EnumerateFunc(&lpnrLocal[i], lnks))
-						;//printf("EnumerateFunc returned FALSE\n");
+						__asm nop;//printf("EnumerateFunc returned FALSE\n");
 				//            TextOut(hdc, 10, 10, "EnumerateFunc returned FALSE.", 29);
 			}
 		}

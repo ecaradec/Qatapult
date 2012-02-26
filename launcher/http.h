@@ -84,7 +84,7 @@ void HttpSubmit(const CString &href, CHAR *data, CStringA *res) {
             if (!WinHttpQueryDataAvailable( hRequest, &dwSize)) 
             {
                 wchar_t buff[1024];
-                swprintf(buff, L"Error %u in WinHttpQueryDataAvailable.\n", GetLastError() );
+                swprintf(buff, sizeof(buff), L"Error %u in WinHttpQueryDataAvailable.\n", GetLastError() );
                 OutputDebugString(buff);
                 break;
             }
@@ -109,7 +109,7 @@ void HttpSubmit(const CString &href, CHAR *data, CStringA *res) {
                                     dwSize, &dwDownloaded))
             {                                  
                 wchar_t buff[1024];
-                wsprintf(buff, L"Error %u in WinHttpReadData.\n", GetLastError() );
+                swprintf(buff, sizeof(buff), L"Error %u in WinHttpReadData.\n", GetLastError() );
                 OutputDebugString(buff);
             }
             else
@@ -132,7 +132,7 @@ void HttpSubmit(const CString &href, CHAR *data, CStringA *res) {
     {
         // Report any errors.
         wchar_t buff[1024];
-        wsprintf(buff, L"Error %d has occurred.\n", GetLastError() );
+        swprintf(buff, sizeof(buff), L"Error %d has occurred.\n", GetLastError() );
         OutputDebugString(buff);
     }
 
@@ -141,7 +141,7 @@ void HttpSubmit(const CString &href, CHAR *data, CStringA *res) {
     // Report any errors.
     if (!bResults) {
         wchar_t buff[1024];
-        wsprintf(buff, L"Error %d has occurred.\n", GetLastError() );
+        swprintf(buff, sizeof(buff), L"Error %d has occurred.\n", GetLastError() );
         OutputDebugString(buff);
     }
 
@@ -233,7 +233,7 @@ int HttpGet(const CString &href, CStringA *res) {
             if (!WinHttpQueryDataAvailable( hRequest, &dwSize)) 
             {
                 wchar_t buff[1024];
-                swprintf(buff, L"Error %u in WinHttpQueryDataAvailable.\n", GetLastError() );
+                swprintf(buff, sizeof(buff),L"Error %u in WinHttpQueryDataAvailable.\n", GetLastError() );
                 OutputDebugString(buff);
                 break;
             }
@@ -375,7 +375,8 @@ int HttpDownload(const CString &href, CStringA path) {
     // Keep checking for data until there is nothing left.
     if (bResults && status==200)
     {
-        FILE *f=fopen(path, "w+b");        
+        FILE *f;
+        fopen_s(&f, path, "w+b");        
         
         DWORD dwSize;
         do 
@@ -385,7 +386,7 @@ int HttpDownload(const CString &href, CStringA path) {
             if (!WinHttpQueryDataAvailable( hRequest, &dwSize)) 
             {
                 wchar_t buff[1024];
-                swprintf(buff, L"Error %u in WinHttpQueryDataAvailable.\n", GetLastError() );
+                swprintf(buff, sizeof(buff), L"Error %u in WinHttpQueryDataAvailable.\n", GetLastError() );
                 OutputDebugString(buff);
                 break;
             }
@@ -540,7 +541,7 @@ int HttpGetBuffer(const CString &href, void **data, int *totalsize) {
             if (!WinHttpQueryDataAvailable( hRequest, &dwSize)) 
             {
                 wchar_t buff[1024];
-                swprintf(buff, L"Error %u in WinHttpQueryDataAvailable.\n", GetLastError() );
+                swprintf(buff, sizeof(buff),L"Error %u in WinHttpQueryDataAvailable.\n", GetLastError() );
                 OutputDebugString(buff);
                 break;
             }
@@ -565,7 +566,7 @@ int HttpGetBuffer(const CString &href, void **data, int *totalsize) {
             if (!WinHttpReadData( hRequest, (LPVOID)*data, dwSize, &dwDownloaded))
             {                                  
                 wchar_t buff[1024];
-                wsprintf(buff, L"Error %u in WinHttpReadData.\n", GetLastError() );
+                swprintf(buff, sizeof(buff),L"Error %u in WinHttpReadData.\n", GetLastError() );
                 OutputDebugString(buff);
             }
 

@@ -158,6 +158,7 @@ BOOL CALLBACK GeneralDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 int DelayLoadExceptionFilter(unsigned int code, struct _EXCEPTION_POINTERS *ep) {
     return EXCEPTION_CONTINUE_EXECUTION;
 }
+
 struct ClockSource : Source {
     ClockSource() : Source(L"CLOCK",L"Clock (Catalog )") {
         m_icon=L"icons\\clock.png";
@@ -187,25 +188,25 @@ struct ClockSource : Source {
         Gdiplus::Matrix m;
         
         if(m_hasGdipDrawImageFX) {
-            int w=ricon.Width/10; // with of aiguilles
+            int w=int(ricon.Width/10); // thickness of needles
 
             m.Reset();
             m.Translate(ricon.X+ricon.Width/2,ricon.Y+ricon.Height/2);
             m.Rotate(((float)st.wHour+(float)st.wMinute/60)/24*360+180);
-            m.Translate(-w/2,-w/2);
-            g.DrawImage(hours, &RectF(0, 0, w, ricon.Width/2), &m, 0, 0, Gdiplus::UnitPixel);
+            m.Translate(float(-w/2),float(-w/2));
+            g.DrawImage(hours, &RectF(0.0f, 0.0f, float(w), float(ricon.Width/2)), &m, 0, 0, Gdiplus::UnitPixel);
 
             m.Reset();
             m.Translate(ricon.X+ricon.Width/2,r.Y+ricon.Height/2);
             m.Rotate(((float)st.wMinute+(float)st.wSecond/60)/60*360+180);
-            m.Translate(-w/2,-w/2);
-            g.DrawImage(minutes, &RectF(0, 0, w, ricon.Width/2), &m, 0, 0, Gdiplus::UnitPixel);
+            m.Translate(float(-w/2),float(-w/2));
+            g.DrawImage(minutes, &RectF(0.0f, 0.0f, float(w), float(ricon.Width/2)), &m, 0, 0, Gdiplus::UnitPixel);
 
             m.Reset();
-            m.Translate(ricon.X+ricon.Width/2,ricon.Y+ricon.Height/2);
+            m.Translate(float(ricon.X+ricon.Width/2),float(ricon.Y+ricon.Height/2));
             m.Rotate((float)st.wSecond/60*360+180);
-            m.Translate(-w/4,-w/2);
-            g.DrawImage(seconds, &RectF(0, 0, w, ricon.Width/2), &m, 0, 0, Gdiplus::UnitPixel);
+            m.Translate(float(-w/4),float(-w/2));
+            g.DrawImage(seconds, &RectF(0.0f, 0.0f, float(w), float(ricon.Width/2)), &m, 0, 0, Gdiplus::UnitPixel);
         }
 
         StringFormat sfcenter;
@@ -513,6 +514,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
     };
     CString m_skin;
     std::vector<Pane> m_panepositions;
+    int m_defaultwidth;
     void Init() {   
         settings.load_file("settings.xml");
         
@@ -522,8 +524,9 @@ struct AlphaGUI : IWindowlessGUI, UI {
         m_textbackground.Load(m_skin+L"/textbackground.png");
         PremultAlpha(m_textbackground);
 
-        //m_background.Load(m_skin+L"/background.png");
-        //PremultAlpha(m_background);
+        m_background.Load(m_skin+L"/background.png");
+        PremultAlpha(m_background);
+        m_defaultwidth=m_background.GetWidth();
         
         /*m_background3.Load(m_skin+L"/background3.png");
         PremultAlpha(m_background3);*/
@@ -542,10 +545,10 @@ struct AlphaGUI : IWindowlessGUI, UI {
         for(pugi::xpath_node_set::const_iterator it=panes.begin(); it!=panes.end(); it++) {
             Pane p;
             
-            p.r.X=atoi(it->node().attribute("x").value());
-            p.r.Y=atoi(it->node().attribute("y").value());
-            p.r.Width=atoi(it->node().attribute("width").value());
-            p.r.Height=atoi(it->node().attribute("height").value());
+            p.r.X=float(atoi(it->node().attribute("x").value()));
+            p.r.Y=float(atoi(it->node().attribute("y").value()));
+            p.r.Width=float(atoi(it->node().attribute("width").value()));
+            p.r.Height=float(atoi(it->node().attribute("height").value()));
             p.background=it->node().attribute("background").value();
             p.margin.top=atoi(it->node().attribute("margintop").value());
             p.margin.left=atoi(it->node().attribute("marginleft").value());
@@ -674,7 +677,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
         //PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
     }
     void Reset() {        
-        bool b=PostThreadMessage(m_crawlThreadId,WM_STOPWORKERTHREAD,0,0);
+        bool b=!!PostThreadMessage(m_crawlThreadId,WM_STOPWORKERTHREAD,0,0);
         if(WaitForSingleObject(m_workerthread,1000)==WAIT_TIMEOUT)
             TerminateThread(m_workerthread,0);
 
@@ -695,7 +698,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
         }        
         m_rules.clear();
 
-        for(int i=0;i<m_args.size();i++) {
+        for(uint i=0;i<m_args.size();i++) {
             if(m_args[i].source)
                 m_args[i].source->clear(m_args[i]);
         }
@@ -875,7 +878,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 if(activerules[i]->m_types.size()>pane)
                     activesources[activerules[i]->m_types[pane].m_type]=true;
 
-            //results.clear();        
+
             for(std::map<CString,bool>::iterator it=activesources.begin(); it!=activesources.end(); it++) {
                 for(uint i=0;i<m_sources[it->first].size();i++) {
                     if(pane==0 && q==L"")
@@ -884,6 +887,16 @@ struct AlphaGUI : IWindowlessGUI, UI {
                         m_sources[it->first][i]->collect(q, results, def);
                 }
             }
+
+            //results.clear();        
+            /*for(std::map<CString,bool>::iterator it=activesources.begin(); it!=activesources.end(); it++) {
+                for(uint i=0;i<m_sources[it->first].size();i++) {
+                    if(pane==0 && q==L"")
+                        ;
+                    else
+                        m_sources[it->first][i]->collect(q, results, def);
+                }
+            }*/
         
         } else {
             m_customsources[pane]->collect(q,results,def);
@@ -1064,12 +1077,12 @@ struct AlphaGUI : IWindowlessGUI, UI {
 
             // draw icon on screen
             if(!m_focus.IsNull()) {
-                for(int i=0;i<max(m_args.size(),2);i++){
-                    int ipos=min(i,m_panepositions.size());
-                    m_focus.AlphaBlend(hdc, m_panepositions[ipos].r.X, m_panepositions[ipos].r.Y);
+                for(uint i=0;i<max(m_args.size(),2);i++){
+                    uint ipos=min(i,m_panepositions.size());
+                    m_focus.AlphaBlend(hdc, int(m_panepositions[ipos].r.X), int(m_panepositions[ipos].r.Y));
                 }
                 int ipos=min(m_pane,m_panepositions.size());
-                m_focus.AlphaBlend(hdc, m_panepositions[ipos].r.X, m_panepositions[ipos].r.Y);
+                m_focus.AlphaBlend(hdc, int(m_panepositions[ipos].r.X), int(m_panepositions[ipos].r.Y));
             }
 
             m_knob.AlphaBlend(hdc, m_curWidth-20, 5);            
@@ -1136,20 +1149,16 @@ struct AlphaGUI : IWindowlessGUI, UI {
 
         CRect rc;
         GetWindowRect(m_listhosthwnd,&rc);
+        rc.right=rc.left+m_defaultwidth;
         
-        int pos=m_panepositions[m_pane].r.X+m_panepositions[m_pane].r.Width/2-rc.Width()/2;
+        int pos=int(m_panepositions[m_pane].r.X)+int(m_panepositions[m_pane].r.Width/2)-int(rc.Width()/2);
         pos=max(0,pos);
         pos=min(m_curWidth-rc.Width(),pos);
         
-        SetWindowPos(m_listhosthwnd, 0, r.left+pos, r.bottom, 0, 0, SWP_NOSIZE|SWP_NOACTIVATE);   /*r.left+157*m_pane*/
+        SetWindowPos(m_listhosthwnd, 0, r.left+pos, r.bottom, rc.Width(), rc.Height(), SWP_NOACTIVATE);
 
-        // CRect r;
-        // GetWindowRect(m_hwnd, &r);
-        // SetWindowPos(m_listhosthwnd, 0, r.left, r.bottom, m_curWidth, 10*40+GetSystemMetrics(SM_CYFRAME)*2, SWP_NOACTIVATE);   /*r.left+157*m_pane*/
-
-        // CRect rc;
-        // GetClientRect(m_listhosthwnd,&rc);
-        // SetWindowPos(m_listhwnd, 0, 0, 0, rc.Width(), rc.Height(), SWP_NOACTIVATE);   
+        GetClientRect(m_listhosthwnd,&rc);
+        SetWindowPos(m_listhwnd, 0, 0, 0, rc.Width(), rc.Height(), SWP_NOACTIVATE);   
     }    
     CString getQuery() {
         if(m_displayPane==m_queries.size())
@@ -1176,8 +1185,9 @@ struct AlphaGUI : IWindowlessGUI, UI {
         results.clear();
     }
     void SetCurrentSource(int pane,Source *s,CString &q) {
-        if(m_customsources.size()<=pane);
+        if(m_customsources.size()<=uint(pane))
             m_customsources.resize(pane+1);
+
         if(s==(Source*)-1)
             m_customsources[pane]=0;
         else
@@ -1319,7 +1329,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
         else if(msg == WM_KEYDOWN && wParam == VK_LEFT)
         {
             if(m_editmode==1) {
-                bool bCtrl=GetKeyState(VK_CONTROL)&0x8000;
+                bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
                 m_input.moveCaretLeft(bCtrl);
             } else if(m_pane<m_customsources.size()) {
                 m_customsources[m_pane]=0;
@@ -1331,7 +1341,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
         else if(msg == WM_KEYDOWN && wParam == VK_RIGHT)
         {
             if(m_editmode==1) {
-                bool bCtrl=GetKeyState(VK_CONTROL)&0x8000;
+                bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
                 m_input.moveCaretRight(bCtrl);
             } else {
                 SourceResult *r=GetSelectedItem();
@@ -1347,13 +1357,13 @@ struct AlphaGUI : IWindowlessGUI, UI {
         }
         else if(msg == WM_KEYDOWN && wParam == VK_BACK)
         {
-            bool bCtrl=GetKeyState(VK_CONTROL)&0x8000;
+            bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
             m_input.back(bCtrl);            
             return FALSE;
         }        
         else if(msg == WM_KEYDOWN && wParam == VK_DELETE)
         {
-            bool bCtrl=GetKeyState(VK_CONTROL)&0x8000;
+            bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
             m_input.del(bCtrl);
             return FALSE;
         }

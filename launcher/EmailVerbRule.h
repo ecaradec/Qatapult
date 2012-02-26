@@ -2,7 +2,6 @@ CString Format(TCHAR * format, ... )
 {
    va_list args;
    int len;
-   char * buffer;
 
    va_start( args, format );
    len = _vsctprintf( format, args ) // _vscprintf doesn't count

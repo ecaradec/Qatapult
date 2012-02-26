@@ -185,7 +185,6 @@ struct StartMenuSource : Source {
 
         WCHAR curDir[MAX_PATH];
         GetCurrentDirectory(MAX_PATH, curDir);
-        int i;
 
         pugi::xpath_node_set ns=settingsWT.select_nodes("/settings/searchFolders");
         for(pugi::xpath_node_set::const_iterator it=ns.begin(); it!=ns.end(); it++) {

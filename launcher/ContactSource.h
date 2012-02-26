@@ -19,7 +19,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 GetDlgItemTextA(hWnd, IDC_CODE, code, sizeof(code));
 
                 char data[4096];
-                sprintf(data, "code=%s&client_id=%s&client_secret=%s&redirect_uri=urn:ietf:wg:oauth:2.0:oob&grant_type=authorization_code", code, clientId, clientSecret);
+                sprintf_s(data, sizeof(data), "code=%s&client_id=%s&client_secret=%s&redirect_uri=urn:ietf:wg:oauth:2.0:oob&grant_type=authorization_code", code, clientId, clientSecret);
 
                 CStringA res;
                 HttpSubmit(L"https://accounts.google.com/o/oauth2/token", data, &res);
@@ -28,9 +28,9 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 char accessToken[1024];
                 int expireIn;
                 char refreshToken[1024];
-                sscanf(res, 
-                       "{\n\"access_token\" : \"%[^\"]\",\n  \"token_type\" : \"Bearer\",\n  \"expires_in\" : %d,\n  \"refresh_token\" : \"%[^\"]\"\n}", 
-                       accessToken, &expireIn, refreshToken);
+                sscanf_s(res, 
+                         "{\n\"access_token\" : \"%[^\"]\",\n  \"token_type\" : \"Bearer\",\n  \"expires_in\" : %d,\n  \"refresh_token\" : \"%[^\"]\"\n}", 
+                         accessToken, sizeof(accessToken), &expireIn, sizeof(expireIn), refreshToken, sizeof(refreshToken));
 
                 SetSettingsStringA("gmailContacts", "accessToken", accessToken);
                 SetSettingsStringA("gmailContacts", "refreshToken", refreshToken);
@@ -54,6 +54,38 @@ struct ContactObject : Object {
         if(GetFileAttributes("photos\\"+key+".jpg")!=INVALID_FILE_ATTRIBUTES)
             return Gdiplus::Bitmap::FromFile(L"photos\\"+key+".jpg");
         return Gdiplus::Bitmap::FromFile(L"icons\\contact.png");
+    }
+    void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
+        float fontsize=10.0f;
+
+        Gdiplus::Font f(GetSettingsString(L"general",L"font",L"Arial"),fontsize);
+        Gdiplus::Font f2(GetSettingsString(L"general",L"font",L"Arial"), 7.0f);         
+
+        float textheight=f.GetHeight(&g);
+        bool h=(float(r.Width)/r.Height)>2;
+
+        RectF ricon=getStdIconPos(r,h,f.GetHeight(&g)+f2.GetHeight(&g));
+        RectF rtext0=getStdTextPos(r,h,f.GetHeight(&g));
+        RectF rtext=getStdTitlePos(r,h,f.GetHeight(&g)+f2.GetHeight(&g));
+        RectF rtext2=getStdSubTitlePos(r,h,f2.GetHeight(&g));
+
+        StringFormat sfcenter;
+        sfcenter.SetAlignment(StringAlignmentNear);
+        sfcenter.SetFormatFlags(StringFormatFlagsNoWrap);        
+        sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
+
+        ricon.Y+=10;
+
+        if(sr->icon)
+            g.DrawImage(sr->icon, ricon);
+        
+        CString email=getString(L"email");        
+        if(email==L"") {
+            drawEmphased(g, sr->display, g_pUI->getQuery(), rtext0, DE_UNDERLINE,StringAlignmentNear, fontsize);
+        } else {
+            drawEmphased(g, sr->display, g_pUI->getQuery(), rtext, DE_UNDERLINE,StringAlignmentNear, fontsize);
+            g.DrawString(email, email.GetLength(), &f2, rtext2, &sfcenter, &SolidBrush(Color(0x88FFFFFF)));
+        }
     }
 };
 
@@ -94,7 +126,7 @@ struct ContactSource : DBSource {
                                 
             CStringA photo=node.node().child("link").attribute("href").value();
             char photoHref[4096];
-            sprintf(photoHref, "%s?access_token=%s", photo, accessToken);                       
+            sprintf_s(photoHref, sizeof(photoHref),"%s?access_token=%s", photo, accessToken);                       
             
             CStringA email=node.node().child("gd:email").attribute("address").value();
             CStringA title=node.node().child_value("title"); if(title=="") title=email;
@@ -139,7 +171,7 @@ struct ContactSource : DBSource {
                 CStringA refreshToken=GetSettingsStringA("gmailContacts", "refreshToken");
 
                 char data[4096];
-                sprintf(data, "client_id=%s&client_secret=%s&refresh_token=%s&grant_type=refresh_token", clientId, clientSecret, refreshToken);
+                sprintf_s(data, sizeof(data), "client_id=%s&client_secret=%s&refresh_token=%s&grant_type=refresh_token", clientId, clientSecret, refreshToken);
                 CStringA res;
                 HttpSubmit(L"https://accounts.google.com/o/oauth2/token", data, &res);
 
@@ -155,39 +187,6 @@ struct ContactSource : DBSource {
             }
             
             parseGmailContacts(res);
-        }
-    }
-    virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
-        StringAlignment alignment;
-        float fontsize=10.0f;
-
-        Gdiplus::Font f(GetSettingsString(L"general",L"font",L"Arial"),fontsize);
-        Gdiplus::Font f2(GetSettingsString(L"general",L"font",L"Arial"), 7.0f);         
-
-        float textheight=f.GetHeight(&g);
-        bool h=(float(r.Width)/r.Height)>2;
-
-        RectF ricon=getStdIconPos(r,h,f.GetHeight(&g)+f2.GetHeight(&g));
-        RectF rtext0=getStdTextPos(r,h,f.GetHeight(&g));
-        RectF rtext=getStdTitlePos(r,h,f.GetHeight(&g)+f2.GetHeight(&g));
-        RectF rtext2=getStdSubTitlePos(r,h,f2.GetHeight(&g));
-
-        StringFormat sfcenter;
-        sfcenter.SetAlignment(StringAlignmentNear);
-        sfcenter.SetFormatFlags(StringFormatFlagsNoWrap);        
-        sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
-
-        ricon.Y+=10;
-
-        if(sr->icon)
-            g.DrawImage(sr->icon, ricon);
-        
-        CString email=getString(*sr,L"email");        
-        if(email==L"") {
-            drawEmphased(g, sr->display, m_pUI->getQuery(), rtext0, DE_UNDERLINE,StringAlignmentNear, fontsize);
-        } else {
-            drawEmphased(g, sr->display, m_pUI->getQuery(), rtext, DE_UNDERLINE,StringAlignmentNear, fontsize);
-            g.DrawString(email, email.GetLength(), &f2, rtext2, &sfcenter, &SolidBrush(Color(0x88FFFFFF)));
         }
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &results, int def) {

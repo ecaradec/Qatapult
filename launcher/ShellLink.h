@@ -1,9 +1,7 @@
 #pragma once
 inline CString getShortcutPath(const CString &lnk) {
 
-    HRESULT hres;
     CComPtr<IShellLink> pSL;
-    WIN32_FIND_DATA wfd;
 
     pSL.CoCreateInstance(CLSID_ShellLink);
     
