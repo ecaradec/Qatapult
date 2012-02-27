@@ -54,6 +54,7 @@ struct Source {
     Source(const CString& t)
         :itemlistFont(GetSettingsString(L"general",L"font",L"Arial"), 8.0f, FontStyleBold, UnitPoint),
          itemscoreFont(GetSettingsString(L"general",L"font",L"Arial"), 8.0f) {
+        def=false;
         m_refreshPeriod=0;
         m_name=t;
         type=t;
@@ -64,6 +65,7 @@ struct Source {
     Source(const CString& t, const CString &n)
     :itemlistFont(GetSettingsString(L"general",L"font",L"Arial"), 8.0f, FontStyleBold, UnitPoint),
      itemscoreFont(GetSettingsString(L"general",L"font",L"Arial"), 8.0f){
+        def=false;
         m_refreshPeriod=0;
         m_name=n;
         type=t;
@@ -135,6 +137,7 @@ struct Source {
 
     virtual void rate(SourceResult *r) {}
 
+    int                             def;
     TCHAR                           m_prefix;
     StringFormat                    sfitemlist;
     Gdiplus::Font                   itemlistFont;

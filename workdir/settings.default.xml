@@ -17,7 +17,41 @@
 		<toggleKey>32</toggleKey>
 		<toggleModifier>4</toggleModifier>
 	</hotKeys>
-    <rules>
+	<sources>
+		<IndexedFiles>
+			<default>1</default>
+			<enabled>1</enabled>
+		</IndexedFiles>
+		<Filesystem>
+			<default>1</default>
+			<enabled>1</enabled>
+		</Filesystem>
+		<Network>
+			<default>1</default>
+			<enabled>1</enabled>
+		</Network>
+		<Contacts>
+			<default>1</default>
+			<enabled>1</enabled>
+		</Contacts>
+		<Websites>
+			<default>1</default>
+			<enabled>1</enabled>
+		</Websites>
+		<FileHistory>
+			<default>1</default>
+			<enabled>1</enabled>
+		</FileHistory>
+		<ExplorerSelection>
+			<default>1</default>
+			<enabled>1</enabled>
+		</ExplorerSelection>
+		<Windows>
+			<default>0</default>
+			<enabled>1</enabled>
+		</Windows>
+	</sources>
+	<rules>
 		<rule>
 			<arg>FILE</arg>
 			<arg>

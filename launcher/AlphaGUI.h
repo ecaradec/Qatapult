@@ -11,7 +11,7 @@
 // [X] deplacer mon blog sur emmanuelcaradec
 
 #ifdef DEBUG
-#include "vld.h"
+//#include "vld.h"
 #endif
 
 #include "resource.h"
@@ -425,7 +425,7 @@ struct CommandRule : Rule {
 };
 
 struct SourceOfSources : Source {
-    SourceOfSources(std::map<CString, std::vector<Source*> > &sources) : Source(L"SOURCE",L"Source of sources"), m_sources(sources) {
+    SourceOfSources() : Source(L"SOURCE",L"Source of sources") {
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
         return Gdiplus::Bitmap::FromFile(L"icons\\source.png");
@@ -435,16 +435,14 @@ struct SourceOfSources : Source {
             return;
 
         CString q(query); q.MakeUpper();
-        for(std::map<CString, std::vector<Source*> >::iterator it=m_sources.begin(); it!=m_sources.end(); it++) {
-            for(uint i=0;i<it->second.size();i++) {
-                if(FuzzyMatch(it->second[i]->m_name,q)) {
-                    SourceResult r;
-                    r.expand=r.display=it->second[i]->m_name;
-                    r.source=this;
-                    r.data=it->second[i];
-                    results.push_back(r);
-                    results.back().object=new Object(it->first,type,this,it->second[i]->m_name);
-                }
+        for(std::vector<Source*>::iterator it=m_sources.begin(); it!=m_sources.end(); it++) {
+            if(FuzzyMatch((*it)->m_name,q)) {
+                SourceResult r;
+                r.expand=r.display=(*it)->m_name;
+                r.source=this;
+                r.data=*it;
+                results.push_back(r);
+                results.back().object=new Object((*it)->m_name,type,this,(*it)->m_name);
             }        
         }
     }
@@ -452,7 +450,7 @@ struct SourceOfSources : Source {
         q=L"";
         return (Source*)sr.data;
     }
-    std::map<CString, std::vector<Source*> > m_sources;
+    std::vector<Source*> m_sources;
 };
 
 struct SourceRule : Rule {
@@ -476,7 +474,7 @@ bool FileExists(const CString &f) {
 struct AlphaGUI : IWindowlessGUI, UI {
     AlphaGUI():m_input(this), m_invalidatepending(false) {
 #ifdef DEBUG
-        VLDMarkAllLeaksAsReported();
+        //VLDMarkAllLeaksAsReported();
 #endif        
         m_hwnd=0;
 
@@ -523,6 +521,18 @@ struct AlphaGUI : IWindowlessGUI, UI {
     CString m_skin;
     std::vector<Pane> m_panepositions;
     int m_defaultwidth;
+    SourceOfSources *sourceofsources;
+
+    bool isSourceEnabled(const char *name) {
+        pugi::xml_node n=settings.select_single_node("settings/sources/"+CStringA(name)+"/enabled").node();
+        if(n.empty()) return true;
+        return CStringA(n.child_value())=="1";
+    }
+    bool isSourceByDefault(const char *name) {
+        pugi::xml_node n=settings.select_single_node("settings/sources/"+CStringA(name)+"/default").node();
+        if(n.empty()) return true;
+        return CStringA(n.child_value())=="1";
+    }
     void Init() {   
         settings.load_file("settings.xml");
         
@@ -584,28 +594,25 @@ struct AlphaGUI : IWindowlessGUI, UI {
         }
 
         // the sources can't be unloaded and reloaded easily as they use threads
-        // sources 
-        Source *filesystem=new FileSource;
-        addSource(filesystem);
-        addSource(new StartMenuSource(m_hwnd));        
-        addSource(new NetworkSource);        
-        addSource(new ContactSource);
-        //addSource(new ClockSource);
-        addSource(new WebsiteSource);
-        addSource(new FileHistorySource);
-        
-        SourceOfSources *sourceofsources=new SourceOfSources(m_sources);
+        // sources
+        //settings.select_single_node("settings/sources/")
+
+        sourceofsources=new SourceOfSources;
         addSource(sourceofsources);
+        sourceofsources->def=true;
 
-        addSource(new TextSource);
-        addSource(new CurrentSelectionSource);
+        addSource("Filesystem",new FileSource);
+        addSource("IndexedFiles",new StartMenuSource(m_hwnd));
+        addSource("Network",new NetworkSource);        
+        addSource("Contacts",new ContactSource);
+        addSource("Websites",new WebsiteSource);
+        addSource("FileHistory",new FileHistorySource);       
+        addSource("ExplorerSelection",new CurrentSelectionSource);
+        addSource("Windows", new WindowSource);
+
+        Source *tt=addSource(new TextSource);
+        tt->def=true;
         addSource(new FileVerbSource);
-
-        // add items to the source of sources
-        Source *ws=new WindowSource;
-        ws->m_pArgs=&m_args;
-        ws->m_pUI=this;
-        sourceofsources->m_sources[ws->type].push_back(ws);
 
         //addRule(L"CLOCK", new ClockRule);
         addRule(L"FILE", L"FILEVERB", new FileVerbRule); 
@@ -613,33 +620,34 @@ struct AlphaGUI : IWindowlessGUI, UI {
         TextItemSource *t;
 
         t=new TextItemSource(L"EMAILFILEVERB");
-        m_sources[t->type].push_back(t);
+        addSource(t);
         t->addItem(L"Email to",L"icons\\emailto.png");
         addRule(L"FILE",t->type,L"CONTACT",new EmailFileVerbRule);
 
         t=new TextItemSource(L"EMAILTEXTVERB");
-        m_sources[t->type].push_back(t);
+        addSource(t);
         t->addItem(L"Email to",L"icons\\emailto.png");        
         addRule(L"TEXT",t->type,L"CONTACT",new EmailVerbRule);        
 
         t=new TextItemSource(L"SEARCHWITHVERB");
-        m_sources[t->type].push_back(t);
+        addSource(t);
         t->addItem(L"Search With",L"icons\\searchwith.png");        
         addRule(L"TEXT",t->type,L"WEBSITE",new WebSearchRule);
                 
         t=new TextItemSource(L"QUITVERB");
-        m_sources[t->type].push_back(t);
+        addSource(t);
         t->addItem(L"Quit (Q)",L"icons\\exit.png");
         t->addItem(L"Reload (Q)",L"icons\\reload.png");
+        t->def=true;
         addRule(t->type,new QuitRule);
 
         t=new TextItemSource(L"SOURCEVERB");
-        m_sources[t->type].push_back(t);
+        addSource(t);
         t->addItem(L"Open",L"icons\\open.png");
         addRule(L"SOURCE",t->type,new SourceRule(this));
 
         m_emptysource=new TextItemSource(L"EMPTY");
-        m_sources[t->type].push_back(t);
+        m_sources.push_back(m_emptysource);
 
         // hotkey
         hotkeycode=GetSettingsInt(L"hotKeys", L"toggleKey",VK_SPACE);
@@ -658,11 +666,10 @@ struct AlphaGUI : IWindowlessGUI, UI {
             LoadRules(d);
         }
 
-        for(std::map<CString, std::vector<Source*> >::iterator it=m_sources.begin(); it!=m_sources.end(); it++)
-            for(uint i=0;i<it->second.size();i++) {
-                it->second[i]->m_pArgs=&m_args;
-                it->second[i]->m_pUI=this;
-            }
+        for(std::vector<Source*>::iterator it=m_sources.begin(); it!=m_sources.end(); it++) {
+            (*it)->m_pArgs=&m_args;
+            (*it)->m_pUI=this;
+        }
 
         for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++)
             (*it)->m_pArgs=&m_args;
@@ -716,9 +723,9 @@ struct AlphaGUI : IWindowlessGUI, UI {
         }
         m_args.clear();
 
-        for(std::map<CString, std::vector<Source*> >::iterator it=m_sources.begin(); it!=m_sources.end(); it++) {
-            for(uint i=0;i<it->second.size();i++)
-                delete it->second[i];
+        int j=0;
+        for(std::vector<Source*>::iterator it=m_sources.begin(); it!=m_sources.end(); it++, j++) {
+            delete (*it);
         }
         m_sources.clear();
     }
@@ -738,7 +745,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 } else {
                     pugi::xpath_node_set elts=itarg->node().select_nodes("item");                    
                     TextItemSource *t=new TextItemSource(getGUID());
-                    m_sources[t->type].push_back(t);
+                    addSource(t);
                     for(pugi::xpath_node_set::const_iterator itelt=elts.begin(); itelt!=elts.end(); itelt++) {
                         CString lbl=UTF8toUTF16(itelt->node().child_value("lbl"));
                         CString ico=UTF8toUTF16(itelt->node().child_value("ico"));
@@ -754,8 +761,19 @@ struct AlphaGUI : IWindowlessGUI, UI {
     void Reload() {
         PostMessage(getHWND(),WM_RELOAD,0,0);
     }
-    void addSource(Source *s) {
-        m_sources[s->type].push_back(s);
+    Source *addSource(Source *s) {
+        m_sources.push_back(s);
+        return s;
+    }
+    Source *addSource(char *name,Source *s) {
+        if(isSourceEnabled(name)) {         
+            sourceofsources->m_sources.push_back(s);
+            addSource(s);
+            s->def=isSourceByDefault(name);        
+        } else {
+            delete s;
+        }
+        return s;
     }
     void addRule(const CString &arg0,const CString &arg1,const CString &arg2,Rule *r) {
         r->m_types.push_back(arg0);
@@ -790,15 +808,13 @@ struct AlphaGUI : IWindowlessGUI, UI {
                         BOOL b=PostMessage(thiz->m_hwnd, WM_PROGRESS, 0, 0);
                         float nbsources=float(thiz->m_sources.size());
                         float isources=0;
-                        for(std::map<CString, std::vector<Source*> >::iterator it=thiz->m_sources.begin(); it!=thiz->m_sources.end();it++) {                        
-                            for(uint i=0;i<it->second.size();i++) {
-                                // if a stop thread message is available stop everything
-                                if(PeekMessage(&msg,0,WM_STOPWORKERTHREAD,WM_STOPWORKERTHREAD,PM_NOREMOVE)) {
-                                    b=PostMessage(thiz->m_hwnd, WM_PROGRESS, 100, 0);
-                                    goto stop;
-                                }
-                                it->second[i]->crawl();
+                        for(std::vector<Source*>::iterator it=thiz->m_sources.begin(); it!=thiz->m_sources.end();it++) {                        
+                            // if a stop thread message is available stop everything
+                            if(PeekMessage(&msg,0,WM_STOPWORKERTHREAD,WM_STOPWORKERTHREAD,PM_NOREMOVE)) {
+                                b=PostMessage(thiz->m_hwnd, WM_PROGRESS, 100, 0);
+                                goto stop;
                             }
+                            (*it)->crawl();
 
                             isources++;
                             b=PostMessage(thiz->m_hwnd, WM_PROGRESS, WPARAM(100.0f*isources/nbsources), 0);
@@ -898,13 +914,13 @@ struct AlphaGUI : IWindowlessGUI, UI {
                 return;
             }
 
-            for(std::map<CString,std::vector<Source*> >::iterator it=m_sources.begin();it!=m_sources.end();it++) {
-                for(uint i=0;i<it->second.size();i++) {
-                    if(pane==0 && q==L"")
-                        ;
-                    else
-                        m_sources[it->first][i]->collect(q, results, def, activesources);
-                }
+            for(std::vector<Source*>::iterator it=m_sources.begin();it!=m_sources.end();it++) {                
+                if(pane==0 && q==L"")
+                    ;
+                else if(pane==0 && !(*it)->def)
+                    ;
+                else
+                    (*it)->collect(q, results, def, activesources);                
             }
         
         } else {
@@ -1428,13 +1444,13 @@ struct AlphaGUI : IWindowlessGUI, UI {
                     if(m_editmode==0)
                         m_input.m_caretpos=m_input.m_text.GetLength();
                 } 
-                else if((wParam == L'/' || wParam == L'\\') && GetSelectedItem()->object && GetSelectedItem()->object->type==L"FILE")
+                else if((wParam == L'/' || wParam == L'\\') && GetSelectedItem() && GetSelectedItem()->object && GetSelectedItem()->object->type==L"FILE")
                 {
                     SourceResult *r=GetSelectedItem();
                     CString path=r->object->getString(L"expand");
                     m_input.SetText(path);
                 }
-                else if((wParam == L'?') && GetSelectedItem()->object && GetSelectedItem()->object->type==L"FILE")
+                else if((wParam == L'?') && GetSelectedItem() && GetSelectedItem()->object && GetSelectedItem()->object->type==L"FILE")
                 {
                     SourceResult *r=GetSelectedItem();
                     CString t(r->object->getString(L"expand"));
@@ -1610,7 +1626,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
     int                        m_curWidth; // current width
     CImage                     premult;
     uint                       m_pane;
-    std::map<CString, std::vector<Source*> > m_sources;
+    std::vector<Source*>       m_sources;
     std::vector<Rule*>         m_rules;
     std::vector<SourceResult>  m_args;     // validated results
     std::vector<SourceResult>  m_results;  // currently displayed results
