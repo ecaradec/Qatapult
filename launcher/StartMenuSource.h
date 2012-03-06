@@ -25,10 +25,8 @@ struct StartMenuSource : Source {
 
         sqlite3_exec(db, "CREATE TABLE startmenu(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, verb TEXT, bonus INTEGER, mark INTEGER)", 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
-        sqlite3_exec(db, "CREATE TABLE startmenu_verbs(key TEXT PRIMARY KEY ASC, startmenu_key TEXT KEY, label TEXT, icon TEXT, id INTEGER, bonus INTEGER)", 0, 0, &zErrMsg);
-        sqlite3_free(zErrMsg);
-        sqlite3_exec(db, "CREATE INDEX startmenu_verbs_index ON startmenu_verbs(startmenu_key)", 0, 0, &zErrMsg);
-        sqlite3_free(zErrMsg);
+
+        // deleted tables : startmenu_verbs, startmenu_verbs_index
     }
     ~StartMenuSource() {
         sqlite3_close(db);
@@ -43,7 +41,7 @@ struct StartMenuSource : Source {
         const char *unused=0;
         int rc;
 
-        rc = sqlite3_prepare_v2(db,"SELECT key, display, expand, path, 0, bonus FROM startmenu WHERE display LIKE ?;",-1, &stmt, &unused);
+        rc = sqlite3_prepare_v2(db,"SELECT key, display, expand, path, bonus FROM startmenu WHERE display LIKE ?;",-1, &stmt, &unused);
         rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q), -1, SQLITE_STATIC);
         int i=0;
         while((rc=sqlite3_step(stmt))==SQLITE_ROW) {

@@ -28,7 +28,7 @@ struct NetworkSource : Source {
         const char *unused=0;
         int rc;
 
-        rc = sqlite3_prepare_v2(db,"SELECT key, display, expand, path, 0, bonus FROM files WHERE display LIKE ?;",-1, &stmt, &unused);
+        rc = sqlite3_prepare_v2(db,"SELECT key, display, expand, path, bonus FROM files WHERE display LIKE ?;",-1, &stmt, &unused);
         rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q), -1, SQLITE_STATIC);
         int i=0;
         while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
