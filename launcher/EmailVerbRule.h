@@ -1,17 +1,4 @@
-CString Format(TCHAR * format, ... )
-{
-   va_list args;
-   int len;
-
-   va_start( args, format );
-   len = _vsctprintf( format, args ) // _vscprintf doesn't count
-                               + 1; // terminating '\0'   
-   CString tmp;
-   _vstprintf(tmp.GetBufferSetLength(len), len, format, args );
-   tmp.ReleaseBuffer();
-   return tmp;
-}
-
+#pragma once
 
 // http://www.jeffkastner.com/2010/01/blat-stunnel-and-gmail/
 struct EmailVerbRule : Rule {

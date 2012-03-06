@@ -1,3 +1,6 @@
+#pragma once
+#include "Source.h"
+#include "Utility.h"
 
 struct DBSource : Source {
     sqlite3 *db;

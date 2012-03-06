@@ -1,6 +1,6 @@
+#pragma once
 
-
-int minimum(int a,int b,int c)
+inline int minimum(int a,int b,int c)
 /*Gets the minimum of three values*/
 {
   int min=a;
@@ -11,7 +11,7 @@ int minimum(int a,int b,int c)
   return min;
 }
 
-int levenshtein_distance(const char *s,const char*t)
+inline int levenshtein_distance(const char *s,const char*t)
 /*Compute levenshtein distance between s and t*/
 {
   //Step 1

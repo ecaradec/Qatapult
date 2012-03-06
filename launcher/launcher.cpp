@@ -4,14 +4,46 @@
 
 #include "stdafx.h"
 #include "AlphaGUI.h"
+#include <psapi.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
+CString GetProcessName( DWORD processID ) {
+    TCHAR szProcessName[MAX_PATH] = L"<unknown>";
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ,FALSE, processID);
+
+    if (NULL != hProcess )
+    {
+        HMODULE hMod;
+        DWORD cbNeeded;
+
+        if ( EnumProcessModules( hProcess, &hMod, sizeof(hMod), &cbNeeded) ) {
+            GetModuleBaseName( hProcess, hMod, szProcessName, sizeof(szProcessName)/sizeof(TCHAR) );
+        }
+    }
+    CloseHandle( hProcess );
+    return szProcessName;
+}
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {    
+    /*TCHAR path[MAX_PATH];
+    GetModuleFileName(0, path, sizeof(path));
+
+    DWORD aProcesses[1024], cbNeeded=0, cProcesses;
+    unsigned int i;
+    EnumProcesses( aProcesses, sizeof(aProcesses), &cbNeeded );
+    cProcesses = cbNeeded / sizeof(DWORD);
+    for ( i = 0; i < cProcesses; i++ )
+        if( aProcesses[i] != 0 ) {
+            if(GetProcessName( aProcesses[i] )==path) {
+                MessageBox(MB_OK, L"Qatapult is already running",L"Qatapult",MB_OK);
+                return 0;
+            }
+        }*/
+
     CoInitialize(0);
 
     ULONG_PTR gdiplusToken;
@@ -23,124 +55,13 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     MSG msg;
     while(GetMessage(&msg, NULL, 0, 0) > 0)
     {
-        bool translate=true;
-        // forward left & right key to onkeyboard message when on the listhostwindow
-        if (::IsChild(gui.m_listhosthwnd, msg.hwnd)) {
-            if(msg.message==WM_KEYDOWN && (msg.wParam==VK_TAB)) {
-                translate=false;
-            }
-            if(msg.message==WM_KEYDOWN && (msg.wParam==VK_RIGHT)) {
-                translate=false;
-            }
-
-            gui.OnKeyboardMessage(msg.message, msg.wParam, msg.lParam);
-            if(!translate)
-                continue;
-        }
-
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
     
     UnregisterClass(L"GUI",0);
+    gui.Reset();
     Gdiplus::GdiplusShutdown(gdiplusToken);
     CoUninitialize();
     return 0;
 }
-
-// ClauncherApp
-/*
-BEGIN_MESSAGE_MAP(ClauncherApp, CWinApp)
-	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
-END_MESSAGE_MAP()
-
-
-// ClauncherApp construction
-
-ClauncherApp::ClauncherApp()
-{
-	// support Restart Manager
-	m_dwRestartManagerSupportFlags = AFX_RESTART_MANAGER_SUPPORT_RESTART;
-
-	// TODO: add construction code here,
-	// Place all significant initialization in InitInstance
-}
-
-
-// The one and only ClauncherApp object
-
-ClauncherApp theApp;
-
-
-// ClauncherApp initialization
-
-BOOL ClauncherApp::InitInstance()
-{
-	// InitCommonControlsEx() is required on Windows XP if an application
-	// manifest specifies use of ComCtl32.dll version 6 or later to enable
-	// visual styles.  Otherwise, any window creation will fail.
-	INITCOMMONCONTROLSEX InitCtrls;
-	InitCtrls.dwSize = sizeof(InitCtrls);
-	// Set this to include all the common control classes you want to use
-	// in your application.
-	InitCtrls.dwICC = ICC_WIN95_CLASSES;
-	InitCommonControlsEx(&InitCtrls);
-
-	CWinApp::InitInstance();
-
-
-	AfxEnableControlContainer();
-
-	// Create the shell manager, in case the dialog contains
-	// any shell tree view or shell list view controls.
-	CShellManager *pShellManager = new CShellManager;
-
-	// Standard initialization
-	// If you are not using these features and wish to reduce the size
-	// of your final executable, you should remove from the following
-	// the specific initialization routines you do not need
-	// Change the registry key under which our settings are stored
-	// TODO: You should modify this string to be something appropriate
-	// such as the name of your company or organization
-	SetRegistryKey(_T("Local AppWizard-Generated Applications"));
-
-    ULONG_PTR gdiplusToken;
-    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-    Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
-
-    AlphaGUI gui;
-
-    MSG msg;
-    while(GetMessage(&msg, NULL, 0, 0) > 0)
-    {
-        bool translate=true;
-        if (//msg.hwnd == gui.m_hwnd ||
-            ::IsChild(gui.m_listhosthwnd, msg.hwnd)) {
-            if(msg.message==WM_KEYDOWN && (msg.wParam==VK_LEFT || msg.wParam==VK_RIGHT)) {
-                translate=false;
-            }
-
-            gui.OnKeyboardMessage(msg.message, msg.wParam, msg.lParam);
-            if(!translate)
-                continue;
-        }
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-
-    
-	// Delete the shell manager created above.
-	if (pShellManager != NULL)
-	{
-		delete pShellManager;
-	}
-    
-    UnregisterClass(L"GUI",0);
-    Gdiplus::GdiplusShutdown(gdiplusToken);
-
-	// Since the dialog has been closed, return FALSE so that we exit the
-	//  application, rather than start the application's message pump.
-	return FALSE;
-}
-
-*/

@@ -1,4 +1,4 @@
-
+#pragma once
 
 // http://www.jeffkastner.com/2010/01/blat-stunnel-and-gmail/
 struct EmailFileVerbRule : Rule {

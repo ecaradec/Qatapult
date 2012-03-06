@@ -1,3 +1,5 @@
+#pragma once
+
 struct Type {
     Type(const CString &type) {
         m_type=type;

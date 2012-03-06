@@ -62,7 +62,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>winhttp.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies); </AdditionalDependencies>
+      <AdditionalDependencies>psapi.lib;winhttp.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies); </AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
     <Midl>
@@ -96,7 +96,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>vld.lib;winhttp.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies); </AdditionalDependencies>
+      <AdditionalDependencies>psapi.lib;vld.lib;winhttp.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies); </AdditionalDependencies>
       <DelayLoadDLLs>gdiplus.dll</DelayLoadDLLs>
     </Link>
     <Midl>
@@ -123,7 +123,11 @@
     <None Include="res\launcher.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ActiveScriptHost.h" />
+    <ClInclude Include="activscp.h" />
+    <ClInclude Include="activscp_plus.h" />
     <ClInclude Include="AlphaGUI.h" />
+    <ClInclude Include="Collecter.h" />
     <ClInclude Include="ContactSource.h" />
     <ClInclude Include="CriticalSection.h" />
     <ClInclude Include="CurrentSelectionSource.h" />
@@ -141,12 +145,15 @@
     <ClInclude Include="HistorySource.h" />
     <ClInclude Include="http.h" />
     <ClInclude Include="IWindowlessGUI.h" />
+    <ClInclude Include="JScriptSource.h" />
     <ClInclude Include="LevhensteinDistance.h" />
     <ClInclude Include="NetworkSource.h" />
     <ClInclude Include="Object.h" />
+    <ClInclude Include="PainterScript.h" />
     <ClInclude Include="premultAlpha.h" />
     <ClInclude Include="pugiconfig.hpp" />
     <ClInclude Include="pugixml.hpp" />
+    <ClInclude Include="QatapultScript.h" />
     <ClInclude Include="QuitPlugin.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Rule.h" />
@@ -162,6 +169,7 @@
     <ClInclude Include="TextObject.h" />
     <ClInclude Include="TextSource.h" />
     <ClInclude Include="utf8.h" />
+    <ClInclude Include="Utility.h" />
     <ClInclude Include="WebsitePlugin.h" />
     <ClInclude Include="WindowlessInput.h" />
   </ItemGroup>
@@ -170,24 +178,39 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="AlphaGUI.cpp" />
+    <ClCompile Include="ContactSource.cpp" />
+    <ClCompile Include="CurrentSelectionSource.cpp" />
+    <ClCompile Include="GetItemVerbs.cpp" />
+    <ClCompile Include="Http.cpp" />
     <ClCompile Include="launcher.cpp" />
     <ClCompile Include="Md5.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="NetworkSource.cpp" />
     <ClCompile Include="Object.cpp" />
     <ClCompile Include="pugixml.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="qatapult_i.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="SendEmail.cpp" />
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="StartMenuSource.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="launcher.rc" />
+    <ResourceCompile Include="launcher.rc">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -195,6 +218,12 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="qatapult.idl">
+      <TypeLibraryName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName).tlb</TypeLibraryName>
+      <TypeLibraryName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName).tlb</TypeLibraryName>
+    </Midl>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,5 +1,6 @@
 #pragma once
 #include "utf8.h"
+#include "pugixml.hpp"
     
 inline CString ItoS(int i) {
     CString tmp; tmp.Format(L"%d",i);

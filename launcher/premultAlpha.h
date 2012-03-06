@@ -1,4 +1,6 @@
-void PremultAlpha(CImage &img) {
+#pragma once
+
+inline void PremultAlpha(CImage &img) {
     for(int y=0;y<img.GetHeight(); y++) 
         for(int x=0;x<img.GetWidth(); x++) {
             DWORD c=*(DWORD*)img.GetPixelAddress(x,y);            
@@ -16,7 +18,7 @@ void PremultAlpha(CImage &img) {
             *(DWORD*)img.GetPixelAddress(x,y) = cm;
         }
 }
-void PremultAlpha(Bitmap &img) {
+inline void PremultAlpha(Bitmap &img) {
     for(uint y=0;y<img.GetHeight(); y++) 
         for(uint x=0;x<img.GetWidth(); x++) {
             DWORD c;

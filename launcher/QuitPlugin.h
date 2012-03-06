@@ -1,3 +1,4 @@
+#pragma once
 
 struct QuitVerbSource : Source {
     QuitVerbSource() : Source(L"QUITVERB") {        

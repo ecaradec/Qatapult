@@ -28,32 +28,33 @@ struct UI {
     virtual HWND getHWND() = 0;
 
     // plugins
-    virtual CString getQuery() = 0;
-    virtual void setStatus(const CString &s) {}
-
+    virtual int getFocus() = 0;
+    virtual CString getQuery(int p) = 0;
     // settings dialog    
     virtual void InvalidateIndex() = 0;
     virtual void Reload() = 0;
     virtual void SetCurrentSource(int pane, Source *s,CString &q) = 0;
     virtual void Show() = 0;
     virtual int  GetCurPane() = 0;
+    virtual CString getArgString(int c, const TCHAR *name) = 0;
+    virtual int  getArgsCount() = 0;
 };
-
 
 #define DE_UNDERLINE 0
 #define DE_COLOR 1
 // this is probably very inefficient as as way to draw highlighted text because it handle proper hyphen in all cases
 // gdiplus doesn't draw hyphen if the bbox is smaller than 2 hyphen => this is a workaround
-void drawEmphased(Graphics &g, CString text, CString query, RectF &rect, int flags=DE_UNDERLINE, StringAlignment align=StringAlignmentCenter, float fontSize=10.0f);
+void drawEmphased(Graphics &g, CString text, CString query, RectF &rect, int flags=DE_UNDERLINE, StringAlignment align=StringAlignmentCenter, float fontSize=10.0f, DWORD color=0xFFFFFFFF);
 
 extern UI *g_pUI; // very lazy way to give access to the ui to the ui window proc
+extern CString g_fontfamily;
 
 bool FuzzyMatch(const CString &w_,const CString &q_);
 
 struct Source {
     Source(const CString& t)
-        :itemlistFont(GetSettingsString(L"general",L"font",L"Arial"), 8.0f, FontStyleBold, UnitPoint),
-         itemscoreFont(GetSettingsString(L"general",L"font",L"Arial"), 8.0f) {
+        :itemlistFont(g_fontfamily, 8.0f, FontStyleBold, UnitPoint),
+         itemscoreFont(g_fontfamily, 8.0f) {
         def=false;
         m_refreshPeriod=0;
         m_name=t;
@@ -63,8 +64,8 @@ struct Source {
         sfitemlist.SetTrimming(StringTrimmingEllipsisCharacter);
     }
     Source(const CString& t, const CString &n)
-    :itemlistFont(GetSettingsString(L"general",L"font",L"Arial"), 8.0f, FontStyleBold, UnitPoint),
-     itemscoreFont(GetSettingsString(L"general",L"font",L"Arial"), 8.0f){
+    :itemlistFont(g_fontfamily, 8.0f, FontStyleBold, UnitPoint),
+     itemscoreFont(g_fontfamily, 8.0f){
         def=false;
         m_refreshPeriod=0;
         m_name=n;
@@ -74,7 +75,10 @@ struct Source {
         sfitemlist.SetTrimming(StringTrimmingEllipsisCharacter);
     }
 
-    virtual ~Source() {}
+    virtual ~Source() {
+        //itemlistFont;
+        //itemscoreFont;
+    }
     // get icon
     virtual Gdiplus::Bitmap *getIcon(SourceResult *r, long flags=ICON_SIZE_LARGE) { 
         return r->object->getIcon(flags);
@@ -84,13 +88,9 @@ struct Source {
         if(sr->object)
             sr->object->drawItem(g,sr,r);
     }
-    virtual void drawListItem(Graphics &g, DRAWITEMSTRUCT *dis, RectF &r) {
-        if(!dis->itemData)
-            return;
-
-        SourceResult *sr=(SourceResult*)dis->itemData;
+    virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r, bool b) {
         if(sr->object)
-            sr->object->drawListItem(g,dis,r);
+            sr->object->drawListItem(g,sr,r,b);
     }
     // get results
     // fuse index and bonus from the db

@@ -1,3 +1,4 @@
+#pragma once
 
 // those kind of sources could have a simplified load and save ?
 struct WebsiteSource : DBSource {
@@ -37,7 +38,7 @@ struct WebsiteSource : DBSource {
                                   UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
             fo->values[L"href"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,2));
             fo->values[L"searchHref"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,3));
-            fo->icon=UTF8toUTF16((char*)sqlite3_column_text(stmt,4));
+            fo->values[L"icon"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,4));
             results.back().object=fo;   
         }
 

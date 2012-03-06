@@ -1,3 +1,4 @@
+#pragma once
 struct CriticalSection {
     CriticalSection() {
        ::InitializeCriticalSection(&m_crit);

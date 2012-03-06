@@ -1,3 +1,4 @@
+#pragma once
 #include "TextObject.h"
 
 struct TextSource : Source {

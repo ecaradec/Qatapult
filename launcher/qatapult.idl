@@ -1,0 +1,74 @@
+import "oaidl.idl";
+import "ocidl.idl";
+
+[
+    object,
+    uuid(E0516B01-92D9-4501-84DB-9E9B478E475F),
+    dual,
+    helpstring("IQatapult"),
+    pointer_default(unique)
+]
+interface IQatapultScript : IDispatch
+{
+    HRESULT match([in] BSTR str, [in] BSTR query, [out,retval] VARIANT_BOOL *b);
+    HRESULT getArgValue([in] INT c, [in] BSTR name, [out,retval] VARIANT *v);
+    [propget] HRESULT argscount([out,retval] INT *v);
+    HRESULT getFocus([out,retval] INT *v);
+    HRESULT getStatus([in] int i, [out,retval] BSTR *text);
+    HRESULT getQuery([in] int i, [out,retval] BSTR *text);
+    [propget] HRESULT resultscount([out,retval] INT *i);
+    [propget] HRESULT textmode([out,retval] VARIANT_BOOL *b);
+    [propget] HRESULT resultsvisible([out,retval] VARIANT_BOOL *b);
+    HRESULT showmenu(INT x, INT y);
+    [propget] HRESULT crawlprogress([out,retval] INT *i);
+};
+
+[
+    object,
+    uuid(240BA9C5-C64D-4DA5-AC5F-65099A1CA927),
+    dual,
+    helpstring("ICollecter"),
+    pointer_default(unique)
+]
+interface ICollecterScript : IDispatch
+{
+    HRESULT addObject([in] BSTR type, [in] BSTR key, [in] IDispatch *p);
+    HRESULT expects([in] BSTR type, [out,retval] VARIANT_BOOL *b);
+};
+
+[
+    object,
+    uuid(03E86E34-8D63-49A7-86A0-023110989767),
+    dual,
+    helpstring("IPainter"),
+    pointer_default(unique)
+]
+interface IPainterScript : IDispatch
+{    
+    HRESULT drawBitmap([in] BSTR text,[in] INT x, [in] INT y, [in] INT w, [in] INT h);
+    HRESULT drawInput([in] INT x, [in] INT y, [in] INT w, [in] INT h);
+    HRESULT drawText([in] BSTR text,[in] INT x, [in] INT y, [in] INT w, [in] INT h);
+    HRESULT drawItem([in] INT arg, [in] INT x, [in] INT y, [in] INT w, [in] INT h);
+    HRESULT drawEmphased([in] BSTR text, [in] BSTR highlight, [in] INT x, [in] INT y, [in] INT w, [in] INT h, [in,defaultvalue(1)] INT flag);
+    HRESULT drawResults([in] INT x, [in] INT y, [in] INT w, [in] INT h);
+    [propget] HRESULT textcolor([out,retval] DWORD *c);
+    [propput] HRESULT textcolor([in] DWORD c);
+    [propput] HRESULT fontsize([in] float f);
+    [propput] HRESULT textalign([in] DWORD c);
+    [propput] HRESULT fontfamily([in] BSTR str);
+};
+
+
+[
+    uuid(F5BB800F-DB3D-4036-BF5C-47D914656131),
+    version(1.0),
+    helpstring("Qatapult Type Library")
+]
+library QatapultLib
+{
+    importlib("stdole32.tlb");
+    importlib("stdole2.tlb");
+    interface IQatapultScript;
+    interface ICollecterScript;
+    interface IPainterScript;
+}

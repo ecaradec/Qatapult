@@ -1,17 +1,17 @@
-
+#pragma once
 struct WindowlessInput {
     WindowlessInput(IWindowlessGUI *p):m_pParent(p) {
         m_text=L"";
         m_caretpos=0;
     }
-    void Draw(HDC hdc, const RectF &r, StringFormat &sf, TCHAR prefix) {
+    void Draw(HDC hdc, const RectF &r, StringFormat &sf, TCHAR prefix, Color c=0xFFFFFFFF) {
         Graphics g(hdc);
         g.SetSmoothingMode(SmoothingModeAntiAlias);
         g.SetTextRenderingHint(TextRenderingHintAntiAlias);
         g.SetInterpolationMode(InterpolationModeHighQualityBicubic);        
         g.SetCompositingQuality(CompositingQualityHighQuality);
 
-        Gdiplus::Font f(GetSettingsString(L"general",L"font",L"Arial"), 10.0f);
+        Gdiplus::Font f(g_fontfamily, 10.0f);
         
         int caretpos=m_caretpos;
         CString text(m_text);
@@ -21,7 +21,7 @@ struct WindowlessInput {
             caretpos=max(caretpos,0);
         }        
 
-        g.DrawString(text, -1, &f, r, &sf, &SolidBrush(Color(0xFFFFFFFF)));        
+        g.DrawString(text, -1, &f, r, &sf, &SolidBrush(c));        
 
         Gdiplus::RectF r1;
         if(caretpos!=0) {
@@ -47,7 +47,7 @@ struct WindowlessInput {
             r1.Height=15;
         }
         
-        g.FillRectangle(&SolidBrush(Color(0xFFFFFFFF)), r1);
+        g.FillRectangle(&SolidBrush(Color(c)), r1);
     }
     void SetText(const CString &txt) {
         m_text=txt;

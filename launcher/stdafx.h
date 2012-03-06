@@ -31,9 +31,10 @@
 #include <shlobj.h>
 #include <atlimage.h>
 
+#include <io.h>
+
 #include <Winhttp.h>
 #include <Shlwapi.h>
-
 #include <windowsx.h>
 
 #ifdef _UNICODE
@@ -54,5 +55,7 @@
 #include <gdiplus.h>
 
 using namespace Gdiplus;
+
+#include "sqlite3/sqlite3.h"
 
 typedef unsigned int uint;

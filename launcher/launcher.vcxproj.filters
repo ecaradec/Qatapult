@@ -150,6 +150,30 @@
     <ClInclude Include="TextObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ActiveScriptHost.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="activscp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="activscp_plus.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JScriptSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Collecter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PainterScript.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="QatapultScript.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="launcher.cpp">
@@ -173,10 +197,42 @@
     <ClCompile Include="Source.cpp">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="qatapult_i.c">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AlphaGUI.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CurrentSelectionSource.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SendEmail.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StartMenuSource.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NetworkSource.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GetItemVerbs.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ContactSource.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="launcher.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="qatapult.idl">
+      <Filter>Header Files</Filter>
+    </Midl>
   </ItemGroup>
 </Project>
