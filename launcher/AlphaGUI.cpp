@@ -243,6 +243,9 @@ void AlphaGUI::Init() {
     m_crawlprogress=0;
     m_textcolor=0xFFFFFFFF;
     m_fontsize=10.0f;
+    m_textalign=StringAlignmentCenter;
+    m_textrenderinghint=TextRenderingHintAntiAliasGridFit;
+    m_stringtrimming=StringTrimmingEllipsisCharacter;
 
     settings.load_file("settings.xml");
 
@@ -716,25 +719,12 @@ static HDC   g_HDC;
 void AlphaGUI::drawBitmap(const TCHAR *text, INT x, INT y, INT w, INT h){    
     if(m_bitmaps.find(text)==m_bitmaps.end()) {
         Gdiplus::Bitmap *p=Gdiplus::Bitmap::FromFile(text);
-        //PremultAlpha(*p);
-        
-        //m_bitmaps[text]=p->Clone(0,0,p->GetWidth(),p->GetHeight(),PixelFormat32bppPARGB);
-
-        /*Gdiplus::Bitmap *p2=new Gdiplus::Bitmap(p->GetWidth(),p->GetHeight(),PixelFormat32bppPARGB);
-        Graphics g(p2);
-        g.DrawImage(p,0,0,p->GetWidth(),p->GetHeight());*/
         m_bitmaps[text]=p;        
-        //delete p;
     }
     
     Gdiplus::Bitmap *f=m_bitmaps[text];
 
     Gdiplus::Graphics g(g_HDC);
-    /*g.SetSmoothingMode(SmoothingModeAntiAlias);
-    g.SetTextRenderingHint(TextRenderingHintAntiAlias);
-    g.SetInterpolationMode(InterpolationModeHighQualityBicubic);        
-    g.SetCompositingQuality(CompositingQualityHighQuality);*/
-
 
     g.SetInterpolationMode(InterpolationModeNearestNeighbor);
     g.SetPixelOffsetMode(PixelOffsetModeHalf);
@@ -749,7 +739,10 @@ void AlphaGUI::drawBitmap(const TCHAR *text, INT x, INT y, INT w, INT h){
 
 void AlphaGUI::drawInput(INT x, INT y, INT w, INT h){
     StringFormat sf;
-    m_input.Draw(g_HDC, RectF(x,y,w,h), sf, L'',m_textcolor); /*m_args[m_pane].source->m_prefix*/
+
+    Graphics g(g_HDC);
+    g.SetTextRenderingHint(TextRenderingHint(m_textrenderinghint));
+    m_input.Draw(g, RectF(x,y,w,h), sf, L'',m_fontsize,m_textcolor); /*m_args[m_pane].source->m_prefix*/
 
     m_curWidth=max(m_curWidth,x+w);
     m_curHeight=max(m_curWidth,y+h);
@@ -757,11 +750,11 @@ void AlphaGUI::drawInput(INT x, INT y, INT w, INT h){
 
 void AlphaGUI::drawText(const TCHAR *text, INT x, INT y, INT w, INT h) {
     Graphics g(g_HDC);
-    g.SetTextRenderingHint(TextRenderingHintAntiAlias);
+    g.SetTextRenderingHint(TextRenderingHint(m_textrenderinghint));
     g.SetPixelOffsetMode(PixelOffsetModeHighQuality);
     StringFormat sf;
     sf.SetAlignment(StringAlignment(m_textalign));
-    sf.SetTrimming(StringTrimmingEllipsisCharacter);     
+    sf.SetTrimming(StringTrimming(m_stringtrimming));
     Gdiplus::Font f(g_fontfamily, m_fontsize);
     g.DrawString(text,-1,&f,RectF(x,y,w,h),&sf,&SolidBrush(m_textcolor));
 }
@@ -772,7 +765,6 @@ void AlphaGUI::drawItem(INT i, INT x, INT y, INT w, INT h){
 
     Graphics g(g_HDC);
     g.SetSmoothingMode(SmoothingModeAntiAlias);
-    g.SetTextRenderingHint(TextRenderingHintAntiAlias);
     g.SetInterpolationMode(InterpolationModeHighQualityBicubic);        
     g.SetCompositingQuality(CompositingQualityHighQuality);
 
@@ -783,13 +775,14 @@ void AlphaGUI::drawItem(INT i, INT x, INT y, INT w, INT h){
 }
 
 void AlphaGUI::drawEmphased(const TCHAR *text, const TCHAR *highlight, INT flag, INT x, INT y, INT w, INT h){
-    Graphics g(g_HDC);    
-    ::drawEmphased(g,text,highlight,RectF(x,y,w,h),flag,StringAlignment(m_textalign),10.0f,m_textcolor);
+    Graphics g(g_HDC);
+    g.SetTextRenderingHint(TextRenderingHint(m_textrenderinghint));
+    ::drawEmphased(g,text,highlight,RectF(x,y,w,h),flag,StringAlignment(m_textalign),m_fontsize,m_textcolor);
 }
 
 void AlphaGUI::drawResults(INT x, INT y, INT w, INT h){
     Graphics g(g_HDC);
-    g.SetTextRenderingHint(TextRenderingHintClearTypeGridFit);
+    g.SetTextRenderingHint(TextRenderingHint(m_textrenderinghint));
 
     m_focusedresult=max(0,m_focusedresult);
     m_focusedresult=min(m_results.size()-1,m_focusedresult);
@@ -803,7 +796,7 @@ void AlphaGUI::drawResults(INT x, INT y, INT w, INT h){
     
     for(int i=m_resultspos;i<m_resultspos+visibleresults;i++) {
         int p=i-m_resultspos;
-        m_results[i].object->drawListItem(g,&m_results[i],RectF(x,y+40*p,w,40),m_focusedresult==i);
+        m_results[i].object->drawListItem(g,&m_results[i],RectF(x,y+40*p,w,40),m_fontsize,m_focusedresult==i);
     }
 
     m_curWidth=max(m_curWidth,x+w);
@@ -846,12 +839,6 @@ void AlphaGUI::Update() {
     ary.Add(CComVariant(CComVariant((IDispatch*)painterscript)));
     host.Run(CComBSTR(L"draw"),ary.GetSafeArrayPtr(),&ret);
         
-
-    Gdiplus::Font arial(g_fontfamily, 50);
-    Gdiplus::StringFormat sfmt(Gdiplus::StringFormat::GenericTypographic());  
-    sfmt.SetFormatFlags(StringFormatFlagsMeasureTrailingSpaces|StringFormatFlagsNoWrap|StringFormatFlagsNoClip|StringFormatFlagsNoFitBlackBox);   
-    sfmt.SetTrimming(StringTrimmingEllipsisCharacter);
-
     CRect workarea;
     ::SystemParametersInfo(SPI_GETWORKAREA, 0, &workarea, 0);
 
@@ -861,7 +848,7 @@ void AlphaGUI::Update() {
     BLENDFUNCTION bf={AC_SRC_OVER, 0, 255, AC_SRC_ALPHA};
     BOOL b=::UpdateLayeredWindow(m_hwnd, 0, &p1, &s, g_HDC, &p2, 0, &bf, ULW_ALPHA);
       
-    g.ReleaseHDC(g_HDC);
+    g_HDC=m_buffer.GetDC();
 }    
 CString AlphaGUI::getQuery(int p) {
     if(p==m_queries.size())

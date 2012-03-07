@@ -22,10 +22,10 @@ struct StartMenuSource : Source {
         int rc = sqlite3_open("databases\\startmenu.db", &db);
         
         char *zErrMsg = 0;
-
         sqlite3_exec(db, "CREATE TABLE startmenu(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, verb TEXT, bonus INTEGER, mark INTEGER)", 0, 0, &zErrMsg);
-        sqlite3_free(zErrMsg);
+        sqlite3_free(zErrMsg);        
 
+        UpgradeTable(db,"startmenu");
         // deleted tables : startmenu_verbs, startmenu_verbs_index
     }
     ~StartMenuSource() {
@@ -135,7 +135,7 @@ struct StartMenuSource : Source {
         WCHAR buff[4096];
         char *zErrMsg = 0;
         // FIXME : bonus should be nb_use to allow fixing various coefficient to it
-        wsprintf(buff, L"UPDATE startmenu SET bonus = MIN(bonus + 5,40) WHERE key=\"%s\"\n", r->object->key);        
+        wsprintf(buff, L"UPDATE startmenu SET uses = uses + 1, lastUse=datetime() WHERE key=\"%s\"\n", r->object->key);        
         int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
     }

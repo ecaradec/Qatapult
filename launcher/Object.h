@@ -48,7 +48,7 @@ struct Object {
     virtual CString getString(const TCHAR *val_);
     virtual Gdiplus::Bitmap *getIcon(long flags);
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r);
-    virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r, bool b);
+    virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontsize, bool b);
 
     CString                   type;
     Source                   *source;

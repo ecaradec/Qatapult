@@ -28,11 +28,13 @@ struct JScriptSource : Source {
         sqlite3_exec(db, "CREATE TABLE main(key TEXT PRIMARY KEY ASC, bonus INTEGER)", 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
 
+        UpgradeTable(db,"main");
+
         const char *unused=0;            
         
         rc = sqlite3_prepare_v2(db,"SELECT bonus FROM main WHERE key = ?;",-1, &getbonusstmt, &unused);
 
-        rc = sqlite3_prepare_v2(db,"INSERT OR REPLACE INTO main (key, bonus) VALUES(?, coalesce((SELECT bonus FROM main WHERE key=?), 0)+10 );",-1, &validatestmt, &unused);
+        rc = sqlite3_prepare_v2(db,"INSERT OR REPLACE INTO main (key, uses, lastUse) VALUES(?, coalesce((SELECT uses FROM main WHERE key=?), 0)+1, datetime());",-1, &validatestmt, &unused);
     }
     ~JScriptSource() {
         sqlite3_finalize(getbonusstmt);

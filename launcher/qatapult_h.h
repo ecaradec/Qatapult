@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0555 */
-/* at Mon Mar 05 23:06:24 2012
+/* at Wed Mar 07 23:05:10 2012
  */
 /* Compiler settings for qatapult.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 7.00.0555 
@@ -534,6 +534,12 @@ EXTERN_C const IID IID_IPainterScript;
         virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_fontfamily( 
             /* [in] */ BSTR str) = 0;
         
+        virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_textrenderinghint( 
+            /* [in] */ DWORD c) = 0;
+        
+        virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_stringtrimming( 
+            /* [in] */ DWORD c) = 0;
+        
     };
     
 #else 	/* C style interface */
@@ -651,6 +657,14 @@ EXTERN_C const IID IID_IPainterScript;
             IPainterScript * This,
             /* [in] */ BSTR str);
         
+        /* [propput] */ HRESULT ( STDMETHODCALLTYPE *put_textrenderinghint )( 
+            IPainterScript * This,
+            /* [in] */ DWORD c);
+        
+        /* [propput] */ HRESULT ( STDMETHODCALLTYPE *put_stringtrimming )( 
+            IPainterScript * This,
+            /* [in] */ DWORD c);
+        
         END_INTERFACE
     } IPainterScriptVtbl;
 
@@ -719,6 +733,12 @@ EXTERN_C const IID IID_IPainterScript;
 
 #define IPainterScript_put_fontfamily(This,str)	\
     ( (This)->lpVtbl -> put_fontfamily(This,str) ) 
+
+#define IPainterScript_put_textrenderinghint(This,c)	\
+    ( (This)->lpVtbl -> put_textrenderinghint(This,c) ) 
+
+#define IPainterScript_put_stringtrimming(This,c)	\
+    ( (This)->lpVtbl -> put_stringtrimming(This,c) ) 
 
 #endif /* COBJMACROS */
 

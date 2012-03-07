@@ -13,6 +13,8 @@ struct NetworkSource : Source {
         char *zErrMsg = 0;
         sqlite3_exec(db, "CREATE TABLE files(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, verb TEXT, bonus INTEGER, mark INTEGER)", 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
+
+        UpgradeTable(db,"files");
     }
     ~NetworkSource() {
         sqlite3_close(db);

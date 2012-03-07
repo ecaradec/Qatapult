@@ -20,7 +20,7 @@ struct DBSource : Source {
     void validate(SourceResult *r) {
         WCHAR buff[4096];
         char *zErrMsg = 0;
-        wsprintf(buff, L"UPDATE %s SET bonus = MIN(bonus + 10, 100) WHERE key=\"%s\"\n", CStringW(m_dbname).GetString(), r->object->key);        
+        wsprintf(buff, L"UPDATE %s SET uses = uses+1, lastUse=datetime() WHERE key=\"%s\"\n", CStringW(m_dbname).GetString(), r->object->key);        
         int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {

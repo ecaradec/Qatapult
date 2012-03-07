@@ -19,6 +19,8 @@ int getResultsCB(void *NotUsed, int argc, char **argv, char **azColName);
 int getStringCB(void *NotUsed, int argc, char **argv, char **azColName);
 int getIntCB(void *NotUsed, int argc, char **argv, char **azColName);
 
+#include "Upgrade.h"
+
 CString md5(const CString &data);
 CStringA sqlEscapeString(const CStringA &args);
 CStringW sqlEscapeStringW(const CStringW &args);
@@ -52,9 +54,7 @@ extern CString g_fontfamily;
 bool FuzzyMatch(const CString &w_,const CString &q_);
 
 struct Source {
-    Source(const CString& t)
-        :itemlistFont(g_fontfamily, 8.0f, FontStyleBold, UnitPoint),
-         itemscoreFont(g_fontfamily, 8.0f) {
+    Source(const CString& t) {
         def=false;
         m_refreshPeriod=0;
         m_name=t;
@@ -63,9 +63,7 @@ struct Source {
         m_prefix=0;
         sfitemlist.SetTrimming(StringTrimmingEllipsisCharacter);
     }
-    Source(const CString& t, const CString &n)
-    :itemlistFont(g_fontfamily, 8.0f, FontStyleBold, UnitPoint),
-     itemscoreFont(g_fontfamily, 8.0f){
+    Source(const CString& t, const CString &n) {
         def=false;
         m_refreshPeriod=0;
         m_name=n;
@@ -88,9 +86,9 @@ struct Source {
         if(sr->object)
             sr->object->drawItem(g,sr,r);
     }
-    virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r, bool b) {
+    virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontsize, bool b) {
         if(sr->object)
-            sr->object->drawListItem(g,sr,r,b);
+            sr->object->drawListItem(g,sr,r,fontsize, b);
     }
     // get results
     // fuse index and bonus from the db
@@ -140,8 +138,6 @@ struct Source {
     int                             def;
     TCHAR                           m_prefix;
     StringFormat                    sfitemlist;
-    Gdiplus::Font                   itemlistFont;
-    Gdiplus::Font                   itemscoreFont;
     bool                            m_ignoreemptyquery;
     CString                         m_name;
     CString                         type;

@@ -409,4 +409,6 @@ struct AlphaGUI : IWindowlessGUI, UI {
     INT                        m_textcolor;    
     float                      m_fontsize;
     DWORD                      m_textalign;
+    DWORD                      m_textrenderinghint;
+    DWORD                      m_stringtrimming;
 };

@@ -52,6 +52,15 @@ struct PainterScript : IDispatchImpl<IPainterScript,&__uuidof(IPainterScript),&C
         g_fontfamily=CString(v);
         return S_OK;
     }
+    STDMETHOD(put_textrenderinghint)(DWORD c) {
+        m_pUI->m_textrenderinghint=c;
+        return S_OK;
+    }
+    STDMETHOD(put_stringtrimming)(DWORD c) {
+        m_pUI->m_stringtrimming=c;
+        return S_OK;
+    }
+
 
     static PainterScript *Make(AlphaGUI *pUI) {
         CComObject<PainterScript> *pImpl=0;

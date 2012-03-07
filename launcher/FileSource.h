@@ -12,6 +12,8 @@ struct FileSource : Source {
         char *zErrMsg = 0;
         sqlite3_exec(db, "CREATE TABLE files(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, verb TEXT, bonus INTEGER, mark INTEGER)", 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
+
+        UpgradeTable(db,"files");
     }
     ~FileSource() {
         sqlite3_close(db);
@@ -116,7 +118,7 @@ struct FileSource : Source {
         CString key=md5(path);
             
         rc = sqlite3_prepare_v2(db,
-                                "INSERT OR REPLACE INTO files(key,display,expand,path,bonus,mark) VALUES(?, ?, ?, ?, coalesce((SELECT bonus FROM files WHERE key=?), 0), ?);\n",
+                                "INSERT OR REPLACE INTO files(key,display,expand,path,uses,lastUse,mark) VALUES(?, ?, ?, ?, coalesce((SELECT uses FROM files WHERE key=?)+1, 0),datetime(),?);\n",
                                 -1, &stmt, &unused);
         rc = sqlite3_bind_text16(stmt, 1, key.GetString(), -1, SQLITE_STATIC);
         rc = sqlite3_bind_text16(stmt, 2, filename.TrimRight('\\').GetString(), -1, SQLITE_STATIC);
@@ -148,6 +150,8 @@ struct FileHistorySource : Source {
         char *zErrMsg = 0;
         sqlite3_exec(db, "CREATE TABLE files(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, verb TEXT, bonus INTEGER, mark INTEGER)", 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
+
+        UpgradeTable(db,"files");
     }
     ~FileHistorySource() {
         sqlite3_close(db);

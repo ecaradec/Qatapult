@@ -33,7 +33,10 @@ void Object::drawItem(Graphics &g, SourceResult *sr, RectF &r) {
     //    g_pUI->setStatus(getString(L"path"));
 }
 
-void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, bool selected) {        
+void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSize, bool selected) {
+    Gdiplus::Font itemlistFont(g_fontfamily, fontSize, FontStyleBold, UnitPoint);
+    Gdiplus::Font itemscoreFont(g_fontfamily, fontSize);
+
     if(selected)
         g.FillRectangle(&SolidBrush(Color(0xFFDDDDFF)), r);
     else
@@ -51,13 +54,13 @@ void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, bool selected
     if(str[0]==source->m_prefix)
         str=str.Mid(1);
 
-    g.DrawString(str, -1, &source->itemlistFont, RectF(x, r.Y+5.0f, r.Width-x, 14.0f), &source->sfitemlist, &SolidBrush(Color(0xFF000000)));
+    g.DrawString(str, -1, &itemlistFont, RectF(x, r.Y+5.0f, r.Width-x, 14.0f), &source->sfitemlist, &SolidBrush(Color(0xFF000000)));
         
     StringFormat sfscore;
     sfscore.SetAlignment(StringAlignmentNear);
-    g.DrawString(ItoS(sr->rank), -1, &source->itemscoreFont, RectF(r.X+r.Height+5+10, r.Y+25, r.Width, r.Height), &sfscore, &SolidBrush(Color(0xFF000000)));
+    g.DrawString(ItoS(sr->rank), -1, &itemscoreFont, RectF(r.X+r.Height+5+10, r.Y+25, r.Width, r.Height), &sfscore, &SolidBrush(Color(0xFF000000)));
 
-    Font pathfont(g_fontfamily, 8.0f);
+    Font pathfont(g_fontfamily, fontSize);
     StringFormat sfpath;
     sfpath.SetTrimming(StringTrimmingEllipsisPath);
     CString path(sr->source->getString(*sr,L"path"));

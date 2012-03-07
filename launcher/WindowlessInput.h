@@ -4,14 +4,8 @@ struct WindowlessInput {
         m_text=L"";
         m_caretpos=0;
     }
-    void Draw(HDC hdc, const RectF &r, StringFormat &sf, TCHAR prefix, Color c=0xFFFFFFFF) {
-        Graphics g(hdc);
-        g.SetSmoothingMode(SmoothingModeAntiAlias);
-        g.SetTextRenderingHint(TextRenderingHintAntiAlias);
-        g.SetInterpolationMode(InterpolationModeHighQualityBicubic);        
-        g.SetCompositingQuality(CompositingQualityHighQuality);
-
-        Gdiplus::Font f(g_fontfamily, 10.0f);
+    void Draw(Graphics &g, const RectF &r, StringFormat &sf, TCHAR prefix, float fontsize, Color c=0xFFFFFFFF) {
+        Gdiplus::Font f(g_fontfamily, fontsize);
         
         int caretpos=m_caretpos;
         CString text(m_text);

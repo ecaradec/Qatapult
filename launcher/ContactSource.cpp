@@ -90,8 +90,10 @@ Gdiplus::Bitmap *ContactObject::getIcon(long flags) {
 
 ContactSource::ContactSource() : DBSource(L"CONTACT",L"Contacts (Catalog )", L"contacts") {
     char *zErrMsg = 0;
-    sqlite3_exec(db, "CREATE TABLE contacts(key TEXT PRIMARY KEY ASC, display TEXT, email TEXT, bonus INTEGER)", 0, 0, &zErrMsg);       
+    sqlite3_exec(db, "CREATE TABLE contacts(key TEXT PRIMARY KEY ASC, display TEXT, email TEXT, bonus INTEGER)", 0, 0, &zErrMsg);
     sqlite3_free(zErrMsg);
+
+    UpgradeTable(db,"contacts");
 }
 void ContactSource::parseGmailContacts(const char *xml) {
     char *zErrMsg = 0;
