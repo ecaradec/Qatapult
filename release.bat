@@ -9,7 +9,7 @@ mkdir "%setupdir%"
 
 copy Release\Qatapult.exe workdir\
 cd workdir
-c:\unxtools\zip.exe -r "..\%setupdir%\Qatapult.zip" *.* -x plugins\* -x *.db -x settings.xml -x blat.log -x _* -x photos\* -x database\* -x dbghelp.dll -x vld_x86.dll -x Microsoft.DTfW.DHL.manifest
+c:\unxtools\zip.exe -r "..\%setupdir%\Qatapult.zip" *.* -x *.psd -x *.db -x settings.xml -x blat.log -x _* -x /Lib/* -x /databases/* -x /photos/* -x /plugins/* -x /skins/alfred-like/* -x dbghelp.dll -x vld_x86.dll -x Microsoft.DTfW.DHL.manifest
 cd ..
 
 :end
