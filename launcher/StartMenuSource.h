@@ -49,7 +49,7 @@ struct StartMenuSource : Source {
                                             UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),    // display
                                             UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),    // expand
                                             this,                                               // source
-                                            sqlite3_column_int(stmt,3),                         // id
+                                            0,                                                  // id
                                             0,                                                  // data                                            
                                             sqlite3_column_int(stmt,4)));                       // Use
 
@@ -107,7 +107,7 @@ struct StartMenuSource : Source {
             CString startmenu_key=md5(lnks[i]);
             
             rc = sqlite3_prepare_v2(db,
-                                    "INSERT OR REPLACE INTO startmenu(key,display,expand,path,bonus,mark) VALUES(?, ?, ?, ?, coalesce((SELECT bonus FROM startmenu WHERE key=?), 0), ?);\n",
+                                    "INSERT OR REPLACE INTO startmenu(key,display,expand,path,uses,mark) VALUES(?, ?, ?, ?, coalesce((SELECT uses FROM startmenu WHERE key=?), 0), ?);\n",
                                     -1, &stmt, &unused);
             rc = sqlite3_bind_text16(stmt, 1, startmenu_key.GetString(), -1, SQLITE_STATIC);
             rc = sqlite3_bind_text16(stmt, 2, str.GetString(), -1, SQLITE_STATIC);
@@ -135,7 +135,7 @@ struct StartMenuSource : Source {
         WCHAR buff[4096];
         char *zErrMsg = 0;
         // FIXME : bonus should be nb_use to allow fixing various coefficient to it
-        wsprintf(buff, L"UPDATE startmenu SET uses = uses + 1, lastUse=datetime() WHERE key=\"%s\"\n", r->object->key);        
+        wsprintf(buff, L"UPDATE startmenu SET uses = uses + 1 WHERE key=\"%s\"\n", r->object->key);        
         int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
     }

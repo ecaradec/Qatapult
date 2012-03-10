@@ -75,7 +75,7 @@ struct NetworkSource : Source {
             CString startmenu_key=md5(lnks[i]);
             
             rc = sqlite3_prepare_v2(db,
-                                    "INSERT OR REPLACE INTO files(key,display,expand,path,bonus,mark) VALUES(?, ?, ?, ?, coalesce((SELECT bonus FROM files WHERE key=?), 0), ?);\n",
+                                    "INSERT OR REPLACE INTO files(key,display,expand,path,uses,mark) VALUES(?, ?, ?, ?, coalesce((SELECT uses FROM files WHERE key=?), 0), ?);\n",
                                     -1, &stmt, &unused);
             rc = sqlite3_bind_text16(stmt, 1, startmenu_key.GetString(), -1, SQLITE_STATIC);
             rc = sqlite3_bind_text16(stmt, 2, str.GetString(), -1, SQLITE_STATIC);

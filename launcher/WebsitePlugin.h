@@ -10,8 +10,8 @@ struct WebsiteSource : DBSource {
 
         UpgradeTable(db,"websites");
 
-        sqlite3_exec(db, "INSERT OR REPLACE INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Google', 'Google', 'http://google.com', 'https://www.google.com/#q=%q', 'icons\\google.png', coalesce((SELECT bonus FROM websites WHERE key=\"Google\"), 0));\n\
-                          INSERT OR REPLACE INTO websites (key, display, href, searchHref, icon, bonus) VALUES('Amazon', 'Amazon', 'http://amazon.com', 'http://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=%q', 'icons\\amazon.png', coalesce((SELECT bonus FROM websites WHERE key=\"Amazon\"), 0));\n", 0, 0, &zErrMsg);
+        sqlite3_exec(db, "INSERT OR REPLACE INTO websites (key, display, href, searchHref, icon, uses) VALUES('Google', 'Google', 'http://google.com', 'https://www.google.com/#q=%q', 'icons\\google.png', coalesce((SELECT bonus FROM websites WHERE key=\"Google\"), 0));\n\
+                          INSERT OR REPLACE INTO websites (key, display, href, searchHref, icon, uses) VALUES('Amazon', 'Amazon', 'http://amazon.com', 'http://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=%q', 'icons\\amazon.png', coalesce((SELECT uses FROM websites WHERE key=\"Amazon\"), 0));\n", 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {

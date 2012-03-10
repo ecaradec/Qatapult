@@ -6,7 +6,7 @@ struct JScriptSource : Source {
     sqlite3         *db;
     CStringA         m_dbname;
     
-    sqlite3_stmt    *getbonusstmt;
+    sqlite3_stmt    *getusesstmt;
     sqlite3_stmt    *validatestmt;
 
     JScriptSource(AlphaGUI *pUI, const TCHAR *pluginname, const TCHAR *scriptpath):Source(L"JScript",CString(pluginname)+L" (Catalog )") {
@@ -30,14 +30,13 @@ struct JScriptSource : Source {
 
         UpgradeTable(db,"main");
 
-        const char *unused=0;            
-        
-        rc = sqlite3_prepare_v2(db,"SELECT bonus FROM main WHERE key = ?;",-1, &getbonusstmt, &unused);
+        const char *unused=0;                    
+        rc = sqlite3_prepare_v2(db,"SELECT uses FROM main WHERE key = ?;",-1, &getusesstmt, &unused);
 
-        rc = sqlite3_prepare_v2(db,"INSERT OR REPLACE INTO main (key, uses, lastUse) VALUES(?, coalesce((SELECT uses FROM main WHERE key=?), 0)+1, datetime());",-1, &validatestmt, &unused);
+        rc = sqlite3_prepare_v2(db,"INSERT OR REPLACE INTO main (key, uses, lastUse) VALUES(?, coalesce((SELECT uses FROM main WHERE key=?), 0)+1);",-1, &validatestmt, &unused);
     }
     ~JScriptSource() {
-        sqlite3_finalize(getbonusstmt);
+        sqlite3_finalize(getusesstmt);
         sqlite3_finalize(validatestmt);
         m_pQatapultScript->Release();
         sqlite3_close(db);
@@ -72,11 +71,11 @@ struct JScriptSource : Source {
             SourceResult *r=&results[i];
 
             CString q(query);
-            sqlite3_reset(getbonusstmt);
-            int rc = sqlite3_bind_text16(getbonusstmt, 1, r->object->key, -1, SQLITE_STATIC);                       
-            if(sqlite3_step(getbonusstmt)==SQLITE_ROW) {
+            sqlite3_reset(getusesstmt);
+            int rc = sqlite3_bind_text16(getusesstmt, 1, r->object->key, -1, SQLITE_STATIC);                       
+            if(sqlite3_step(getusesstmt)==SQLITE_ROW) {
                 //const char *errmsg=sqlite3_errmsg(db) ;
-                r->bonus=sqlite3_column_int(getbonusstmt,0);                
+                r->uses=sqlite3_column_int(getusesstmt,0);                
             }            
         }        
     }

@@ -137,7 +137,7 @@ void ContactSource::parseGmailContacts(const char *xml) {
         //    HttpDownload(photoHref, "photos\\"+key+".jpg");
 
         rc = sqlite3_prepare_v2(db,
-                                "INSERT OR REPLACE INTO contacts (key, display, email, bonus) VALUES(?, ?, ?, coalesce((SELECT bonus FROM contacts WHERE key=?), 0));\n",
+                                "INSERT OR REPLACE INTO contacts (key, display, email, uses) VALUES(?, ?, ?, coalesce((SELECT uses FROM contacts WHERE key=?), 0));\n",
                                 -1, &stmt, &unused);
         rc = sqlite3_bind_text(stmt, 1, key.GetString(), -1, SQLITE_STATIC);
         rc = sqlite3_bind_text(stmt, 2, title.GetString(), -1, SQLITE_STATIC);

@@ -118,7 +118,7 @@ struct FileSource : Source {
         CString key=md5(path);
             
         rc = sqlite3_prepare_v2(db,
-                                "INSERT OR REPLACE INTO files(key,display,expand,path,uses,lastUse,mark) VALUES(?, ?, ?, ?, coalesce((SELECT uses FROM files WHERE key=?)+1, 0),datetime(),?);\n",
+                                "INSERT OR REPLACE INTO files(key,display,expand,path,uses,mark) VALUES(?, ?, ?, ?, coalesce((SELECT uses FROM files WHERE key=?)+1, 0),?);\n",
                                 -1, &stmt, &unused);
         rc = sqlite3_bind_text16(stmt, 1, key.GetString(), -1, SQLITE_STATIC);
         rc = sqlite3_bind_text16(stmt, 2, filename.TrimRight('\\').GetString(), -1, SQLITE_STATIC);
