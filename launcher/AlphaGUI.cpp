@@ -585,6 +585,24 @@ void AlphaGUI::CreateSettingsDlg() {
     BOOL b=TreeView_SelectItem(hTreeView, htreeG);
 }
 
+// value of a match is the word length
+// -1 if the match is not consecutive 
+// ponderate by word length to get somthing that's between 0-1
+float evalMatch(const CString &W,const CString &Q) {
+    int q=0;
+    float score=0;
+    int cbonus=W.GetLength(); // consecutive match bonus
+    for(int i=0;i<W.GetLength()&&q!=Q.GetLength();i++) {
+        if(Q[q]==W[i]) {
+            q+=1;
+            score+=cbonus;            
+        } else {
+            cbonus-=1;
+        }
+    }
+    return float(score)/(W.GetLength()*W.GetLength());
+}
+
 void AlphaGUI::CollectItems(const CString &q, const uint pane, std::vector<SourceResult> &args, std::vector<SourceResult> &results, int def) {
     // collect all active rules (match could have an args that tell how much to match )
     // i should probably ignore the current pane for the match or just match until pane-1 ?
@@ -651,7 +669,8 @@ void AlphaGUI::CollectItems(const CString &q, const uint pane, std::vector<Sourc
             if(results[i].source->m_prefix!=0 && text[0]==results[i].source->m_prefix)
                 results[i].rank+=100;
 
-            matchingBonus=100*float(qlen) / text.GetLength();
+            //matchingBonus=100*float(qlen) / text.GetLength();
+            matchingBonus=100*evalMatch(text,Q);
             usageBonus=min(100,results[i].uses*5);
             results[i].rank = matchingBonus + usageBonus;
         }
