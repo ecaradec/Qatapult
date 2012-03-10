@@ -30,17 +30,17 @@ struct NetworkSource : Source {
         const char *unused=0;
         int rc;
 
-        rc = sqlite3_prepare_v2(db,"SELECT key, display, expand, path, bonus FROM files WHERE display LIKE ?;",-1, &stmt, &unused);
+        rc = sqlite3_prepare_v2(db,"SELECT key, display, expand, path, uses FROM files WHERE display LIKE ?;",-1, &stmt, &unused);
         rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q), -1, SQLITE_STATIC);
         int i=0;
         while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
-            results.push_back(SourceResult(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),        // key
-                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),        // display
-                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),        // expand
-                                            this,                         // source
-                                            sqlite3_column_int(stmt,3),   // id
-                                            0,                            // data
-                                            sqlite3_column_int(stmt,4))); // bonus
+            results.push_back(SourceResult(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),     // key
+                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),    // display
+                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),    // expand
+                                            this,                                               // source
+                                            0,                                                  // id
+                                            0,                                                  // data                                            
+                                            sqlite3_column_int(stmt,4)));                       // uses
             
             results.back().object=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
                                                     this,

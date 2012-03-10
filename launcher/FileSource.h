@@ -181,7 +181,7 @@ struct FileHistorySource : Source {
             int rc;
 
             rc = sqlite3_prepare_v2(db,
-                                    "SELECT key, display, expand, path, bonus FROM files WHERE display LIKE ?;",
+                                    "SELECT key, display, expand, path, uses FROM files WHERE display LIKE ?;",
                                     -1, &stmt, &unused);
             rc = sqlite3_bind_text16(stmt, 1, CString(L"%")+q.GetString()+L"%", -1, SQLITE_STATIC);
             int i=0;
@@ -190,9 +190,9 @@ struct FileHistorySource : Source {
                                                UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),        // display
                                                UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),        // expand
                                                this,                         // source
-                                               sqlite3_column_int(stmt,3),   // id
-                                               0,                            // data
-                                               sqlite3_column_int(stmt,4))); // bonus
+                                               0,                            // id
+                                               0,                            // data                                               
+                                               sqlite3_column_int(stmt,4)));                         // uses
 
                 results.back().object=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
                                                      this,

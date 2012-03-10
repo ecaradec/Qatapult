@@ -200,7 +200,7 @@ struct WindowSource : Source {
             TCHAR title[MAX_PATH]={0};
             GetWindowText(*it,title,sizeof(title));
             if(FuzzyMatch(title,q)) {
-                results.push_back(SourceResult(title,title,title,this,0,*it,0));
+                results.push_back(SourceResult(title,title,title,this,0,*it));
                 Object *o=new Object(ItoS((int)*it),type,this,title);
                 o->values[L"title"]=title;
                 o->values[L"hwnd"]=ItoS((int)*it);
@@ -313,9 +313,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
     AlphaGUI();
     ~AlphaGUI();
     HANDLE m_workerthread;
-    int GetCurPane();
-    CString getArgString(int c,const TCHAR *name);
-    int getArgsCount();
+    
     bool isSourceEnabled(const char *name);
     bool isSourceByDefault(const char *name);
     void Init();
@@ -341,14 +339,22 @@ struct AlphaGUI : IWindowlessGUI, UI {
     void SetArg(uint pane, SourceResult &r);
     void OnSelChange(SourceResult *r);
 
+    // arg querying
+    int GetCurPane();
+    CString getArgString(int c,const TCHAR *name);
+    int getArgsCount();
+    CString getResString(INT c, const TCHAR* name);
+    void setVisibleResCount(INT i);
 
     // public drawing functions
     void drawBitmap(const TCHAR *text, INT x, INT y, INT w, INT h);
     void drawInput(INT x, INT y, INT w, INT h);
     void drawText(const TCHAR *text, INT x, INT y, INT w, INT h);
     void drawItem(INT c, INT x, INT y, INT w, INT h);
+    void drawResItem(INT i, INT x, INT y, INT w, INT h);
     void drawEmphased(const TCHAR *text, const TCHAR *highlight, int flag, INT x, INT y, INT w, INT h);
     void drawResults(INT x, INT y, INT w, INT h);
+    void fillRectangle(INT x, INT y, INT w, INT h, DWORD c);
 
     void showMenu(int xPos,int yPos);
 
@@ -390,6 +396,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
     uint                       m_pane;
     INT                        m_crawlprogress;
     bool                       m_resultsvisible;
+    int                        m_visibleresultscount;
     int                        m_resultspos;
     std::vector<SourceResult>  m_results;  // currently displayed results
     std::vector<CString>       m_queries;
@@ -405,10 +412,12 @@ struct AlphaGUI : IWindowlessGUI, UI {
     CImage                     m_buffer;
     bool                       m_invalidatepending;
     int                        m_curWidth;
-    int                        m_curHeight;        
-    INT                        m_textcolor;    
+    int                        m_curHeight;
     float                      m_fontsize;
     DWORD                      m_textalign;
     DWORD                      m_textrenderinghint;
     DWORD                      m_stringtrimming;
+    DWORD                      m_resultfocuscolor;
+    DWORD                      m_resultscrollbarcolor;
+    DWORD                      m_resultbgcolor;
 };

@@ -50,6 +50,7 @@ void drawEmphased(Graphics &g, CString text, CString query, RectF &rect, int fla
 
 extern UI *g_pUI; // very lazy way to give access to the ui to the ui window proc
 extern CString g_fontfamily;
+extern DWORD g_textcolor;
 
 bool FuzzyMatch(const CString &w_,const CString &q_);
 
@@ -85,10 +86,6 @@ struct Source {
         // empty result may not have an object
         if(sr->object)
             sr->object->drawItem(g,sr,r);
-    }
-    virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontsize, bool b) {
-        if(sr->object)
-            sr->object->drawListItem(g,sr,r,fontsize, b);
     }
     // get results
     // fuse index and bonus from the db

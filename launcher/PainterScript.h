@@ -23,6 +23,10 @@ struct PainterScript : IDispatchImpl<IPainterScript,&__uuidof(IPainterScript),&C
         m_pUI->drawItem(arg,x,y,w,h);
         return S_OK;
     }
+    STDMETHOD(drawResItem)(INT i, INT x, INT y, INT w, INT h) {        
+        m_pUI->drawResItem(i,x,y,w,h);
+        return S_OK;
+    }
     STDMETHOD(drawEmphased)(BSTR text, BSTR highlight, INT x, INT y, INT w, INT h, INT flag) {
         m_pUI->drawEmphased(CString(text),CString(highlight),flag,x,y,w,h);
         return S_OK;
@@ -32,12 +36,17 @@ struct PainterScript : IDispatchImpl<IPainterScript,&__uuidof(IPainterScript),&C
         m_pUI->drawResults(x,y,w,h);
         return S_OK;
     }
+    STDMETHOD(fillRectangle)(INT x,INT y,INT w,INT h,DWORD c)
+    {
+        m_pUI->fillRectangle(x,y,w,h,c);
+        return S_OK;
+    }
     STDMETHOD(get_textcolor)(DWORD *c) {
-        *c=m_pUI->m_textcolor;
+        *c=g_textcolor;
         return S_OK;
     }
     STDMETHOD(put_textcolor)(DWORD c) {
-        m_pUI->m_textcolor=c;
+        g_textcolor=c;
         return S_OK;
     }
     STDMETHOD(put_fontsize)(float f) {
@@ -52,15 +61,26 @@ struct PainterScript : IDispatchImpl<IPainterScript,&__uuidof(IPainterScript),&C
         g_fontfamily=CString(v);
         return S_OK;
     }
-    STDMETHOD(put_textrenderinghint)(DWORD c) {
+    STDMETHOD(put_textRenderingHint)(DWORD c) {
         m_pUI->m_textrenderinghint=c;
         return S_OK;
     }
-    STDMETHOD(put_stringtrimming)(DWORD c) {
+    STDMETHOD(put_stringTrimming)(DWORD c) {
         m_pUI->m_stringtrimming=c;
         return S_OK;
     }
-
+    STDMETHOD(put_resultScrollbarColor)(DWORD c) {
+        m_pUI->m_resultscrollbarcolor=c;
+        return S_OK;
+    }
+    STDMETHOD(put_resultFocusColor)(DWORD c) {
+        m_pUI->m_resultfocuscolor=c;
+        return S_OK;
+    }
+    STDMETHOD(put_resultBgColor)(DWORD c) {
+        m_pUI->m_resultbgcolor=c;
+        return S_OK;
+    }
 
     static PainterScript *Make(AlphaGUI *pUI) {
         CComObject<PainterScript> *pImpl=0;

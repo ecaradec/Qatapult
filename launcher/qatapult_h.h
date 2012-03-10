@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0555 */
-/* at Wed Mar 07 23:05:10 2012
+/* at Sat Mar 10 16:27:25 2012
  */
 /* Compiler settings for qatapult.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 7.00.0555 
@@ -145,6 +145,20 @@ EXTERN_C const IID IID_IQatapultScript;
         virtual /* [propget] */ HRESULT STDMETHODCALLTYPE get_crawlprogress( 
             /* [retval][out] */ INT *i) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE getResValue( 
+            /* [in] */ INT c,
+            /* [in] */ BSTR name,
+            /* [retval][out] */ VARIANT *v) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE setVisibleResults( 
+            /* [in] */ INT i) = 0;
+        
+        virtual /* [propget] */ HRESULT STDMETHODCALLTYPE get_firstResult( 
+            /* [retval][out] */ INT *i) = 0;
+        
+        virtual /* [propget] */ HRESULT STDMETHODCALLTYPE get_focusedResult( 
+            /* [retval][out] */ INT *i) = 0;
+        
     };
     
 #else 	/* C style interface */
@@ -245,6 +259,24 @@ EXTERN_C const IID IID_IQatapultScript;
             IQatapultScript * This,
             /* [retval][out] */ INT *i);
         
+        HRESULT ( STDMETHODCALLTYPE *getResValue )( 
+            IQatapultScript * This,
+            /* [in] */ INT c,
+            /* [in] */ BSTR name,
+            /* [retval][out] */ VARIANT *v);
+        
+        HRESULT ( STDMETHODCALLTYPE *setVisibleResults )( 
+            IQatapultScript * This,
+            /* [in] */ INT i);
+        
+        /* [propget] */ HRESULT ( STDMETHODCALLTYPE *get_firstResult )( 
+            IQatapultScript * This,
+            /* [retval][out] */ INT *i);
+        
+        /* [propget] */ HRESULT ( STDMETHODCALLTYPE *get_focusedResult )( 
+            IQatapultScript * This,
+            /* [retval][out] */ INT *i);
+        
         END_INTERFACE
     } IQatapultScriptVtbl;
 
@@ -313,6 +345,18 @@ EXTERN_C const IID IID_IQatapultScript;
 
 #define IQatapultScript_get_crawlprogress(This,i)	\
     ( (This)->lpVtbl -> get_crawlprogress(This,i) ) 
+
+#define IQatapultScript_getResValue(This,c,name,v)	\
+    ( (This)->lpVtbl -> getResValue(This,c,name,v) ) 
+
+#define IQatapultScript_setVisibleResults(This,i)	\
+    ( (This)->lpVtbl -> setVisibleResults(This,i) ) 
+
+#define IQatapultScript_get_firstResult(This,i)	\
+    ( (This)->lpVtbl -> get_firstResult(This,i) ) 
+
+#define IQatapultScript_get_focusedResult(This,i)	\
+    ( (This)->lpVtbl -> get_focusedResult(This,i) ) 
 
 #endif /* COBJMACROS */
 
@@ -504,6 +548,13 @@ EXTERN_C const IID IID_IPainterScript;
             /* [in] */ INT w,
             /* [in] */ INT h) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE drawResItem( 
+            /* [in] */ INT arg,
+            /* [in] */ INT x,
+            /* [in] */ INT y,
+            /* [in] */ INT w,
+            /* [in] */ INT h) = 0;
+        
         virtual HRESULT STDMETHODCALLTYPE drawEmphased( 
             /* [in] */ BSTR text,
             /* [in] */ BSTR highlight,
@@ -518,6 +569,22 @@ EXTERN_C const IID IID_IPainterScript;
             /* [in] */ INT y,
             /* [in] */ INT w,
             /* [in] */ INT h) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE fillRectangle( 
+            /* [in] */ INT x,
+            /* [in] */ INT y,
+            /* [in] */ INT w,
+            /* [in] */ INT h,
+            /* [in] */ DWORD color) = 0;
+        
+        virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_resultScrollbarColor( 
+            /* [in] */ DWORD c) = 0;
+        
+        virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_resultBgColor( 
+            /* [in] */ DWORD c) = 0;
+        
+        virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_resultFocusColor( 
+            /* [in] */ DWORD c) = 0;
         
         virtual /* [propget] */ HRESULT STDMETHODCALLTYPE get_textcolor( 
             /* [retval][out] */ DWORD *c) = 0;
@@ -534,10 +601,10 @@ EXTERN_C const IID IID_IPainterScript;
         virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_fontfamily( 
             /* [in] */ BSTR str) = 0;
         
-        virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_textrenderinghint( 
+        virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_textRenderingHint( 
             /* [in] */ DWORD c) = 0;
         
-        virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_stringtrimming( 
+        virtual /* [propput] */ HRESULT STDMETHODCALLTYPE put_stringTrimming( 
             /* [in] */ DWORD c) = 0;
         
     };
@@ -620,6 +687,14 @@ EXTERN_C const IID IID_IPainterScript;
             /* [in] */ INT w,
             /* [in] */ INT h);
         
+        HRESULT ( STDMETHODCALLTYPE *drawResItem )( 
+            IPainterScript * This,
+            /* [in] */ INT arg,
+            /* [in] */ INT x,
+            /* [in] */ INT y,
+            /* [in] */ INT w,
+            /* [in] */ INT h);
+        
         HRESULT ( STDMETHODCALLTYPE *drawEmphased )( 
             IPainterScript * This,
             /* [in] */ BSTR text,
@@ -636,6 +711,26 @@ EXTERN_C const IID IID_IPainterScript;
             /* [in] */ INT y,
             /* [in] */ INT w,
             /* [in] */ INT h);
+        
+        HRESULT ( STDMETHODCALLTYPE *fillRectangle )( 
+            IPainterScript * This,
+            /* [in] */ INT x,
+            /* [in] */ INT y,
+            /* [in] */ INT w,
+            /* [in] */ INT h,
+            /* [in] */ DWORD color);
+        
+        /* [propput] */ HRESULT ( STDMETHODCALLTYPE *put_resultScrollbarColor )( 
+            IPainterScript * This,
+            /* [in] */ DWORD c);
+        
+        /* [propput] */ HRESULT ( STDMETHODCALLTYPE *put_resultBgColor )( 
+            IPainterScript * This,
+            /* [in] */ DWORD c);
+        
+        /* [propput] */ HRESULT ( STDMETHODCALLTYPE *put_resultFocusColor )( 
+            IPainterScript * This,
+            /* [in] */ DWORD c);
         
         /* [propget] */ HRESULT ( STDMETHODCALLTYPE *get_textcolor )( 
             IPainterScript * This,
@@ -657,11 +752,11 @@ EXTERN_C const IID IID_IPainterScript;
             IPainterScript * This,
             /* [in] */ BSTR str);
         
-        /* [propput] */ HRESULT ( STDMETHODCALLTYPE *put_textrenderinghint )( 
+        /* [propput] */ HRESULT ( STDMETHODCALLTYPE *put_textRenderingHint )( 
             IPainterScript * This,
             /* [in] */ DWORD c);
         
-        /* [propput] */ HRESULT ( STDMETHODCALLTYPE *put_stringtrimming )( 
+        /* [propput] */ HRESULT ( STDMETHODCALLTYPE *put_stringTrimming )( 
             IPainterScript * This,
             /* [in] */ DWORD c);
         
@@ -713,11 +808,26 @@ EXTERN_C const IID IID_IPainterScript;
 #define IPainterScript_drawItem(This,arg,x,y,w,h)	\
     ( (This)->lpVtbl -> drawItem(This,arg,x,y,w,h) ) 
 
+#define IPainterScript_drawResItem(This,arg,x,y,w,h)	\
+    ( (This)->lpVtbl -> drawResItem(This,arg,x,y,w,h) ) 
+
 #define IPainterScript_drawEmphased(This,text,highlight,x,y,w,h,flag)	\
     ( (This)->lpVtbl -> drawEmphased(This,text,highlight,x,y,w,h,flag) ) 
 
 #define IPainterScript_drawResults(This,x,y,w,h)	\
     ( (This)->lpVtbl -> drawResults(This,x,y,w,h) ) 
+
+#define IPainterScript_fillRectangle(This,x,y,w,h,color)	\
+    ( (This)->lpVtbl -> fillRectangle(This,x,y,w,h,color) ) 
+
+#define IPainterScript_put_resultScrollbarColor(This,c)	\
+    ( (This)->lpVtbl -> put_resultScrollbarColor(This,c) ) 
+
+#define IPainterScript_put_resultBgColor(This,c)	\
+    ( (This)->lpVtbl -> put_resultBgColor(This,c) ) 
+
+#define IPainterScript_put_resultFocusColor(This,c)	\
+    ( (This)->lpVtbl -> put_resultFocusColor(This,c) ) 
 
 #define IPainterScript_get_textcolor(This,c)	\
     ( (This)->lpVtbl -> get_textcolor(This,c) ) 
@@ -734,11 +844,11 @@ EXTERN_C const IID IID_IPainterScript;
 #define IPainterScript_put_fontfamily(This,str)	\
     ( (This)->lpVtbl -> put_fontfamily(This,str) ) 
 
-#define IPainterScript_put_textrenderinghint(This,c)	\
-    ( (This)->lpVtbl -> put_textrenderinghint(This,c) ) 
+#define IPainterScript_put_textRenderingHint(This,c)	\
+    ( (This)->lpVtbl -> put_textRenderingHint(This,c) ) 
 
-#define IPainterScript_put_stringtrimming(This,c)	\
-    ( (This)->lpVtbl -> put_stringtrimming(This,c) ) 
+#define IPainterScript_put_stringTrimming(This,c)	\
+    ( (This)->lpVtbl -> put_stringTrimming(This,c) ) 
 
 #endif /* COBJMACROS */
 

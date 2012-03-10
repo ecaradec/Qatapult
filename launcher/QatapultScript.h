@@ -57,6 +57,22 @@ struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript)
         *p=m_pUI->m_crawlprogress;
         return S_OK;
     }
+    STDMETHOD(getResValue)(INT i, BSTR name, VARIANT *v) {
+        CComVariant(m_pUI->getResString(i,CString(name))).Detach(v);
+        return S_OK;
+    }
+    STDMETHOD(setVisibleResults)(INT p) {
+        m_pUI->m_visibleresultscount=p;
+        return S_OK;
+    }
+    STDMETHOD(get_firstResult)(INT *p) {
+        *p=m_pUI->m_resultspos;
+        return S_OK;
+    }
+    STDMETHOD(get_focusedResult)(INT *p) {
+        *p=m_pUI->m_focusedresult;
+        return S_OK;
+    }
     static QatapultScript *Make(AlphaGUI *pUI) {
         CComObject<QatapultScript> *pImpl=0;
         CComObject<QatapultScript>::CreateInstance(&pImpl);

@@ -21,6 +21,10 @@ interface IQatapultScript : IDispatch
     [propget] HRESULT resultsvisible([out,retval] VARIANT_BOOL *b);
     HRESULT showmenu(INT x, INT y);
     [propget] HRESULT crawlprogress([out,retval] INT *i);
+    HRESULT getResValue([in] INT c, [in] BSTR name, [out,retval] VARIANT *v);
+    HRESULT setVisibleResults([in] INT i);
+    [propget] HRESULT firstResult([out,retval] INT *i);
+    [propget] HRESULT focusedResult([out,retval] INT *i);
 };
 
 [
@@ -49,15 +53,20 @@ interface IPainterScript : IDispatch
     HRESULT drawInput([in] INT x, [in] INT y, [in] INT w, [in] INT h);
     HRESULT drawText([in] BSTR text,[in] INT x, [in] INT y, [in] INT w, [in] INT h);
     HRESULT drawItem([in] INT arg, [in] INT x, [in] INT y, [in] INT w, [in] INT h);
+    HRESULT drawResItem([in] INT arg, [in] INT x, [in] INT y, [in] INT w, [in] INT h);
     HRESULT drawEmphased([in] BSTR text, [in] BSTR highlight, [in] INT x, [in] INT y, [in] INT w, [in] INT h, [in,defaultvalue(1)] INT flag);
     HRESULT drawResults([in] INT x, [in] INT y, [in] INT w, [in] INT h);
+    HRESULT fillRectangle([in] INT x, [in] INT y, [in] INT w, [in] INT h, [in] DWORD color);
+    [propput] HRESULT resultScrollbarColor([in] DWORD c);
+    [propput] HRESULT resultBgColor([in] DWORD c);
+    [propput] HRESULT resultFocusColor([in] DWORD c);
     [propget] HRESULT textcolor([out,retval] DWORD *c);
     [propput] HRESULT textcolor([in] DWORD c);
     [propput] HRESULT fontsize([in] float f);
     [propput] HRESULT textalign([in] DWORD c);
     [propput] HRESULT fontfamily([in] BSTR str);
-    [propput] HRESULT textrenderinghint([in] DWORD c);
-    [propput] HRESULT stringtrimming([in] DWORD c);
+    [propput] HRESULT textRenderingHint([in] DWORD c);
+    [propput] HRESULT stringTrimming([in] DWORD c);
 };
 
 

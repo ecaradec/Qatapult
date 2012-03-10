@@ -24,7 +24,7 @@ CString getExplorerSelection(HWND hwndFind);
 struct CurrentSelectionSource : Source {
     CurrentSelectionSource() : Source(L"FILE", L"Current selection (Catalog )") {
         m_ignoreemptyquery=true;
-        m_index[L"CurrentSelection"]=SourceResult(L"CurrentSelection", L"Current Selection", L"Current Selection", this, 0, 0, 0);
+        m_index[L"CurrentSelection"]=SourceResult(L"CurrentSelection", L"Current Selection", L"Current Selection", this);
     }
     ~CurrentSelectionSource() {
     }

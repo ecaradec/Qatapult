@@ -15,7 +15,7 @@ int     hotkeymodifiers=0;
 int     hotkeycode=0;
 HWND    g_foregroundWnd;
 CString g_fontfamily;
-
+DWORD   g_textcolor;
 
 struct QatapultAtlModule : CAtlModule {
     HRESULT AddCommonRGSReplacements(IRegistrarBase *) {
@@ -241,11 +241,15 @@ bool AlphaGUI::isSourceByDefault(const char *name) {
 }
 void AlphaGUI::Init() {   
     m_crawlprogress=0;
-    m_textcolor=0xFFFFFFFF;
+    g_textcolor=0xFFFFFFFF;
     m_fontsize=10.0f;
     m_textalign=StringAlignmentCenter;
     m_textrenderinghint=TextRenderingHintAntiAliasGridFit;
     m_stringtrimming=StringTrimmingEllipsisCharacter;
+
+    m_resultbgcolor=0xFFFFFFFF;
+    m_resultfocuscolor=0xFFDDDDFF;
+    m_resultscrollbarcolor=0xFF000000;
 
     settings.load_file("settings.xml");
 
@@ -388,8 +392,8 @@ SourceResult AlphaGUI::getEmptyResult() {
     r.object=new Object(L"EMPTY",L"EMPTY",m_emptysource,L"");
     return r;
 }
-void AlphaGUI::Reset() {        
-    delete m_buffer;
+void AlphaGUI::Reset() {
+    m_buffer.Destroy();
 
     bool b=!!PostThreadMessage(m_crawlThreadId,WM_STOPWORKERTHREAD,0,0);
     if(WaitForSingleObject(m_workerthread,5000)==WAIT_TIMEOUT)
@@ -622,6 +626,14 @@ void AlphaGUI::CollectItems(const CString &q, const uint pane, std::vector<Sourc
         m_customsources[pane]->collect(q,results,def,activesources);
     }
 
+    time_t currentTime;
+    time(&currentTime);
+
+    int matchingBonus;
+    int usageBonus;
+    int lastUseBonus;
+    int tdiff;
+
     uselev=0;
     CString Q(q); Q.MakeUpper();
     int qlen=max(1, Q.GetLength());
@@ -632,12 +644,16 @@ void AlphaGUI::CollectItems(const CString &q, const uint pane, std::vector<Sourc
         if(uselev) {
             int len=levenshtein_distance(CStringA(Q), CStringA(text).GetString());                
             float f = 1 - float(len) / text.GetLength();
-            results[i].rank = int(100*f + results[i].bonus);
+            results[i].rank = int(100*f + results[i].uses*5);
         } else {
-            if(results[i].source->m_prefix!=0 && text[0]==results[i].source->m_prefix)
-                results[i].bonus+=100;
+            results[i].rank=0;
 
-            results[i].rank = int(100*float(qlen) / text.GetLength() + results[i].bonus);
+            if(results[i].source->m_prefix!=0 && text[0]==results[i].source->m_prefix)
+                results[i].rank+=100;
+
+            matchingBonus=100*float(qlen) / text.GetLength();
+            usageBonus=min(100,results[i].uses*5);
+            results[i].rank = matchingBonus + usageBonus;
         }
         results[i].source->rate(&results[i]);
     }
@@ -715,6 +731,18 @@ void AlphaGUI::OnSelChange(SourceResult *r) {
     Invalidate();
 }
 
+CString AlphaGUI::getResString(int i, const TCHAR *name) {
+    if(i>=m_results.size())
+        return L"";
+    if(CString(name)==L"rank")
+        return ItoS(m_results[i].rank);
+    return m_results[i].object->getString(name);
+}
+
+void AlphaGUI::setVisibleResCount(int i) {
+    m_visibleresultscount=i;
+}
+
 static HDC   g_HDC;
 void AlphaGUI::drawBitmap(const TCHAR *text, INT x, INT y, INT w, INT h){    
     if(m_bitmaps.find(text)==m_bitmaps.end()) {
@@ -742,7 +770,7 @@ void AlphaGUI::drawInput(INT x, INT y, INT w, INT h){
 
     Graphics g(g_HDC);
     g.SetTextRenderingHint(TextRenderingHint(m_textrenderinghint));
-    m_input.Draw(g, RectF(x,y,w,h), sf, L'',m_fontsize,m_textcolor); /*m_args[m_pane].source->m_prefix*/
+    m_input.Draw(g, RectF(x,y,w,h), sf, L'',m_fontsize,g_textcolor); /*m_args[m_pane].source->m_prefix*/
 
     m_curWidth=max(m_curWidth,x+w);
     m_curHeight=max(m_curWidth,y+h);
@@ -756,7 +784,7 @@ void AlphaGUI::drawText(const TCHAR *text, INT x, INT y, INT w, INT h) {
     sf.SetAlignment(StringAlignment(m_textalign));
     sf.SetTrimming(StringTrimming(m_stringtrimming));
     Gdiplus::Font f(g_fontfamily, m_fontsize);
-    g.DrawString(text,-1,&f,RectF(x,y,w,h),&sf,&SolidBrush(m_textcolor));
+    g.DrawString(text,-1,&f,RectF(x,y,w,h),&sf,&SolidBrush(g_textcolor));
 }
 
 void AlphaGUI::drawItem(INT i, INT x, INT y, INT w, INT h){
@@ -774,10 +802,26 @@ void AlphaGUI::drawItem(INT i, INT x, INT y, INT w, INT h){
     m_curHeight=max(m_curWidth,y+h);
 }
 
+void AlphaGUI::drawResItem(INT i, INT x, INT y, INT w, INT h){
+    if(i>=m_results.size())
+        return;
+
+    Graphics g(g_HDC);
+    g.SetSmoothingMode(SmoothingModeAntiAlias);
+    g.SetInterpolationMode(InterpolationModeHighQualityBicubic);        
+    g.SetCompositingQuality(CompositingQualityHighQuality);
+
+    m_results[i].object->drawItem(g, &m_results[i], RectF(x, y, w, h));
+
+    m_curWidth=max(m_curWidth,x+w);
+    m_curHeight=max(m_curWidth,y+h);
+}
+
+
 void AlphaGUI::drawEmphased(const TCHAR *text, const TCHAR *highlight, INT flag, INT x, INT y, INT w, INT h){
     Graphics g(g_HDC);
     g.SetTextRenderingHint(TextRenderingHint(m_textrenderinghint));
-    ::drawEmphased(g,text,highlight,RectF(x,y,w,h),flag,StringAlignment(m_textalign),m_fontsize,m_textcolor);
+    ::drawEmphased(g,text,highlight,RectF(x,y,w,h),flag,StringAlignment(m_textalign),m_fontsize,g_textcolor);
 }
 
 void AlphaGUI::drawResults(INT x, INT y, INT w, INT h){
@@ -787,22 +831,38 @@ void AlphaGUI::drawResults(INT x, INT y, INT w, INT h){
     m_focusedresult=max(0,m_focusedresult);
     m_focusedresult=min(m_results.size()-1,m_focusedresult);
 
-    int visibleresults=min(m_results.size(),int(h/40));
-    if(m_focusedresult>=m_resultspos+visibleresults)
-        m_resultspos=m_focusedresult-visibleresults+1;
+    m_visibleresultscount=min(m_results.size(),int(h/40));
+    if(m_focusedresult>=m_resultspos+m_visibleresultscount)
+        m_resultspos=m_focusedresult-m_visibleresultscount+1;
     
     if(m_focusedresult<m_resultspos)
         m_resultspos=m_focusedresult;
     
-    for(int i=m_resultspos;i<m_resultspos+visibleresults;i++) {
+    int rw;
+    if(m_visibleresultscount<m_results.size())
+        rw=w-9;
+    else
+        rw=w;
+
+    for(int i=m_resultspos;i<m_resultspos+m_visibleresultscount;i++) {
         int p=i-m_resultspos;
-        m_results[i].object->drawListItem(g,&m_results[i],RectF(x,y+40*p,w,40),m_fontsize,m_focusedresult==i);
+        m_results[i].object->drawListItem(g,&m_results[i],RectF(x,y+40*p,rw,40),m_fontsize,m_focusedresult==i,g_textcolor,m_resultbgcolor,m_resultfocuscolor);
+    }
+    
+    if(m_visibleresultscount<m_results.size()) {        
+        g.FillRectangle(&SolidBrush(Color(m_resultbgcolor)),x+w-9,y,9,h);
+        g.FillRectangle(&SolidBrush(Color(m_resultscrollbarcolor)),x+w-7,y+2+(h-4)*m_resultspos/m_results.size(),5,(h-4)*m_visibleresultscount/m_results.size());
     }
 
     m_curWidth=max(m_curWidth,x+w);
     m_curHeight=max(m_curWidth,y+h);
 }
  
+void AlphaGUI::fillRectangle(INT x, INT y, INT w, INT h, DWORD c){
+    Graphics g(g_HDC);
+    g.FillRectangle(&SolidBrush(Color(c)),x,y,w,h);
+}
+
 void AlphaGUI::Update() {
     CString str;
     m_invalidatepending=false;        
@@ -848,7 +908,7 @@ void AlphaGUI::Update() {
     BLENDFUNCTION bf={AC_SRC_OVER, 0, 255, AC_SRC_ALPHA};
     BOOL b=::UpdateLayeredWindow(m_hwnd, 0, &p1, &s, g_HDC, &p2, 0, &bf, ULW_ALPHA);
       
-    g_HDC=m_buffer.GetDC();
+    m_buffer.ReleaseDC();
 }    
 CString AlphaGUI::getQuery(int p) {
     if(p==m_queries.size())
@@ -1064,33 +1124,47 @@ LRESULT AlphaGUI::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         m_input.del(bCtrl);
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && wParam == VK_DOWN)
+    else if(msg == WM_KEYDOWN && (wParam == VK_DOWN || wParam==VK_NEXT))
     {	
         if(m_editmode==1) {
             ;
         } else {
-            if(m_resultsvisible) {
+            if(m_resultsvisible && wParam == VK_DOWN) {
                 m_focusedresult++;
+            } else if(m_resultsvisible && wParam == VK_NEXT) {
+                m_focusedresult+=m_visibleresultscount;
             } else {
                 m_focusedresult=0;
             }
             m_resultsvisible=true;
             if(m_focusedresult>=m_results.size())
                 m_focusedresult=m_results.size()-1;
+
+            if(m_focusedresult>=m_resultspos+m_visibleresultscount)
+                m_resultspos=m_focusedresult-m_visibleresultscount+1;
+    
             if(m_results.size()>0)
                 OnSelChange(&m_results[m_focusedresult]);
             Invalidate();
         }
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && wParam == VK_UP)
+    else if(msg == WM_KEYDOWN && (wParam == VK_UP || wParam == VK_PRIOR))
     {	
         if(m_editmode==1) {
             ;
         } else {
-            m_focusedresult--;
+            if(wParam == VK_UP)
+                m_focusedresult--;
+            else if(wParam == VK_PRIOR)
+                m_focusedresult-=m_visibleresultscount;
+
             if(m_focusedresult<0)
                 m_focusedresult=0;
+
+            if(m_focusedresult<m_resultspos)
+                m_resultspos=m_focusedresult;
+
             if(m_results.size()>m_focusedresult)
                 OnSelChange(&m_results[m_focusedresult]);
             Invalidate();

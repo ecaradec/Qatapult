@@ -8,9 +8,10 @@ Object *Object::clone() {
     return new Object(*this);
 }
 CString Object::getString(const TCHAR *val_) {
-    if(CString(val_)==L"type")
+    CString v(val_);
+    if(v==L"type")
         return type;
-    if(CString(val_)==L"status")
+    else if(v==L"status")
         return values[L"text"];
     return values[val_];
 }
@@ -24,6 +25,8 @@ Gdiplus::Bitmap *Object::getIcon(long flags) {
     return Gdiplus::Bitmap::FromFile(L"icons\\default.png");
 }
 void Object::drawItem(Graphics &g, SourceResult *sr, RectF &r) {        
+    if(!sr->icon)
+        sr->icon=getIcon(0);
     if(sr->icon)
         g.DrawImage(sr->icon, r);
     
@@ -33,14 +36,14 @@ void Object::drawItem(Graphics &g, SourceResult *sr, RectF &r) {
     //    g_pUI->setStatus(getString(L"path"));
 }
 
-void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSize, bool selected) {
+void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSize, bool selected, DWORD textcolor, DWORD bgcolor, DWORD focuscolor) {
     Gdiplus::Font itemlistFont(g_fontfamily, fontSize, FontStyleBold, UnitPoint);
     Gdiplus::Font itemscoreFont(g_fontfamily, fontSize);
 
     if(selected)
-        g.FillRectangle(&SolidBrush(Color(0xFFDDDDFF)), r);
+        g.FillRectangle(&SolidBrush(Color(focuscolor)), r);
     else
-        g.FillRectangle(&SolidBrush(Color(0xFFFFFFFF)), r);
+        g.FillRectangle(&SolidBrush(Color(bgcolor)), r);
 
     if(!sr->smallicon)
         sr->smallicon=source->getIcon(sr,ICON_SIZE_SMALL);
@@ -54,18 +57,18 @@ void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSiz
     if(str[0]==source->m_prefix)
         str=str.Mid(1);
 
-    g.DrawString(str, -1, &itemlistFont, RectF(x, r.Y+5.0f, r.Width-x, 14.0f), &source->sfitemlist, &SolidBrush(Color(0xFF000000)));
+    g.DrawString(str, -1, &itemlistFont, RectF(x, r.Y+5.0f, r.Width-x, 14.0f), &source->sfitemlist, &SolidBrush(Color(textcolor)));
         
     StringFormat sfscore;
     sfscore.SetAlignment(StringAlignmentNear);
-    g.DrawString(ItoS(sr->rank), -1, &itemscoreFont, RectF(r.X+r.Height+5+10, r.Y+25, r.Width, r.Height), &sfscore, &SolidBrush(Color(0xFF000000)));
+    g.DrawString(ItoS(sr->rank), -1, &itemscoreFont, RectF(r.X+r.Height+5+10, r.Y+25, r.Width, r.Height), &sfscore, &SolidBrush(Color(textcolor)));
 
     Font pathfont(g_fontfamily, fontSize);
     StringFormat sfpath;
     sfpath.SetTrimming(StringTrimmingEllipsisPath);
     CString path(sr->source->getString(*sr,L"path"));
     path.TrimRight(L'\\');
-    g.DrawString(path.Left(path.ReverseFind(L'\\')), -1, &pathfont, RectF(r.X+r.Height+5+40, r.Y+25, r.Width-(r.X+r.Height+5+40), 14), &sfpath, &SolidBrush(Color(0xBB000000)));
+    g.DrawString(path.Left(path.ReverseFind(L'\\')), -1, &pathfont, RectF(r.X+r.Height+40, r.Y+25, r.Width-(r.X+r.Height+40), 14), &sfpath, &SolidBrush(Color(textcolor)));
 }
 
 FileObject::FileObject(const CString &k, Source *s, const CString &text, const CString &expand, const CString &path) :Object(k,L"FILE",s,text) {
