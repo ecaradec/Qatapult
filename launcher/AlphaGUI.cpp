@@ -935,7 +935,7 @@ void AlphaGUI::Update() {
     PainterScript *painterscript=PainterScript::Make(this);
     painterscript->AddRef();
     ary.Add(CComVariant(CComVariant((IDispatch*)painterscript)));
-    host.Run(CComBSTR(L"draw"),ary.GetSafeArrayPtr(),&ret);
+    m_painter.Run(CComBSTR(L"draw"),ary.GetSafeArrayPtr(),&ret);
         
     CRect workarea;
     ::SystemParametersInfo(SPI_GETWORKAREA, 0, &workarea, 0);
@@ -1319,7 +1319,7 @@ LRESULT AlphaGUI::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         CComVariant ret;
         ary.Add(CComVariant(CComVariant(xPos)));
         ary.Add(CComVariant(CComVariant(yPos)));
-        host.Run(CComBSTR(L"onClick"),ary.GetSafeArrayPtr(),&ret);
+        m_painter.Run(CComBSTR(L"onClick"),ary.GetSafeArrayPtr(),&ret);
             
         /*if(CRect(CPoint(m_curWidth-20,5), CSize(15,15)).PtInRect(CPoint(xPos, yPos))) {
             HMENU hmenu=CreatePopupMenu();
