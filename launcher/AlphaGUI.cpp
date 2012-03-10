@@ -686,13 +686,12 @@ void AlphaGUI::CollectItems(const CString &q, const uint pane, std::vector<Sourc
         } else {
             results[i].rank=0;
 
-            if(results[i].source->m_prefix!=0 && text[0]==results[i].source->m_prefix)
+            if(results[i].source->m_prefix!=0 && results[i].display[0]==results[i].source->m_prefix)
                 results[i].rank+=100;
 
-            //matchingBonus=100*float(qlen) / text.GetLength();
             matchingBonus=100*evalMatch(text,Q);
             usageBonus=min(100,results[i].uses*5);
-            results[i].rank = matchingBonus + usageBonus;
+            results[i].rank += matchingBonus + usageBonus;
         }
         results[i].source->rate(&results[i]);
     }
