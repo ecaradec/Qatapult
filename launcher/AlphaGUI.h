@@ -219,9 +219,8 @@ struct WindowSource : Source {
 // file,copyto,file => copy $p0.path $p2.path
 // text,clip => clip $p0.text
 // parseur : chercher les *, renvoyer la chaine, 
-
-struct CommandRule : Rule {
-    CommandRule(const CString &cmd,const CString &args, const CString &workdir):m_command(cmd),m_args(args),m_workdir(workdir) {
+struct ShellExecuteRule : Rule {    
+    ShellExecuteRule(const CString &cmd,const CString &args, const CString &workdir):m_command(cmd),m_args(args),m_workdir(workdir) {
         m_command.Trim();
     } // the type must be precised later
     bool execute(std::vector<SourceResult> &args) {
@@ -263,6 +262,19 @@ struct CommandRule : Rule {
     CString m_command;
     CString m_args;
     CString m_workdir;
+};
+
+struct ScriptRule : Rule {    
+    ScriptRule(ActiveScriptHost *pHost, const CString &script)
+        :m_script(script),m_pHost(pHost) {
+    }
+    bool execute(std::vector<SourceResult> &args) {
+        CComVariant v;
+        m_pHost->Eval(m_script,&v);
+        return true;
+    }
+    CString m_script;
+    ActiveScriptHost *m_pHost;
 };
 
 struct SourceOfSources : Source {
@@ -405,9 +417,10 @@ struct AlphaGUI : IWindowlessGUI, UI {
 
     // painting
     CString                    m_skin;
-    std::map<CString,Gdiplus::Bitmap*> m_bitmaps;
-    ActiveScriptHost           host;
+    ActiveScriptHost           m_painter;
     QatapultScript            *m_pQatapultScript;    
+
+    std::map<CString,Gdiplus::Bitmap*> m_bitmaps;
     int                        m_defaultwidth;    
     CImage                     m_buffer;
     bool                       m_invalidatepending;
@@ -420,4 +433,7 @@ struct AlphaGUI : IWindowlessGUI, UI {
     DWORD                      m_resultfocuscolor;
     DWORD                      m_resultscrollbarcolor;
     DWORD                      m_resultbgcolor;
+     
+    // actions
+    ActiveScriptHost           m_commandsHost;
 };

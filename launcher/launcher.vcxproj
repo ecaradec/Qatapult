@@ -145,6 +145,7 @@
     <ClInclude Include="HistorySource.h" />
     <ClInclude Include="http.h" />
     <ClInclude Include="IWindowlessGUI.h" />
+    <ClInclude Include="JScriptCommand.h" />
     <ClInclude Include="JScriptSource.h" />
     <ClInclude Include="LevhensteinDistance.h" />
     <ClInclude Include="NetworkSource.h" />

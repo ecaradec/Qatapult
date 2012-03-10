@@ -266,14 +266,14 @@ void AlphaGUI::Init() {
     }
 
     
-    host.Initialize(L"Qatapult",L"JScript");
+    m_painter.Initialize(L"Qatapult",L"JScript");
     
     m_pQatapultScript=QatapultScript::Make(this);
     m_pQatapultScript->AddRef();
     
-    host.AddObject(L"qatapult",(IDispatch*)m_pQatapultScript);
+    m_painter.AddObject(L"qatapult",(IDispatch*)m_pQatapultScript);
 
-    host.ParseScriptText(getFileContent(m_skin+L"\\painter.js"),L"skin");
+    m_painter.ParseScriptText(getFileContent(m_skin+L"\\painter.js"),L"skin");
 
     m_focusedresult=0;
     m_resultspos=0;
@@ -371,6 +371,16 @@ void AlphaGUI::Init() {
     for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++)
         (*it)->m_pArgs=&m_args;    
     
+
+    m_commandsHost.Initialize(L"Qatapult",L"JScript");
+    m_commandsHost.AddObject(L"qatapult",(IDispatch*)m_pQatapultScript);
+
+    std::vector<CString> commands;
+    FindFilesRecursively(L"plugins",L"*.command.js",commands,99,0);
+    for(std::vector<CString>::iterator it=commands.begin(); it!=commands.end(); it++) {
+        m_commandsHost.ParseScriptText(getFileContent(*it),*it);
+    }      
+
     OnQueryChange(L"");
     
     // we shouldn't create a thread for each source, this is inefficient
@@ -400,7 +410,9 @@ void AlphaGUI::Reset() {
         TerminateThread(m_workerthread,0);
 
     m_pQatapultScript=0;
-    host.Reset();
+    m_painter.Reset();
+
+    m_commandsHost.Reset();
 
     for(std::map<CString,Gdiplus::Bitmap*>::iterator it=m_bitmaps.begin(); it!=m_bitmaps.end(); it++) 
         delete it->second;
@@ -427,12 +439,18 @@ void AlphaGUI::Reset() {
     }
     m_sources.clear();
 }
+
 void AlphaGUI::LoadRules(pugi::xml_document &settings) {
     pugi::xpath_node_set ns=settings.select_nodes("/settings/rules/rule");
     for(pugi::xpath_node_set::const_iterator it=ns.begin(); it!=ns.end(); it++) {
-        Rule *r=new CommandRule(UTF8toUTF16(it->node().child_value("cmd")),
-                                UTF8toUTF16(it->node().child_value("args")),
-                                UTF8toUTF16(it->node().child_value("workdir")));
+        Rule *r=0;
+        if(it->node().child_value("script")!="") {
+            r=new ScriptRule(&m_commandsHost,UTF8toUTF16(it->node().child_value("script")));
+        } else {
+            r=new ShellExecuteRule(UTF8toUTF16(it->node().child_value("cmd")),
+                                   UTF8toUTF16(it->node().child_value("args")),
+                                   UTF8toUTF16(it->node().child_value("workdir")));
+        }
         m_rules.push_back(r);
         
         pugi::xpath_node_set ns=it->node().select_nodes("arg");
@@ -589,6 +607,8 @@ void AlphaGUI::CreateSettingsDlg() {
 // -1 if the match is not consecutive 
 // ponderate by word length to get somthing that's between 0-1
 float evalMatch(const CString &W,const CString &Q) {
+    if(W.GetLength()==0)
+        return 0;
     int q=0;
     float score=0;
     int cbonus=W.GetLength(); // consecutive match bonus
