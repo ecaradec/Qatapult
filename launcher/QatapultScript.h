@@ -1,5 +1,5 @@
 #pragma once
-#include "AlphaGUI.h"
+#include "Qatapult.h"
 
 struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript),&CAtlModule::m_libid,0xFFFF,0xFFFF>, CComObjectRoot {
     BEGIN_COM_MAP(QatapultScript)
@@ -73,11 +73,11 @@ struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript)
         *p=m_pUI->m_focusedresult;
         return S_OK;
     }
-    static QatapultScript *Make(AlphaGUI *pUI) {
+    static QatapultScript *Make(Qatapult *pUI) {
         CComObject<QatapultScript> *pImpl=0;
         CComObject<QatapultScript>::CreateInstance(&pImpl);
         pImpl->m_pUI=pUI;
         return pImpl;
     }
-    AlphaGUI *m_pUI;
+    Qatapult *m_pUI;
 };

@@ -3,7 +3,7 @@
 //
 
 #include "stdafx.h"
-#include "AlphaGUI.h"
+#include "Qatapult.h"
 #include <psapi.h>
 
 #ifdef _DEBUG
@@ -50,7 +50,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     Gdiplus::GdiplusStartupInput gdiplusStartupInput;
     Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
-    AlphaGUI gui; 
+    Qatapult gui; 
 
     MSG msg;
     while(GetMessage(&msg, NULL, 0, 0) > 0)

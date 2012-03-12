@@ -1,5 +1,5 @@
 #pragma once
-#include "AlphaGUI.h"
+#include "Qatapult.h"
 
 struct PainterScript : IDispatchImpl<IPainterScript,&__uuidof(IPainterScript),&CAtlModule::m_libid,0xFFFF,0xFFFF>, CComObjectRoot {
     BEGIN_COM_MAP(PainterScript)
@@ -82,12 +82,12 @@ struct PainterScript : IDispatchImpl<IPainterScript,&__uuidof(IPainterScript),&C
         return S_OK;
     }
 
-    static PainterScript *Make(AlphaGUI *pUI) {
+    static PainterScript *Make(Qatapult *pUI) {
         CComObject<PainterScript> *pImpl=0;
         CComObject<PainterScript>::CreateInstance(&pImpl);
         pImpl->m_pUI=pUI;
         return pImpl;
     }
 
-    AlphaGUI *m_pUI;
+    Qatapult *m_pUI;
 };

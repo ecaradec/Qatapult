@@ -9,7 +9,7 @@ struct JScriptSource : Source {
     sqlite3_stmt    *getusesstmt;
     sqlite3_stmt    *validatestmt;
 
-    JScriptSource(AlphaGUI *pUI, const TCHAR *pluginname, const TCHAR *scriptpath):Source(L"JScript",CString(pluginname)+L" (Catalog )") {
+    JScriptSource(Qatapult *pUI, const TCHAR *pluginname, const TCHAR *scriptpath):Source(L"JScript",CString(pluginname)+L" (Catalog )") {
         host.Initialize(L"Qatapult",L"JScript");
                 
         m_pQatapultScript=QatapultScript::Make(pUI);
@@ -82,3 +82,5 @@ struct JScriptSource : Source {
 
     QatapultScript *m_pQatapultScript;
 };
+
+

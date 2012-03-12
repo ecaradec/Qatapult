@@ -34,6 +34,8 @@ struct CollecterScript : IDispatchImpl<ICollecterScript,&__uuidof(ICollecterScri
                 m_pSourceResults->back().display=r;
             else if(n==L"expand")
                 m_pSourceResults->back().expand=r;
+            else if(n==L"bonus")
+                m_pSourceResults->back().bonus=ret.intVal;
 
             m_pSourceResults->back().object->values[CString(name)]=CString(ret);
         }

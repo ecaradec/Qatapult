@@ -70,7 +70,7 @@ struct FileSource : Source {
                     r.display=foldername;
                     r.expand=noslash+L"\\";
                     r.source=this;
-                    r.bonus=1000;
+                    r.bonus=100;
                     results.push_back(r);
 
                     results.back().object=new FileObject(noslash+L"\\",this,foldername,noslash+L"\\",noslash+L"\\");

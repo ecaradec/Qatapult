@@ -36,9 +36,6 @@
     <ClInclude Include="Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AlphaGUI.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FindFileRecursively.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -180,6 +177,9 @@
     <ClInclude Include="JScriptCommand.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Qatapult.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="launcher.cpp">
@@ -206,9 +206,6 @@
     <ClCompile Include="qatapult_i.c">
       <Filter>Header Files</Filter>
     </ClCompile>
-    <ClCompile Include="AlphaGUI.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
     <ClCompile Include="CurrentSelectionSource.cpp">
       <Filter>Header Files</Filter>
     </ClCompile>
@@ -228,6 +225,9 @@
       <Filter>Header Files</Filter>
     </ClCompile>
     <ClCompile Include="ContactSource.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Qatapult.cpp">
       <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>

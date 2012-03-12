@@ -48,6 +48,11 @@ struct ActiveScriptHost : IActiveScriptSite, IActiveScriptSiteDebug
 
         for(std::map<CString, IDispatch*>::iterator it=m_objects.begin(); it!=m_objects.end(); it++)
             it->second->Release();
+        m_objects.clear();
+
+        for(std::map<DWORD, IDebugDocumentHelper*>::iterator it=m_DDHList.begin(); it!=m_DDHList.end(); it++)
+            it->second->Release();
+        m_DDHList.clear();
     }
     HRESULT Initialize(const wchar_t *appName, const wchar_t *engineName)
     {
