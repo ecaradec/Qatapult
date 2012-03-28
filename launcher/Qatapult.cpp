@@ -782,7 +782,7 @@ void Qatapult::setArg(uint pane, SourceResult &r) {
         r.source->copy(r,&m_args.back());
     } else {
         m_args[pane].source->clear(m_args[pane]);
-        r.source->copy(r,&m_args[pane]);
+        r.source->copy(r,&m_args[pane]);        
     }
 }
 
@@ -1064,7 +1064,9 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             if(m_results.size()>0) {
                 OnSelChange(&m_results.front());
             } else {
-                OnSelChange(&getEmptyResult());
+                SourceResult &r=getEmptyResult();
+                OnSelChange(&r);
+                r.source->clear(r);
             }
             delete p;
         }
@@ -1088,7 +1090,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             std::sort(m_nextresults.begin(), m_nextresults.end(), ResultSourceCmp);
 
             if(m_nextresults.size()!=0) {
-                setArg(m_pane+1,m_nextresults.front()); 
+                setArg(m_pane+1,m_nextresults.front());
             }
 
             delete p;
