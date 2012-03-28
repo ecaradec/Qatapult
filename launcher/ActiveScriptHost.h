@@ -118,7 +118,6 @@ struct ActiveScriptHost : IActiveScriptSite, IActiveScriptSiteDebug
         CComObject<RequireScript> *pRequire=0;
         CComObject<RequireScript>::CreateInstance(&pRequire);
         pRequire->m_pHost=this;
-        pRequire->AddRef();
         AddObject(L"require",(IDispatch*)pRequire);
 
         return S_OK;
