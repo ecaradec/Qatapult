@@ -297,11 +297,7 @@ void Qatapult::Init() {
         m_hwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", /*WS_VISIBLE|*/WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
         ::SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG)_WndProc);
         ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);
-    }
-
-    
-    QatapultScript *pQatapult=QatapultScript::Make(this);
-    pQatapult->AddRef();    
+    }    
 
     m_painter.Initialize(L"Qatapult",L"JScript");
     
@@ -416,7 +412,7 @@ void Qatapult::Init() {
         
 
     m_commandsHost.Initialize(L"Qatapult",L"JScript");
-    m_commandsHost.AddObject(L"qatapult",(IDispatch*)pQatapult);
+    m_commandsHost.AddObject(L"qatapult",(IDispatch*)m_pQatapultScript);
     
 
     std::vector<CString> commands;
