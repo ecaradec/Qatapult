@@ -180,6 +180,33 @@
     <ClInclude Include="Qatapult.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DYNACALL.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShellExecuteRule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptRule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SourceOfSources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SourceRule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextItemSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClockSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="makeObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="launcher.cpp">
@@ -228,6 +255,18 @@
       <Filter>Header Files</Filter>
     </ClCompile>
     <ClCompile Include="Qatapult.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="levenshtein_distance.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DYNWRAP.CPP">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DYNACALL.C">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="makeObject.cpp">
       <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,6 +1,8 @@
 #pragma once
 #include "QatapultScript.h"
 
+
+
 struct JScriptSource : Source {
     ActiveScriptHost host;
     sqlite3         *db;
@@ -15,8 +17,8 @@ struct JScriptSource : Source {
         m_pQatapultScript=QatapultScript::Make(pUI);
         m_pQatapultScript->AddRef();
         host.AddObject(L"qatapult",(IDispatch*)m_pQatapultScript);
-
-        host.ParseScriptText(getFileContent(scriptpath),scriptpath);
+        
+        host.Require(scriptpath);
 
         m_dbname="databases\\"+CStringA(pluginname)+".db";
 
@@ -44,13 +46,13 @@ struct JScriptSource : Source {
     void validate(SourceResult *r) {
         sqlite3_stmt *stmt=0;
         const char *unused=0;
-        int rc;
-        sqlite3_reset(validatestmt);
+        int rc;        
         rc = sqlite3_bind_text16(validatestmt, 1, r->object->key, -1, SQLITE_STATIC);
         rc = sqlite3_bind_text16(validatestmt, 2, r->object->key, -1, SQLITE_STATIC);
         rc = sqlite3_bind_text16(validatestmt, 3, r->object->key, -1, SQLITE_STATIC);
         sqlite3_step(validatestmt);
         const char *errmsg=sqlite3_errmsg(db);
+        sqlite3_reset(validatestmt);
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
         CComVariant ret;
@@ -70,13 +72,12 @@ struct JScriptSource : Source {
         for(int i=nbresults;i<results.size();i++) {
             SourceResult *r=&results[i];
 
-            CString q(query);
-            sqlite3_reset(getusesstmt);
+            CString q(query);            
             int rc = sqlite3_bind_text16(getusesstmt, 1, r->object->key, -1, SQLITE_STATIC);                       
             if(sqlite3_step(getusesstmt)==SQLITE_ROW) {
-                //const char *errmsg=sqlite3_errmsg(db) ;
                 r->uses=sqlite3_column_int(getusesstmt,0);                
-            }            
+            }
+            sqlite3_reset(getusesstmt);
         }        
     }
 

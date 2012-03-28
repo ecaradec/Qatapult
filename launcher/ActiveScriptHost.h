@@ -40,6 +40,38 @@ struct ActiveScriptHost : IActiveScriptSite, IActiveScriptSiteDebug
     {
         Reset();
     }
+
+
+    struct RequireScript : IDispatch, CComObjectRoot {
+        BEGIN_COM_MAP(RequireScript)
+            COM_INTERFACE_ENTRY(IDispatch)
+        END_COM_MAP()    
+
+        // These methods not implemented
+        STDMETHOD(GetTypeInfoCount)(UINT* pctinfo)
+        { return E_NOTIMPL;  }
+        STDMETHOD(GetTypeInfo)(UINT, LCID, ITypeInfo**)
+        { return E_NOTIMPL;  }
+
+        // Defer to CDynCallChain for everything else
+        STDMETHOD(GetIDsOfNames)(REFIID, LPOLESTR* rgszNames, 
+                   UINT cNames, LCID, DISPID* rgDispId)
+        {
+          return S_OK;
+        }
+        STDMETHOD(Invoke)(DISPID dispIdMember, REFIID, LCID, WORD, 
+                DISPPARAMS* pDispParams, VARIANT* pVarResult,
+                EXCEPINFO* pExcepInfo, UINT *puArgErr)
+        {
+            if(dispIdMember==0) {
+                m_pHost->Require(CString(pDispParams->rgvarg[0]));
+            }
+          return S_OK;
+        }
+
+        ActiveScriptHost *m_pHost;
+    };        
+
     void Reset() {
         m_pDDH=0;
         m_pPDM=0;
@@ -83,7 +115,21 @@ struct ActiveScriptHost : IActiveScriptSite, IActiveScriptSiteDebug
         if(!Q_ASSERT_SUCCEEDED(hr=m_pAS->SetScriptState(SCRIPTSTATE_CONNECTED)))
             return hr;
 
+        CComObject<RequireScript> *pRequire=0;
+        CComObject<RequireScript>::CreateInstance(&pRequire);
+        pRequire->m_pHost=this;
+        pRequire->AddRef();
+        AddObject(L"require",(IDispatch*)pRequire);
+
         return S_OK;
+    }
+    void Require(const TCHAR *path) {
+        if(m_required.find(path)!=m_required.end())
+            return;
+
+        OutputDebugString(L"Requiring "+CString(path)+L"\n");
+        CString txt=getFileContent(path);
+        ParseScriptText(txt, L"Qatapult");
     }
     HRESULT ParseScriptText(const wchar_t *code, const wchar_t *name)
     {
@@ -343,6 +389,7 @@ struct ActiveScriptHost : IActiveScriptSite, IActiveScriptSiteDebug
         return S_OK;
     }
 
+    std::map<CString,bool>        m_required;
     std::map<CString, IDispatch*> m_objects;
     std::map<DWORD,IDebugDocumentHelper*> m_DDHList;    
 

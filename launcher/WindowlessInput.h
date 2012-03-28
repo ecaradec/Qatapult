@@ -142,7 +142,7 @@ struct WindowlessInput {
     void appendAtCaret(const CString &s) {
         m_text=m_text.Left(m_caretpos)+s+m_text.Mid(m_caretpos);
         m_caretpos=m_text.Left(m_caretpos).GetLength()+s.GetLength();
-        m_pParent->OnQueryChange(m_text);
+        //m_pParent->OnQueryChange(m_text);
         m_pParent->Invalidate();
     }
     void home() {

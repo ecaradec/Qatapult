@@ -1,0 +1,1 @@
+SourceResult getResultFromIDispatch(const CString &type, const CString &key, IDispatch *args,Source *src);

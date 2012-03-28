@@ -18,6 +18,7 @@ interface IQatapultScript : IDispatch
     HRESULT getQuery([in] int i, [out,retval] BSTR *text);
     [propget] HRESULT resultscount([out,retval] INT *i);
     [propget] HRESULT textmode([out,retval] VARIANT_BOOL *b);
+    // DEPRECATED
     [propget] HRESULT resultsvisible([out,retval] VARIANT_BOOL *b);
     HRESULT showmenu(INT x, INT y);
     [propget] HRESULT crawlprogress([out,retval] INT *i);
@@ -25,6 +26,12 @@ interface IQatapultScript : IDispatch
     HRESULT setVisibleResults([in] INT i);
     [propget] HRESULT firstResult([out,retval] INT *i);
     [propget] HRESULT focusedResult([out,retval] INT *i);
+    HRESULT invalidate();
+    HRESULT getObject([in] BSTR, [out,retval] IDispatch **pp);
+    HRESULT getDynWrapper([out,retval] IDispatch **pp);
+    HRESULT trace([in] BSTR str);
+    HRESULT getBuffer([in] INT l, [out,retval] BSTR *pstr);
+    HRESULT setInput([in] IDispatch *p);
 };
 
 [

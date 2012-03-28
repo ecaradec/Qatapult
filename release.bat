@@ -8,8 +8,10 @@ mkdir setup
 mkdir "%setupdir%"
 
 copy Release\Qatapult.exe workdir\
+echo %YYYYMMDD%%HMS% > setup\currentversion
 cd workdir
-c:\unxtools\zip.exe -r "..\%setupdir%\Qatapult.zip" *.* -x *.psd -x *.db -x settings.xml -x blat.log -x _* -x /Lib/* -x /databases/* -x /photos/* -x /plugins/* -x /skins/alfred-like/* -x dbghelp.dll -x vld_x86.dll -x Microsoft.DTfW.DHL.manifest
+echo %YYYYMMDD%%HMS% > currentversion.txt
+c:\unxtools\zip.exe -r "..\%setupdir%\Qatapult.zip" *.* -x *.psd -x *.db -x settings.xml -x blat.log -x _* -x /databases/* -x /photos/* -x /plugins/* -x /skins/alfred-like/* -x dbghelp.dll -x vld_x86.dll -x Microsoft.DTfW.DHL.manifest
 cd ..
 
 :end

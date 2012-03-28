@@ -57,7 +57,7 @@ void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSiz
     if(str[0]==source->m_prefix)
         str=str.Mid(1);
 
-    g.DrawString(str, -1, &itemlistFont, RectF(x, r.Y+5.0f, r.Width-x, 14.0f), &source->sfitemlist, &SolidBrush(Color(textcolor)));
+    g.DrawString(str, -1, &itemlistFont, RectF(x, r.Y+5.0f, r.Width, 14.0f), &source->sfitemlist, &SolidBrush(Color(textcolor)));
         
     StringFormat sfscore;
     sfscore.SetAlignment(StringAlignmentNear);

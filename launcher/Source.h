@@ -53,6 +53,42 @@ extern CString g_fontfamily;
 extern DWORD g_textcolor;
 
 bool FuzzyMatch(const CString &w_,const CString &q_);
+inline int levenshtein_distance(const char *s,const char*t);
+// value of a match is the word length
+// -1 if the match is not consecutive 
+// ponderate by word length to get somthing that's between 0-1
+inline float evalMatch(const CString &w_,const CString &q_) {
+    CString W(w_); W.MakeUpper();
+    CString Q(q_); Q.MakeUpper();
+
+    if(Q.GetLength()==0 || W.GetLength()==0)
+        return 0;
+    int q=0;
+    float score=0;
+    int cbonus=0;//W.GetLength()/2; // consecutive match bonus    
+    int i=0;
+    int longuestMatch=0;
+    bool cmatch=false;
+    for(;i<W.GetLength()&&q!=Q.GetLength();i++) {
+        if(Q[q]==W[i]) {
+            if(cmatch)
+                longuestMatch++;
+            q+=1;
+            score+=1;
+            cmatch=true;
+        } else {
+            cmatch=false;
+        }        
+    }
+    float f=float(score + longuestMatch)/(2*W.GetLength());    
+    return f;
+    
+    /*if(Q.GetLength()==0)
+        return 0;
+    int d=levenshtein_distance(CStringA(W),CStringA(Q));
+    return float( W.GetLength() - d ) / W.GetLength();*/
+}
+
 
 struct Source {
     Source(const CString& t) {
@@ -130,8 +166,15 @@ struct Source {
     }
     virtual int getInt(const TCHAR *itemquery) { return false; }
 
-    virtual void rate(SourceResult *r) {}
+    virtual void rate(const CString &q, SourceResult *r) {
+        r->rank=0;
+        if(m_prefix!=0 && r->display[0]==m_prefix)
+            r->rank+=100;
 
+        CString T(r->object->getString(L"text"));
+        r->rank=min(100,r->uses*5) + r->bonus + r->rank+100*evalMatch(T,q);
+    }
+    
     int                             def;
     TCHAR                           m_prefix;
     StringFormat                    sfitemlist;

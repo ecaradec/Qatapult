@@ -5,11 +5,11 @@
 struct DBSource : Source {
     sqlite3 *db;
     CStringA  m_dbname;
-    CString   m_icon;
+    CString   m_icon;    
     DBSource(const CString &type,const CString &name, const CString &dbname) : Source(type,name), m_dbname(dbname) {
-        int rc = sqlite3_open(L"databases\\"+m_dbname+".db", &db);
+        int rc = sqlite3_open(L"databases\\"+m_dbname+".db", &db);        
     }    
-    ~DBSource() {
+    ~DBSource() {        
         sqlite3_close(db);
     }
     // get icon

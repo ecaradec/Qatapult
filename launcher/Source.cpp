@@ -94,7 +94,7 @@ void drawEmphased(Graphics &g, CString text, CString query, RectF &rect, int fla
     int q=0;
     for(int i=0;i<text.GetLength();i++) {
         CString cur=text[i];
-
+        
         RectF bbox;
         g.MeasureString(cur, -1, &hifont, PointF(0,0), &sfmtdraw, &bbox);
         if((r1.X+hyphenbbox.Width)>(rect.X+rect.Width) ) {
@@ -114,6 +114,7 @@ void drawEmphased(Graphics &g, CString text, CString query, RectF &rect, int fla
             b=same?&hibrush:&lobrush;
         
         g.DrawString(cur, -1, f, r1, &sfmtdraw, b);
+
         r1.X+=bbox.Width;
     }
 }

@@ -21,7 +21,7 @@ struct TextSource : Source {
 
         r.back().object=new TextObject(text,this);
     }
-    void rate(SourceResult *r) {
+    void rate(const CString &q, SourceResult *r) {
         if(r->id==0)
             r->rank=0;
     }

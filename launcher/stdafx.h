@@ -36,6 +36,7 @@
 #include <Winhttp.h>
 #include <Shlwapi.h>
 #include <windowsx.h>
+#include <dispex.h>
 
 #ifdef _UNICODE
 #if defined _M_IX86

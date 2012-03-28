@@ -1,22 +1,12 @@
 #pragma once
 
-struct QuitVerbSource : Source {
-    QuitVerbSource() : Source(L"QUITVERB") {        
-        m_index[L"Quit (Qatapult )"]=SourceResult(L"Quit (Qatapult )", L"Quit (Qatapult )", L"Quit (Qatapult )", this, 0, 0, m_index[L"Quit (Qatapult )"].bonus);
-        m_ignoreemptyquery=true;
-    }
-    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return Gdiplus::Bitmap::FromFile(L"icons\\exit.png");
-    }
-};
-
 // commented for use with textitemsource
-struct QuitRule : Rule {
-    QuitRule() {}
+struct QatapultRule : Rule {
+    QatapultRule() {}
     virtual bool execute(std::vector<SourceResult> &args) {
-        if(args[0].display==L"Quit (Q)")
+        if(args[1].display==L"Quit")
             PostQuitMessage(0);
-        else if(args[0].display==L"Reload (Q)")
+        else if(args[1].display==L"Reload")
             g_pUI->Reload();
 
         return true;

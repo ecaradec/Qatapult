@@ -1,21 +1,57 @@
 #pragma once
+#include <atlrx.h>
 
 struct Type {
-    Type(const CString &type) {
+    // only equality first
+    struct Predicat {
+        Predicat(const CString &n, const CString &v, const CString &op=L"="):m_name(n), m_value(v) {
+            if(op==L"=")
+                m_operator=0;
+            else if(op==L"~=") {
+                m_operator=1;
+            }
+        } 
+        int             m_operator;
+        CString         m_name;
+        CString         m_value;            
+    };
+
+    Type(const CString &type, std::vector<Predicat> &predicates=std::vector<Predicat>()) {
         m_type=type;
+        m_predicates=predicates;
     }
-    Type(const CString &type, const CString &icon) {
+    Type(const CString &type, const CString &icon, std::vector<Predicat> &predicates=std::vector<Predicat>()) {
         m_type=type;
         m_icon=icon;
+        m_predicates=predicates;
     }
-    CString m_type;
-    CString m_icon;
+    bool match(Object *o) {
+        if(o->type != m_type)
+            return false;
+        for(std::vector<Predicat>::iterator it=m_predicates.begin(); it!=m_predicates.end(); it++) {
+            CString n(o->getString(it->m_name));
+            CString N(n); N.MakeUpper();
+            switch(it->m_operator) {
+            case 0: {
+                if(N != it->m_value )
+                    return false;
+                break;
+            }
+            case 1:
+                CAtlRegExp<>    re;
+                CAtlREMatchContext<> m;
+                BOOL b=re.Parse( it->m_value ); 
+                if( !re.Match(n, &m) )
+                    return false;
+                break;
+            }
+        }
+        return true;
+    }
+    CString               m_type;
+    CString               m_icon;
+    std::vector<Predicat> m_predicates;
 };
-
-// a simple solution to mark the difference between sources and keywords
-//Type Keyword(const CString &type, const CString &icon) {
-//    return Type();
-//}
 
 struct Rule {
     Rule(){}
@@ -31,11 +67,10 @@ struct Rule {
         m_types.push_back(arg2);
         m_types.push_back(arg3);
     }
-
     int match(std::vector<SourceResult> &args, int l) {
         uint i; 
         for(i=0;i<args.size() && i<m_types.size() ;i++) {
-            if(args[i].object && args[i].object->type!=m_types[i].m_type)
+            if(args[i].object && !m_types[i].match(args[i].object))
                 break;
         }
 

@@ -139,7 +139,20 @@ struct FileSource : Source {
     CString getString(SourceResult &sr, const TCHAR *val) {        
         return sr.object->getString(val);
     }
+    void rate(const CString &q, SourceResult *r) {
+        CString Q(q);
 
+        Q=Q.Mid(Q.ReverseFind(L'\\')+1);
+
+        r->rank=0;
+        if(m_prefix!=0 && r->display[0]==m_prefix)
+            r->rank+=100;
+
+        CString P(r->object->getString(L"path"));
+        P.TrimRight(L"\\");
+        P=P.Mid(P.ReverseFind(L'\\')+1);        
+        r->rank=min(100,r->uses*5) + r->bonus + r->rank+100*evalMatch(P,Q);
+    }
     sqlite3 *db;
 };
 
@@ -183,7 +196,7 @@ struct FileHistorySource : Source {
             rc = sqlite3_prepare_v2(db,
                                     "SELECT key, display, expand, path, uses FROM files WHERE display LIKE ?;",
                                     -1, &stmt, &unused);
-            rc = sqlite3_bind_text16(stmt, 1, CString(L"%")+q.GetString()+L"%", -1, SQLITE_STATIC);
+            rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q).GetString(), -1, SQLITE_STATIC);
             int i=0;
             while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
                 results.push_back(SourceResult(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),        // key
@@ -207,6 +220,24 @@ struct FileHistorySource : Source {
             return;
         }
     }
+    void validate(SourceResult *r) {
+        sqlite3_stmt *stmt=0;
+        const char *unused=0;
+        int rc;
+
+        CString path=r->source->getString(*r,L"path");
+        path.TrimRight(L"\\");
+        
+        CString key=md5(path);            
+        rc = sqlite3_prepare_v2(db,
+                                "UPDATE files SET uses=uses+1 WHERE key=?",
+                                -1, &stmt, &unused);
+        rc = sqlite3_bind_text16(stmt, 1, key.GetString(), -1, SQLITE_STATIC);
+        rc = sqlite3_step(stmt);
+        const char *errmsg=sqlite3_errmsg(db) ;
+        sqlite3_finalize(stmt);
+    }
+    
     void crawl() {
         // should scan the history and remove non available items
     }

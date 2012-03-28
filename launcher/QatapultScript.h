@@ -1,6 +1,8 @@
 #pragma once
 #include "Qatapult.h"
 
+extern IDispatch *getDynamicWrapper();
+
 struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript),&CAtlModule::m_libid,0xFFFF,0xFFFF>, CComObjectRoot {
     BEGIN_COM_MAP(QatapultScript)
         COM_INTERFACE_ENTRY(IDispatch)
@@ -46,7 +48,9 @@ struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript)
         return S_OK;
     }
     STDMETHOD(get_resultsvisible)(VARIANT_BOOL *b) {
-        *b=m_pUI->m_resultsvisible?VARIANT_TRUE:VARIANT_FALSE;
+        // DEPRECATED
+        *b=VARIANT_TRUE;
+        //*b=m_pUI->m_resultsvisible?VARIANT_TRUE:VARIANT_FALSE;
         return S_OK;
     }
     STDMETHOD(showmenu)(INT x, INT y) {
@@ -71,6 +75,31 @@ struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript)
     }
     STDMETHOD(get_focusedResult)(INT *p) {
         *p=m_pUI->m_focusedresult;
+        return S_OK;
+    }
+    STDMETHOD(invalidate)() {
+        m_pUI->Invalidate();
+        return S_OK;
+    }
+    STDMETHOD(getObject)(BSTR q, IDispatch **p) {
+        return ::CoGetObject(q, NULL, IID_IDispatch, (void**)p);
+    }
+    STDMETHOD(trace)(BSTR str) {
+        OutputDebugString(CStringW(str)+L"\n");
+        return S_OK;
+    }
+    STDMETHOD(getDynWrapper)(IDispatch **pp) {
+        *pp=getDynamicWrapper();
+        (*pp)->AddRef();
+        return S_OK;
+    }
+    STDMETHOD(getBuffer)(INT l, BSTR *pstr) {
+        *pstr=SysAllocStringLen(NULL,l);
+        (*pstr)[0]=0;
+        return S_OK;
+    }
+    STDMETHOD(setInput)(IDispatch *p) {
+        m_pUI->setRetArg(0, getResultFromIDispatch(L"",L"",p,m_pUI->m_inputsource));
         return S_OK;
     }
     static QatapultScript *Make(Qatapult *pUI) {

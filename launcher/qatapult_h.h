@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0555 */
-/* at Mon Mar 12 22:08:45 2012
+/* at Wed Mar 28 23:30:49 2012
  */
 /* Compiler settings for qatapult.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 7.00.0555 
@@ -159,6 +159,25 @@ EXTERN_C const IID IID_IQatapultScript;
         virtual /* [propget] */ HRESULT STDMETHODCALLTYPE get_focusedResult( 
             /* [retval][out] */ INT *i) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE invalidate( void) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE getObject( 
+            /* [in] */ BSTR __MIDL__IQatapultScript0000,
+            /* [retval][out] */ IDispatch **pp) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE getDynWrapper( 
+            /* [retval][out] */ IDispatch **pp) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE trace( 
+            /* [in] */ BSTR str) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE getBuffer( 
+            /* [in] */ INT l,
+            /* [retval][out] */ BSTR *pstr) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE setInput( 
+            /* [in] */ IDispatch *p) = 0;
+        
     };
     
 #else 	/* C style interface */
@@ -277,6 +296,31 @@ EXTERN_C const IID IID_IQatapultScript;
             IQatapultScript * This,
             /* [retval][out] */ INT *i);
         
+        HRESULT ( STDMETHODCALLTYPE *invalidate )( 
+            IQatapultScript * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *getObject )( 
+            IQatapultScript * This,
+            /* [in] */ BSTR __MIDL__IQatapultScript0000,
+            /* [retval][out] */ IDispatch **pp);
+        
+        HRESULT ( STDMETHODCALLTYPE *getDynWrapper )( 
+            IQatapultScript * This,
+            /* [retval][out] */ IDispatch **pp);
+        
+        HRESULT ( STDMETHODCALLTYPE *trace )( 
+            IQatapultScript * This,
+            /* [in] */ BSTR str);
+        
+        HRESULT ( STDMETHODCALLTYPE *getBuffer )( 
+            IQatapultScript * This,
+            /* [in] */ INT l,
+            /* [retval][out] */ BSTR *pstr);
+        
+        HRESULT ( STDMETHODCALLTYPE *setInput )( 
+            IQatapultScript * This,
+            /* [in] */ IDispatch *p);
+        
         END_INTERFACE
     } IQatapultScriptVtbl;
 
@@ -357,6 +401,24 @@ EXTERN_C const IID IID_IQatapultScript;
 
 #define IQatapultScript_get_focusedResult(This,i)	\
     ( (This)->lpVtbl -> get_focusedResult(This,i) ) 
+
+#define IQatapultScript_invalidate(This)	\
+    ( (This)->lpVtbl -> invalidate(This) ) 
+
+#define IQatapultScript_getObject(This,__MIDL__IQatapultScript0000,pp)	\
+    ( (This)->lpVtbl -> getObject(This,__MIDL__IQatapultScript0000,pp) ) 
+
+#define IQatapultScript_getDynWrapper(This,pp)	\
+    ( (This)->lpVtbl -> getDynWrapper(This,pp) ) 
+
+#define IQatapultScript_trace(This,str)	\
+    ( (This)->lpVtbl -> trace(This,str) ) 
+
+#define IQatapultScript_getBuffer(This,l,pstr)	\
+    ( (This)->lpVtbl -> getBuffer(This,l,pstr) ) 
+
+#define IQatapultScript_setInput(This,p)	\
+    ( (This)->lpVtbl -> setInput(This,p) ) 
 
 #endif /* COBJMACROS */
 
