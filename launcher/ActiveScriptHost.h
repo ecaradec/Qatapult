@@ -73,6 +73,9 @@ struct ActiveScriptHost : IActiveScriptSite, IActiveScriptSiteDebug
     };        
 
     void Reset() {
+        if(m_pAS)
+            m_pAS->Close();
+
         m_pDDH=0;
         m_pPDM=0;
         m_pDA=0;

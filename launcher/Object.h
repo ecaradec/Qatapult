@@ -30,18 +30,21 @@ inline StringAlignment getStdAlignment(bool h) {
 
 // only stores object specifics into the object, then store sources commons in source
 // derive and gives an correctly typed pointer if in need for extra data
+extern int objects;
 struct Object {
     Object(const CString &k, const CString &t, Source *s, const CString &text) {
         type=t;
         key=k;
         source=s;        
         values[L"text"]=text;
+        objects++;
     }
     Object(const Object& c) {
         source=c.source;
         key=c.key;
         values=c.values;
         type=c.type;
+        objects++;
     }
     virtual ~Object();
     virtual Object *clone();

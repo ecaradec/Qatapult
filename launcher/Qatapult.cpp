@@ -188,6 +188,7 @@ BOOL CALLBACK EmailDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return FALSE;
 }
 
+int objects=0;
 Qatapult::Qatapult():m_input(this), m_invalidatepending(false) {
 #ifdef DEBUG
     VLDMarkAllLeaksAsReported();
@@ -459,11 +460,11 @@ void Qatapult::Reset() {
     if(m_pPainterScript)
         m_pPainterScript->Release();
     m_pPainterScript=0;
-
+    
     if(m_pQatapultScript)
         m_pQatapultScript->Release();
-
     m_pQatapultScript=0;
+
     m_painter.Reset();
 
     m_commandsHost.Reset();

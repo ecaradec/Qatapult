@@ -3,7 +3,9 @@
 #include "Source.h"
 #include "ShellLink.h"
 
-Object::~Object() {}
+Object::~Object() {
+    objects--;
+}
 Object *Object::clone() {
     return new Object(*this);
 }
