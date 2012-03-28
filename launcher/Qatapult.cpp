@@ -478,7 +478,9 @@ void Qatapult::Reset() {
     // bitmaps
     UnregisterHotKey(m_hwnd,1);
 
-    ClearResults(m_results);        
+    ClearResults(m_results);
+    ClearResults(m_nextresults);
+
     for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++) {
         delete *it;
     }        
