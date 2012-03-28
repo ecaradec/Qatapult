@@ -354,6 +354,13 @@ void Qatapult::Init() {
                 
     TextItemSource *t;
 
+    t=new TextItemSource(L"QATAPULTVERB");
+    addSource(t);
+    t->addItem(L"Quit",L"icons\\exit.png");
+    t->addItem(L"Reload",L"icons\\reload.png");
+    //t->def=true;
+    addRule(Type(L"FILE", Array(Type::Predicat(L"rfilename", L"QATAPULT.EXE"))), Type(L"QATAPULTVERB"), new QatapultRule);
+
     t=new TextItemSource(L"EMAILFILEVERB");
     addSource(t);
     t->addItem(L"Email to",L"icons\\emailto.png");
@@ -368,13 +375,6 @@ void Qatapult::Init() {
     addSource(t);
     t->addItem(L"Search With",L"icons\\searchwith.png");        
     addRule(Type(L"TEXT"),Type(t->type),Type(L"WEBSITE"),new WebSearchRule);
-                
-    t=new TextItemSource(L"QATAPULTVERB");
-    addSource(t);
-    t->addItem(L"Quit",L"icons\\exit.png");
-    t->addItem(L"Reload",L"icons\\reload.png");
-    t->def=true;
-    addRule(Type(L"FILE", Array(Type::Predicat(L"rfilename", L"QATAPULT.EXE"))), Type(L"QATAPULTVERB"), new QatapultRule);
 
     t=new TextItemSource(L"SOURCEVERB");
     addSource(t);
@@ -437,14 +437,15 @@ void Qatapult::Init() {
     // crawl should be called with an empty index for each source
     //_beginthread((void (*)(void*))crawlProc, 0, this);
     //m_workerthread=CreateThread(0, 0, (LPTHREAD_START_ROUTINE)crawlProc, this, 0, &m_crawlThreadId);
-    m_workerthread = (HANDLE)_beginthreadex(0, 0, (uint (__stdcall *)(void*))crawlProc, this, 0, (uint*)&m_crawlThreadId );
+    /*m_workerthread = (HANDLE)_beginthreadex(0, 0, (uint (__stdcall *)(void*))crawlProc, this, 0, (uint*)&m_crawlThreadId );
     
     m_mainThreadId=GetCurrentThreadId();
 
     BOOL b=PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
 
-    PostThreadMessage(m_crawlThreadId, WM_RELOADSETTINGS, 0, 0);            
+    PostThreadMessage(m_crawlThreadId, WM_RELOADSETTINGS, 0, 0);            */
     //PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
+    PostQuitMessage(0);
 }
 
 SourceResult Qatapult::getEmptyResult() {

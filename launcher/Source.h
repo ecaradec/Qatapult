@@ -91,7 +91,7 @@ inline float evalMatch(const CString &w_,const CString &q_) {
 
 
 struct Source {
-    Source(const CString& t) {
+    Source(const TCHAR* t) {
         def=false;
         m_refreshPeriod=0;
         m_name=t;
@@ -100,7 +100,7 @@ struct Source {
         m_prefix=0;
         sfitemlist.SetTrimming(StringTrimmingEllipsisCharacter);
     }
-    Source(const CString& t, const CString &n) {
+    Source(const TCHAR* t, const TCHAR *n) {
         def=false;
         m_refreshPeriod=0;
         m_name=n;

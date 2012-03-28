@@ -53,8 +53,10 @@ struct Type {
     std::vector<Predicat> m_predicates;
 };
 
+extern int rulescount;
 struct Rule {
-    Rule(){}
+    Rule(){
+    }
     Rule(const Type &arg1) {
         m_types.push_back(arg1);
     }
@@ -66,6 +68,8 @@ struct Rule {
         m_types.push_back(arg1);
         m_types.push_back(arg2);
         m_types.push_back(arg3);
+    }
+    virtual ~Rule() {
     }
     int match(std::vector<SourceResult> &args, int l) {
         uint i; 

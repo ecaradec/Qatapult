@@ -13,7 +13,7 @@ inline CStringW UTF8toUTF16(const CStringA& utf8)
     return utf16;
 }
 inline CStringA UTF16toUTF8(const CStringW& utf16)
-{
+{    
     CStringA utf8;
     int len = WideCharToMultiByte(CP_UTF8, 0, utf16, -1, NULL, 0, 0, 0);
     if (len>1)
