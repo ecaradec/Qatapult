@@ -434,15 +434,15 @@ void Qatapult::Init() {
     // crawl should be called with an empty index for each source
     //_beginthread((void (*)(void*))crawlProc, 0, this);
     //m_workerthread=CreateThread(0, 0, (LPTHREAD_START_ROUTINE)crawlProc, this, 0, &m_crawlThreadId);
-    /*m_workerthread = (HANDLE)_beginthreadex(0, 0, (uint (__stdcall *)(void*))crawlProc, this, 0, (uint*)&m_crawlThreadId );
+    m_workerthread = (HANDLE)_beginthreadex(0, 0, (uint (__stdcall *)(void*))crawlProc, this, 0, (uint*)&m_crawlThreadId );
     
     m_mainThreadId=GetCurrentThreadId();
 
     BOOL b=PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
 
-    PostThreadMessage(m_crawlThreadId, WM_RELOADSETTINGS, 0, 0);            */
+    PostThreadMessage(m_crawlThreadId, WM_RELOADSETTINGS, 0, 0);            
     //PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
-    PostQuitMessage(0);
+    //PostQuitMessage(0);
 }
 
 SourceResult Qatapult::getEmptyResult() {
