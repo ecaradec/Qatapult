@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef DEBUG
-//#include "vld.h"
+#include "vld.h"
 #endif
 
 #include "resource.h"
@@ -64,6 +64,7 @@ extern HWND g_foregroundWnd;
 #define WM_CURRENTVERSION (WM_USER+9)
 
 struct QatapultScript;
+struct PainterScript;
 struct SourceOfSources;
 
 struct Qatapult : IWindowlessGUI, UI {
@@ -169,7 +170,8 @@ struct Qatapult : IWindowlessGUI, UI {
     // painting
     CString                    m_skin;
     ActiveScriptHost           m_painter;
-    QatapultScript            *m_pQatapultScript;    
+    QatapultScript            *m_pQatapultScript;
+    PainterScript             *m_pPainterScript;
 
     std::map<CString,Gdiplus::Bitmap*> m_bitmaps;
     int                        m_defaultwidth;    

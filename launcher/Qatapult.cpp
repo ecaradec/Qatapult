@@ -190,7 +190,7 @@ BOOL CALLBACK EmailDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 Qatapult::Qatapult():m_input(this), m_invalidatepending(false) {
 #ifdef DEBUG
-    //VLDMarkAllLeaksAsReported();
+    VLDMarkAllLeaksAsReported();
 #endif                
     m_hwnd=0;
     m_request=0;
@@ -310,6 +310,9 @@ void Qatapult::Init() {
     
     m_painter.AddObject(L"qatapult",(IDispatch*)m_pQatapultScript);
     m_painter.Require(m_skin+L"\\painter.js");
+
+    m_pPainterScript=PainterScript::Make(this);
+    m_pPainterScript->AddRef();
 
     m_focusedresult=0;
     m_resultspos=0;
@@ -455,6 +458,13 @@ void Qatapult::Reset() {
     bool b=!!PostThreadMessage(m_crawlThreadId,WM_STOPWORKERTHREAD,0,0);
     if(WaitForSingleObject(m_workerthread,5000)==WAIT_TIMEOUT)
         TerminateThread(m_workerthread,0);
+
+    if(m_pPainterScript)
+        m_pPainterScript->Release();
+    m_pPainterScript=0;
+
+    if(m_pQatapultScript)
+        m_pQatapultScript->Release();
 
     m_pQatapultScript=0;
     m_painter.Reset();
@@ -955,10 +965,8 @@ void Qatapult::Update() {
     
     CComVariant ret;
     CComSafeArray<VARIANT> ary;
-    CComVariant v;    
-    PainterScript *painterscript=PainterScript::Make(this);
-    painterscript->AddRef();
-    ary.Add(CComVariant(CComVariant((IDispatch*)painterscript)));
+    CComVariant v;        
+    ary.Add(CComVariant(CComVariant((IDispatch*)m_pPainterScript)));
     m_painter.Run(CComBSTR(L"draw"),ary.GetSafeArrayPtr(),&ret);
         
     CRect workarea;
