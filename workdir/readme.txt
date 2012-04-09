@@ -1,7 +1,16 @@
-Tips :
+# Tips
 - The default hotkey is CTRL+SPACE
 - A few options are in the top right corner of the default skin
 - A lot of other possibilities are discussed on the DonationCoder forum http://www.donationcoder.com/forum/index.php?board=308.0 
+
+# How to send emails from blat
+Qatapult uses blat to send email. Currently you must set your email, username and password inside the settings.xml file directly.
+Blat also doesn't work natively with gmail so if you use gmail or another ssl secure email provider use the following tutorial
+http://www.jeffkastner.com/2010/01/blat-stunnel-and-gmail/ to configure blat.
+
+# How to add new personal rules
+Rules are defined into settings.xml. There are already a few defined that you can use for inspiration. Qatapult usually 
+will use a series of types and keywords with an action that fetch the various information from the selected panes on match.
 
 Source of icons :
 
@@ -76,5 +85,8 @@ http://www.iconfinder.com/icondetails/61506/128/42_icon
 
 source.png : (Free for commercial use - LGPL)
 http://www.iconfinder.com/icondetails/17904/128/cabinet_drawer_file_filing_manager_icon
+
+options.png : (Free for personal url )
+http://www.iconfinder.com/icondetails/35498/128/check_list_option_options_todo_icon
 
 Thanks to iconfinder as well for it's awesome  selection

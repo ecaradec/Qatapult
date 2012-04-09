@@ -37,7 +37,6 @@
 #include "EmailVerbRule.h"
 #include "EmailFileVerbRule.h"
 #include "WebsitePlugin.h"
-#include "QuitPlugin.h"
 #include "LevhensteinDistance.h"
 #include "ActiveScriptHost.h"
 #include "qatapult_h.h"
@@ -62,6 +61,7 @@ extern HWND g_foregroundWnd;
 #define WM_PUSHRESULT (WM_USER+7)
 #define WM_PUSHRESULT2 (WM_USER+8)
 #define WM_CURRENTVERSION (WM_USER+9)
+#define WM_SAVESETTINGS (WM_USER+10)
 
 struct QatapultScript;
 struct PainterScript;

@@ -60,3 +60,13 @@ using namespace Gdiplus;
 #include "sqlite3/sqlite3.h"
 
 typedef unsigned int uint;
+
+#pragma comment(lib,"Comctl32.lib")
+
+
+#define     SubclassWindowX(hwnd, lpfn)       \
+              ((WNDPROC)SetWindowLongPtr((hwnd), GWLP_WNDPROC, (LPARAM)(WNDPROC)(lpfn)))
+
+#include <atlapp.h>
+#include <atlwinx.h>
+#include <atldlgs.h>

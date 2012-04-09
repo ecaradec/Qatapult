@@ -20,7 +20,7 @@ BOOL WINAPI EnumerateFunc(LPNETRESOURCE lpnr, std::vector<CString> &lnks)
 		0,  // enumerate all resources
 		lpnr,       // NULL first time the function is called
 		&hEnum);    // handle to the resource
-
+    
 	if (dwResult != NO_ERROR) {
 		//printf("WnetOpenEnum failed with error %d\n", dwResult);
 		return FALSE;

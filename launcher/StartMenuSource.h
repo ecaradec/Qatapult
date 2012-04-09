@@ -4,13 +4,12 @@
 #include "Source.h"
 #include "sqlite3/sqlite3.h"
 #include "Utility.h"
+#include "resource.h"
 
 CString GetSpecialFolder(int csidl);
 int SaveSearchFolders(HWND hListView);
 
-BOOL CALLBACK SearchFolderDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 extern int uselev;
-
 
 // might be useful
 // http://stackoverflow.com/questions/1744902/how-might-i-obtain-the-icontextmenu-that-is-displayed-in-an-ishellview-context-m
@@ -195,3 +194,138 @@ while(pEIDL->Next(1, &pidl2, &fetched)==S_OK) {
     m_results.push_back(SourceResult(CStringW(name.pOleStr), L"", this, 0, 0));
     m_results.back().icon=::getIcon(pidlCF);
 }*/
+
+class SearchFoldersDlg : public CDialogImpl<SearchFoldersDlg>
+{
+public:
+    enum { IDD = IDD_EMPTY };
+ 
+    BEGIN_MSG_MAP(SearchFoldersDlg)
+        MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+        MESSAGE_HANDLER(WM_COMMAND, OnCommand)
+        MESSAGE_HANDLER(WM_NOTIFY, OnNotify)
+        //MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
+        //MESSAGE_HANDLER(WM_SAVESETTINGS, OnSaveSettings)        
+    END_MSG_MAP()
+
+    HWND hListView;
+
+    LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        CRect r;
+        INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
+        icex.dwICC = ICC_LISTVIEW_CLASSES;
+        InitCommonControlsEx(&icex);
+
+        RECT rcClient;                       // The parent window's client area.
+
+        GetClientRect(&rcClient); 
+
+        // Create the list-view window in report view with label editing enabled.
+        hListView = ::CreateWindow(WC_LISTVIEW, 
+                                        L"",
+                                        WS_CHILD | LVS_REPORT | LVS_EDITLABELS | WS_VISIBLE | WS_BORDER,
+                                        0, 0,
+                                        rcClient.right - rcClient.left,
+                                        rcClient.bottom - rcClient.top,
+                                        m_hWnd,
+                                        0,
+                                        0,
+                                        NULL); 
+
+        ListView_SetExtendedListViewStyle(hListView, LVS_EX_FULLROWSELECT);
+
+        // allows for full row selection
+        //ListView_SetExtendedListViewStyle(hListView, ListView_GetExtendedListViewStyle(hListView)| LVS_EX_FULLROWSELECT);
+
+        ::GetClientRect(hListView, &r);
+
+        LVCOLUMN lvc;
+        lvc.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+        lvc.pszText=L"Path";
+        lvc.cx=r.Width()-60;
+        ListView_InsertColumn(hListView, 0, &lvc);
+
+        lvc.pszText=L"Depth";
+        lvc.cx=60;
+        lvc.fmt = LVCFMT_CENTER;
+        ListView_InsertColumn(hListView, 1, &lvc);
+
+        //lvc.pszText=L"Bonus";
+        //lvc.cx=40;
+        //ListView_InsertColumn(GetDlgItem(hWnd, IDC_LIST3), 0, &lvc);
+            
+        WCHAR curDir[MAX_PATH];
+        GetCurrentDirectory(MAX_PATH, curDir);
+
+        int i=0;
+
+        pugi::xpath_node_set ns=settings.select_nodes("settings/searchFolders/folder");
+        for(pugi::xpath_node_set::const_iterator it=ns.begin(); it!=ns.end(); it++,i++) {
+            CStringW path=UTF8toUTF16(it->node().child_value());
+            if(path==L"")
+                break;
+            LVITEM lvi;
+            memset(&lvi, 0, sizeof(lvi));
+            lvi.pszText=(LPWSTR)path.GetString();
+            lvi.mask=LVFIF_TEXT;
+            lvi.iItem=i;
+            int iitem=ListView_InsertItem(hListView, &lvi);
+            ListView_SetItemText(hListView, iitem, 1, L"3");
+        }
+
+        LVITEM lvi;
+        memset(&lvi, 0, sizeof(lvi));
+        lvi.pszText=L"";
+        lvi.mask=LVFIF_TEXT;
+        lvi.iItem=i;
+        int res=ListView_InsertItem(hListView, &lvi);
+
+        //int ii=ListView_GetItemCount(hListView);
+        return TRUE;
+    }
+    LRESULT OnCommand(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        if(wParam==10000) {
+            int iitem=ListView_GetSelectionMark(hListView);
+            ListView_DeleteItem(hListView, iitem);
+
+            SaveSearchFolders(hListView);
+            return TRUE;
+        }
+        return FALSE;
+    }
+    LRESULT OnNotify(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        if(((NMHDR*)lParam)->code==LVN_ENDLABELEDIT) {
+            HWND hListView=((NMHDR*)lParam)->hwndFrom;
+
+            int ii=ListView_GetItemCount(hListView);
+
+            NMLVDISPINFO *nmdi=(NMLVDISPINFO*)lParam;
+            INT i=ListView_SetItem(hListView, &nmdi->item);
+
+            ListView_SetItemText(hListView, nmdi->item.iItem, 1, L"3");
+
+            int itemcount=SaveSearchFolders(hListView);
+
+            // if the edited item was the last, add an empty one
+            if(nmdi->item.iItem==(itemcount-1)) {
+                LVITEM lvi;
+                memset(&lvi, 0, sizeof(lvi));
+                lvi.pszText=L"";
+                lvi.mask=LVFIF_TEXT;
+                lvi.iItem=itemcount;
+                int res=ListView_InsertItem(hListView, &lvi);
+            }
+            return TRUE;
+        } else if(((NMHDR*)lParam)->code==NM_RCLICK) {
+            HMENU hmenu=CreatePopupMenu();
+            AppendMenu(hmenu, MF_STRING, 10000, L"Delete");
+            DWORD pos=GetMessagePos();
+            TrackPopupMenu(hmenu, TPM_LEFTALIGN, GET_X_LPARAM(pos), GET_Y_LPARAM(pos), 0, m_hWnd, 0);
+            return TRUE;
+        }
+        return FALSE;
+    }
+};

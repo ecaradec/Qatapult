@@ -359,6 +359,7 @@ HRESULT fParse(CDynCall* pThis, LPWSTR w, int c)
 void __stdcall _com_issue_error(long) {
 }
 
+#include <atlstr.h>
 // CDynCallChain class manages a simple CDynCall linked-list
 class CDynCallChain
 {
@@ -429,6 +430,8 @@ public:
     unsigned char *ptr=(unsigned char*)pDispParams->rgvarg[a].lVal; a++;
     int offset=(LONG)pDispParams->rgvarg[a].lVal; a++;
 
+    ptr+=offset;
+
     int i=0;
     for(i=0;i<sizeof(ArgInfo)/sizeof(ARGTYPEINFO);i++) {
         if( c == ArgInfo[i].id)
@@ -438,7 +441,16 @@ public:
         return E_FAIL;
     }
 
-    memcpy((unsigned char*)ptr+offset, &pDispParams->rgvarg[0].lVal, ArgInfo[i].size);
+    if(c==L'w') {
+        int len=SysStringLen(pDispParams->rgvarg[0].bstrVal);
+        wcsncpy((WCHAR*)ptr, pDispParams->rgvarg[0].bstrVal, len);
+        ((WCHAR*)ptr)[len]=0;
+    } else if(c==L's') {
+        CStringA s(pDispParams->rgvarg[0].bstrVal);
+        strncpy((char*)ptr, s.GetString(), s.GetLength());
+        ptr[s.GetLength()]=0;
+    } else
+        memcpy(ptr, &pDispParams->rgvarg[0].lVal, ArgInfo[i].size);
 
     //VariantClear(pVarResult);
     return S_OK;

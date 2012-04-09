@@ -11,8 +11,10 @@
 #include "SourceOfSources.h"
 #include "SourceRule.h"
 
-
 UI *g_pUI; // very lazy way to give access to the ui to the ui window proc
+Qatapult *g_pQatapult;
+#include "QatapultPlugin.h"
+
 CString settingsini;
 pugi::xml_document settings;
 pugi::xml_document settingsWT; // settings for the working thread
@@ -43,7 +45,9 @@ CString HotKeyToString(int modifier, int vk) {
         mod+=L"WIN+";
 
     CString c;
-    if(vk==VK_PAUSE)
+    if(vk==VK_SPACE)
+        c=L"SPACE";
+    else if(vk==VK_PAUSE)
         c=L"PAUSE";
     else if(vk==VK_ESCAPE)
         c=L"ESCAPE";            
@@ -107,7 +111,7 @@ BOOL CALLBACK GeneralDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         case WM_INITDIALOG:
         {
-            OldHotKeyEditProc=SubclassWindow(GetDlgItem(hWnd, IDC_HOTKEY1), HotKeyEditProc);
+            OldHotKeyEditProc=SubclassWindowX(GetDlgItem(hWnd, IDC_HOTKEY1), HotKeyEditProc);
             CString txt=HotKeyToString(hotkeymodifiers,hotkeycode);
             SetDlgItemText(hWnd,IDC_HOTKEY1, txt);
             return TRUE;
@@ -127,17 +131,6 @@ BOOL CALLBACK GeneralDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 int DelayLoadExceptionFilter(unsigned int code, struct _EXCEPTION_POINTERS *ep) {
     return EXCEPTION_CONTINUE_EXECUTION;
-}
-
-
-void CenterWindow(HWND hwnd) {
-    CRect workarea;
-    ::SystemParametersInfo(SPI_GETWORKAREA, 0, &workarea, 0);
-
-    CRect r;
-    GetWindowRect(hwnd, r);
-    
-    SetWindowPos(hwnd, 0, (workarea.left+workarea.right)/2-r.Width()/2, max(workarea.top, (workarea.top+workarea.bottom)/2 - r.Height()/2), 0, 0, SWP_NOSIZE);
 }
 
 BOOL CALLBACK ToggleSettingsEWProc(HWND hwnd, LPARAM lParam) {
@@ -160,10 +153,20 @@ BOOL CALLBACK SettingsDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         return TRUE;
         case WM_COMMAND:
             if(wParam==IDOK) {
-                g_pUI->InvalidateIndex();
+                // Get the first child window. Use it.
+                HWND hwndChild = ::GetWindow(hWnd, GW_CHILD | GW_HWNDFIRST );
+                while( hwndChild )
+                {
+                    ::SendMessage(hwndChild, WM_SAVESETTINGS, 0, 0);
+                    // Get the next window. Use it.
+                    hwndChild = ::GetWindow( hwndChild, GW_HWNDNEXT );
+                }
+                g_pQatapult->Reload();
+                //g_pUI->InvalidateIndex();
                 ::EndDialog(hWnd, 0);
             } else if(wParam==IDCANCEL) {
                 ::EndDialog(hWnd, 0);
+                g_pQatapult->Show();
             }
         return TRUE;
         case WM_NOTIFY:
@@ -188,11 +191,174 @@ BOOL CALLBACK EmailDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return FALSE;
 }
 
+struct PluginDesc {
+    PluginDesc(){}
+    PluginDesc(const TCHAR *n): name(n), key(n) {
+    }
+    CString key;
+    CString name;
+    CString desc;
+};
+
+void GetSubFolderList(const TCHAR *path, std::vector<CString> &subfolders) {
+    TCHAR szFullPattern[MAX_PATH];
+    WIN32_FIND_DATA FindFileData;
+    HANDLE hFindFile;
+    // first we are going to process any subdirectories
+    PathCombine(szFullPattern, path, _T("*"));
+    hFindFile = FindFirstFile(szFullPattern, &FindFileData);
+    if(hFindFile != INVALID_HANDLE_VALUE)
+    {
+        do
+        {
+            if(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY && CString(FindFileData.cFileName)!=L"." && CString(FindFileData.cFileName)!=L"..")
+                subfolders.push_back(FindFileData.cFileName);
+        } while(FindNextFile(hFindFile, &FindFileData));
+        FindClose(hFindFile);
+    }
+}
+
+void getPluginList(std::vector<PluginDesc> &plugins) {
+    plugins.push_back(L"Filesystem");
+    plugins.push_back(L"IndexedFiles");
+    plugins.push_back(L"Network");
+    plugins.push_back(L"Contacts");
+    plugins.push_back(L"Websites");
+    plugins.push_back(L"FileHistory");
+    plugins.push_back(L"ExplorerSelection");
+    plugins.push_back(L"Windows");
+
+    plugins.push_back(L"EmailFile");
+    plugins.push_back(L"EmailText");
+    plugins.push_back(L"WebsiteSearch");
+
+    std::vector<CString> pluginsfolders;
+    GetSubFolderList(L"plugins",pluginsfolders);
+    for(std::vector<CString>::iterator it=pluginsfolders.begin();it!=pluginsfolders.end();it++) {
+        CString key(*it);
+        CString pluginxml=L"plugins\\"+*it+"\\plugin.xml";
+
+        pugi::xml_document d;
+        d.load_file(pluginxml);
+        CStringA name=d.select_single_node("settings").node().child_value("name");
+        CStringA desc=d.select_single_node("settings").node().child_value("description");        
+
+        PluginDesc pd;
+        pd.key=key;
+        if(name==L"") {            
+            pd.name=key;
+            pd.desc=UTF8toUTF16(desc);
+        } else {
+            pd.name=UTF8toUTF16(name);
+            pd.desc=UTF8toUTF16(desc);            
+        }
+        plugins.push_back(pd);
+    }
+}
+
+
+
+class PluginsDlg : public CDialogImpl<PluginsDlg>
+{
+public:
+    enum { IDD = IDD_EMPTY };
+ 
+    BEGIN_MSG_MAP(PluginsDlg)
+        MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+        MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
+        MESSAGE_HANDLER(WM_SAVESETTINGS, OnSaveSettings)        
+    END_MSG_MAP()
+
+    std::vector<PluginDesc> m_plugins;
+    HWND                    m_hListView;
+
+    LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {         
+        INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
+        icex.dwICC = ICC_LISTVIEW_CLASSES;
+        InitCommonControlsEx(&icex);
+
+        RECT rcClient;                       // The parent window's client area.
+
+        GetClientRect(&rcClient); 
+
+        // Create the list-view window in report view with label editing enabled.
+        m_hListView = CreateWindow(WC_LISTVIEW, 
+                                      L"",
+                                      WS_CHILD | LVS_REPORT | WS_VISIBLE | WS_BORDER,
+                                      0, 0,
+                                      rcClient.right - rcClient.left,
+                                      rcClient.bottom - rcClient.top,
+                                      m_hWnd,
+                                      0,
+                                      0,
+                                      NULL); 
+
+        ListView_SetExtendedListViewStyle(m_hListView, LVS_EX_CHECKBOXES | LVS_EX_FULLROWSELECT);
+
+        LVCOLUMN lvc;
+        lvc.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+        lvc.pszText=L"Active";
+        lvc.fmt = LVCFMT_CENTER;
+        lvc.cx=20;
+        ListView_InsertColumn(m_hListView, 0, &lvc);
+
+        lvc.pszText=L"Name";
+        lvc.cx=120;
+        lvc.fmt = LVCFMT_LEFT;
+        ListView_InsertColumn(m_hListView, 1, &lvc);
+
+        lvc.pszText=L"Description";
+        lvc.cx=rcClient.right - rcClient.left - 160;
+        lvc.fmt = LVCFMT_LEFT;
+        ListView_InsertColumn(m_hListView, 2, &lvc);
+
+        int z=0;
+        Qatapult *pQ=(Qatapult*)lParam;
+        int i=0;
+        getPluginList(m_plugins);
+        for(int i=0;i<m_plugins.size();i++) {
+            LVITEM lvi;
+            memset(&lvi, 0, sizeof(lvi));
+            lvi.pszText=(LPWSTR)L"";
+            lvi.mask=LVFIF_TEXT;
+            lvi.iItem=i;
+            int iitem=ListView_InsertItem(m_hListView, &lvi);
+            ListView_SetItemText(m_hListView, iitem, 1, (LPWSTR)m_plugins[i].name.GetString());
+
+            ListView_SetItemText(m_hListView, iitem, 2, (LPWSTR)m_plugins[i].desc.GetString());
+
+            bool bChecked=pQ->isSourceEnabled(UTF16toUTF8(m_plugins[i].key));
+            ListView_SetCheckState(m_hListView, iitem, bChecked);
+        }
+
+        //hcbox=CreateWindow(L"BUTTON", (*it)->m_name, WS_CHILD|WS_VISIBLE|BS_AUTOCHECKBOX, 0, i, 300, 25, hWnd, 0, 0, 0);
+        //HGDIOBJ hfDefault=GetStockObject(DEFAULT_GUI_FONT);
+		//SendMessage(hcbox, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));*/
+        return TRUE;    // let the system set the focus
+    }
+    LRESULT OnDestroy(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        m_plugins.clear();
+        m_hListView=0;
+        return TRUE;
+    }
+    LRESULT OnSaveSettings(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        for(int i=0;i<m_plugins.size();i++) {
+            SetSettingsInt(L"sources/"+m_plugins[i].key, L"enabled", !!ListView_GetCheckState(m_hListView,i));
+        }
+        return TRUE;
+    }
+};
+
 int objects=0;
 Qatapult::Qatapult():m_input(this), m_invalidatepending(false) {
 #ifdef DEBUG
     VLDMarkAllLeaksAsReported();
-#endif                
+#endif          
+    g_pQatapult=this;
+
     m_hwnd=0;
     m_request=0;
     m_pane=0;
@@ -213,10 +379,7 @@ Qatapult::Qatapult():m_input(this), m_invalidatepending(false) {
         
     CreateDirectory(L"databases", 0);
 
-    CreateDirectory(L"skins", 0);
-        
-    // create dialogs
-    CreateSettingsDlg();
+    CreateDirectory(L"skins", 0);        
 
     Init();
 
@@ -274,6 +437,25 @@ std::vector<T> Array(T &t0,T &t1, T &t2) {
 
 #include <atlrx.h>
 
+/*
+class CSearchFoldersDlg : public CDialogImpl<CSearchFoldersDlg>
+{
+    public:
+    enum { IDD = IDD_GMAILCONTACTS };
+ 
+    BEGIN_MSG_MAP(CSearchFoldersDlg)
+    END_MSG_MAP()
+};
+
+*/
+/*
+CAboutDlg about;    
+CSearchFoldersDlg searchfolder;
+about.Create(0);    
+about.ShowWindow(SW_SHOW);
+searchfolder.Create(about.m_hWnd);
+*/
+
 void Qatapult::Init() {
     m_crawlprogress=0;
     g_textcolor=0xFFFFFFFF;
@@ -287,6 +469,9 @@ void Qatapult::Init() {
     m_resultscrollbarcolor=0xFF000000;
 
     settings.load_file("settings.xml");
+    //SetSettingsInt(L"sources/test", L"enabled", 0);
+
+    //SetSettingsString(L"general",L"font",L"Arial");
 
     g_fontfamily=GetSettingsString(L"general",L"font",L"Arial");
         
@@ -300,16 +485,20 @@ void Qatapult::Init() {
         ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);
     }    
 
-    m_painter.Initialize(L"Qatapult",L"JScript");
-    
     m_pQatapultScript=QatapultScript::Make(this);
-    m_pQatapultScript->AddRef();
-    
+    m_pQatapultScript->AddRef();    
+
+    m_painter.Initialize(L"Qatapult",L"JScript");    
     m_painter.AddObject(L"qatapult",(IDispatch*)m_pQatapultScript);
     m_painter.Require(m_skin+L"\\painter.js");
 
     m_pPainterScript=PainterScript::Make(this);
     m_pPainterScript->AddRef();
+
+
+    m_commandsHost.Initialize(L"Qatapult",L"JScript");
+    m_commandsHost.AddObject(L"qatapult",(IDispatch*)m_pQatapultScript);
+    
 
     m_focusedresult=0;
     m_resultspos=0;
@@ -325,22 +514,12 @@ void Qatapult::Init() {
 
     addSource(L"Filesystem",new FileSource);
     addSource(L"IndexedFiles",new StartMenuSource(m_hwnd));
-    addSource(L"Network",new NetworkSource);        
+    addSource(L"Network",new NetworkSource);
     addSource(L"Contacts",new ContactSource);
     addSource(L"Websites",new WebsiteSource);
-    addSource(L"FileHistory",new FileHistorySource);       
+    addSource(L"FileHistory",new FileHistorySource);
     addSource(L"ExplorerSelection",new CurrentSelectionSource);
     addSource(L"Windows", new WindowSource);
-
-    std::vector<CString> collecters;
-    FindFilesRecursively(L"plugins",L"*.collecter.js",collecters,99,0);
-    for(std::vector<CString>::iterator it=collecters.begin(); it!=collecters.end(); it++) {
-        CString str(*it);
-        str=str.Mid(8);
-        str=str.Left(str.Find(L"\\"));
-        str=str.MakeLower();
-        addSource(str, new JScriptSource(this,str,*it));
-    }
 
     Source *tt=addSource(new TextSource);
     tt->def=true;
@@ -355,23 +534,30 @@ void Qatapult::Init() {
     addSource(t);
     t->addItem(L"Quit",L"icons\\exit.png");
     t->addItem(L"Reload",L"icons\\reload.png");
+    t->addItem(L"Options",L"icons\\options.png");
     //t->def=true;
     addRule(Type(L"FILE", Array(Type::Predicat(L"rfilename", L"QATAPULT.EXE"))), Type(L"QATAPULTVERB"), new QatapultRule);
 
-    t=new TextItemSource(L"EMAILFILEVERB");
-    addSource(t);
-    t->addItem(L"Email to",L"icons\\emailto.png");
-    addRule(Type(L"FILE"),Type(t->type),Type(L"CONTACT"),new EmailFileVerbRule);
+    if(isSourceEnabled("EmailFile")) {
+        t=new TextItemSource(L"EMAILFILEVERB");
+        addSource(t);
+        t->addItem(L"Email to",L"icons\\emailto.png");
+        addRule(Type(L"FILE"),Type(t->type),Type(L"CONTACT"),new EmailFileVerbRule);
+    }
 
-    t=new TextItemSource(L"EMAILTEXTVERB");
-    addSource(t);
-    t->addItem(L"Email to",L"icons\\emailto.png");        
-    addRule(Type(L"TEXT"),Type(t->type),Type(L"CONTACT"),new EmailVerbRule);        
+    if(isSourceEnabled("EmailText")) {
+        t=new TextItemSource(L"EMAILTEXTVERB");
+        addSource(t);
+        t->addItem(L"Email to",L"icons\\emailto.png");        
+        addRule(Type(L"TEXT"),Type(t->type),Type(L"CONTACT"),new EmailVerbRule);        
+    }
 
-    t=new TextItemSource(L"SEARCHWITHVERB");
-    addSource(t);
-    t->addItem(L"Search With",L"icons\\searchwith.png");        
-    addRule(Type(L"TEXT"),Type(t->type),Type(L"WEBSITE"),new WebSearchRule);
+    if(isSourceEnabled("WebsiteSearch")) {
+        t=new TextItemSource(L"SEARCHWITHVERB");
+        addSource(t);
+        t->addItem(L"Search With",L"icons\\searchwith.png");        
+        addRule(Type(L"TEXT"),Type(t->type),Type(L"WEBSITE"),new WebSearchRule);
+    }
 
     t=new TextItemSource(L"SOURCEVERB");
     addSource(t);
@@ -386,7 +572,6 @@ void Qatapult::Init() {
     m_inputsource=new Source(L"INPUTSOURCE");
     addSource(m_inputsource);
 
-
     // hotkey
     hotkeycode=GetSettingsInt(L"hotKeys", L"toggleKey",VK_SPACE);
     hotkeymodifiers=GetSettingsInt(L"hotKeys", L"toggleModifier",MOD_SHIFT);      
@@ -396,33 +581,54 @@ void Qatapult::Init() {
 
     LoadRules(settings);
 
-    std::vector<CString> plugins;
-    FindFilesRecursively(L"plugins", L"plugin.xml", plugins, 3);
-    for(std::vector<CString>::iterator it=plugins.begin();it!=plugins.end();it++) {
-        pugi::xml_document d;
-        d.load_file(*it);
-        LoadRules(d);
+    // load plugins rules & sources
+    std::vector<CString> pluginsfolders;
+    GetSubFolderList(L"plugins", pluginsfolders);
+    for(std::vector<CString>::iterator it=pluginsfolders.begin(); it!=pluginsfolders.end(); it++) {                
+        CString folder=L"plugins\\"+*it;
+        CString pluginname=*it;
+        if(!isSourceEnabled(CStringA(pluginname)))
+            continue;
+        
+        if(FileExists(folder+L"\\plugin.xml")) {
+            pugi::xml_document d;
+            d.load_file(folder+L"\\plugin.xml");
+            LoadRules(d);
+        }
+
+        std::vector<CString> collectors;
+        FindFilesRecursively(folder,L"*.collecter.js",collectors,1,0);
+        FindFilesRecursively(folder,L"*.collector.js",collectors,1,0);
+        for(std::vector<CString>::iterator it=collectors.begin(); it!=collectors.end(); it++) {
+            CString str(*it);
+            str=str.Mid(8);
+            str=str.Left(str.Find(L"\\"));
+            str=str.MakeLower();
+            Source *s=new JScriptSource(this,str,*it);
+            s->def=true;
+            addSource(s);
+        }
+
+        std::vector<CString> commands;
+        FindFilesRecursively(folder,L"*.command.js",commands,1,0);
+        for(std::vector<CString>::iterator it=commands.begin(); it!=commands.end(); it++) {
+            m_commandsHost.Require(*it);
+        }
     }
     
     for(std::vector<Source*>::iterator it=m_sources.begin(); it!=m_sources.end(); it++) {
         (*it)->m_pUI=this;
     }
     
-    for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++)
-        (*it)->m_pArgs=&m_args;    
-        
-
-    m_commandsHost.Initialize(L"Qatapult",L"JScript");
-    m_commandsHost.AddObject(L"qatapult",(IDispatch*)m_pQatapultScript);
+    for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++) {
+        (*it)->m_pArgs=&m_args;
+    }
     
-
-    std::vector<CString> commands;
-    FindFilesRecursively(L"plugins",L"*.command.js",commands,99,0);
-    for(std::vector<CString>::iterator it=commands.begin(); it!=commands.end(); it++) {
-        m_commandsHost.Require(*it);
-    }      
-
     OnQueryChange(L"");
+
+    
+    // create dialogs
+    CreateSettingsDlg();
     
 
     //CStringA *remoteversion=new CStringA;
@@ -450,7 +656,17 @@ SourceResult Qatapult::getEmptyResult() {
     r.object=new Object(L"EMPTY",L"EMPTY",m_emptysource,L"");
     return r;
 }
+
+PluginsDlg pluginsdlg;
+SearchFoldersDlg searchfolderdlg;
+
 void Qatapult::Reset() {
+    if(pluginsdlg.IsWindow())
+        pluginsdlg.DestroyWindow();
+
+    if(searchfolderdlg.IsWindow())
+        searchfolderdlg.DestroyWindow();
+
     m_buffer.Destroy();
 
     bool b=!!PostThreadMessage(m_crawlThreadId,WM_STOPWORKERTHREAD,0,0);
@@ -595,7 +811,7 @@ uint __stdcall Qatapult::crawlProc(Qatapult *thiz) {
                     BOOL b=PostMessage(thiz->m_hwnd, WM_PROGRESS, 0, 0);
                     float nbsources=float(thiz->m_sources.size());
                     float isources=0;
-                    for(std::vector<Source*>::iterator it=thiz->m_sources.begin(); it!=thiz->m_sources.end();it++) {                        
+                    for(std::vector<Source*>::iterator it=thiz->m_sources.begin(); it!=thiz->m_sources.end();it++) {
                         // if a stop thread message is available stop everything
                         if(PeekMessage(&msg,0,WM_STOPWORKERTHREAD,WM_STOPWORKERTHREAD,PM_NOREMOVE)) {
                             b=PostMessage(thiz->m_hwnd, WM_PROGRESS, 100, 0);
@@ -636,10 +852,14 @@ void Qatapult::Invalidate() {
         m_invalidatepending=true;
     }
 }
+
 extern BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 void Qatapult::CreateSettingsDlg() {
     m_hwndsettings=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_SETTINGS), 0, (DLGPROC)SettingsDlgProc);  //CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GET_GMAILAUTHCODE), 0, DlgProc);
-    HWND hTreeView=GetDlgItem(m_hwndsettings, IDC_TREE);
+    HWND hTreeView=GetDlgItem(m_hwndsettings, IDC_TREE);    
+
+    pluginsdlg.Create(m_hwndsettings);
+    pluginsdlg.SetWindowPos(0, 160, 11, 0, 0, SWP_NOSIZE);
 
     HWND hwndGmail=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GMAILCONTACTS), m_hwndsettings, (DLGPROC)DlgProc);
     SetWindowPos(hwndGmail, 0, 160, 0, 0, 0, SWP_NOSIZE);
@@ -647,25 +867,41 @@ void Qatapult::CreateSettingsDlg() {
     //HWND hwndEmail=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_EMAIL), m_hwndsettings, (DLGPROC)DlgProc);
     //SetWindowPos(hwndEmail, 0, 160, 0, 0, 0, SWP_NOSIZE);
 
-    HWND hwndSF=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_SEARCHFOLDERS), m_hwndsettings, (DLGPROC)SearchFolderDlgProc);
-    SetWindowPos(hwndSF, 0, 160, 0, 0, 0, SWP_NOSIZE);
-
+    searchfolderdlg.Create(m_hwndsettings);
+    searchfolderdlg.SetWindowPos(0, 160, 11, 0, 0, SWP_NOSIZE);
 
     HWND hwndG=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GENERAL), m_hwndsettings, (DLGPROC)GeneralDlgProc);
     SetWindowPos(hwndG, 0, 160, 0, 0, 0, SWP_NOSIZE);
 
 
     TV_INSERTSTRUCT tviis;
-    ZeroMemory(&(tviis.item), sizeof(TV_ITEM));
-    tviis.item.mask = TVIF_TEXT|TVIF_PARAM;
+    ZeroMemory(&(tviis.item), sizeof(TV_ITEM));    
+    tviis.itemex.state=TVIS_BOLD;    
+    tviis.itemex.stateMask=TVIS_BOLD;
     tviis.hParent = TVI_ROOT;
+
+    tviis.item.pszText = L"Preferences";
+    tviis.item.mask = TVIF_TEXT|TVIF_STATE;
+    HTREEITEM htreeP=TreeView_InsertItem(hTreeView, &tviis);
+
+    tviis.item.mask = TVIF_TEXT|TVIF_PARAM;
 
     tviis.item.pszText = L"General";
     tviis.item.lParam=(LPARAM)hwndG;
     HTREEITEM htreeG=TreeView_InsertItem(hTreeView, &tviis);
 
+    tviis.item.pszText = L"Plugins";
+    tviis.item.lParam=(LPARAM)pluginsdlg.m_hWnd;
+    HTREEITEM htreePl=TreeView_InsertItem(hTreeView, &tviis);
+
+    tviis.item.pszText = L"Plugins preferences";
+    tviis.item.mask = TVIF_TEXT|TVIF_STATE;
+    HTREEITEM htreePg=TreeView_InsertItem(hTreeView, &tviis);
+
+    tviis.item.mask = TVIF_TEXT|TVIF_PARAM;
+
     tviis.item.pszText = L"Search folders";
-    tviis.item.lParam=(LPARAM)hwndSF;
+    tviis.item.lParam=(LPARAM)searchfolderdlg.m_hWnd;
     HTREEITEM htreeSF=TreeView_InsertItem(hTreeView, &tviis);
 
     tviis.item.pszText = L"Gmail contacts";

@@ -77,6 +77,8 @@ FileObject::FileObject(const CString &k, Source *s, const CString &text, const C
     values[L"expand"]=expand;
     values[L"path"]=path;
 }
+FileObject::FileObject(const FileObject &f):Object(f) {
+}
 FileObject *FileObject::clone() {
     return new FileObject(*this);
 }
