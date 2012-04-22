@@ -50,7 +50,7 @@ struct Object {
     virtual Object *clone();
     virtual CString getString(const TCHAR *val_);
     virtual Gdiplus::Bitmap *getIcon(long flags);
-    virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r);
+    virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r, int e=0);
     virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontsize, bool b, DWORD textcolor, DWORD bgcolor, DWORD focuscolor);
 
     CString                   type;

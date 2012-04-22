@@ -52,7 +52,7 @@ struct StartMenuSource : Source {
                                             0,                                                  // data                                            
                                             sqlite3_column_int(stmt,4)));                       // Use
 
-            results.back().object=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+            results.back().object()=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
                                                  this,
                                                  UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
                                                  UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
@@ -133,19 +133,18 @@ struct StartMenuSource : Source {
     void validate(SourceResult *r) {
         WCHAR buff[4096];
         char *zErrMsg = 0;
-        // FIXME : bonus should be nb_use to allow fixing various coefficient to it
-        wsprintf(buff, L"UPDATE startmenu SET uses = uses + 1 WHERE key=\"%s\"\n", r->object->key);        
+        wsprintf(buff, L"UPDATE startmenu SET uses = uses + 1 WHERE key=\"%s\"\n", r->object()->key);        
         int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
     }
 
     // getvalue name, buff, bufflen
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return r->object->getIcon(flags);
+        return r->object()->getIcon(flags);
     }
     // itemkey/name : itemkey/verb/open/icon < get subresults ???
     virtual CString getString(SourceResult &sr,const TCHAR *val_) {
-        return sr.object->getString(val_);
+        return sr.object()->getString(val_);
     }
     virtual int getInt(const TCHAR *itemquery) {
         return false; 

@@ -57,6 +57,77 @@ CString HotKeyToString(int modifier, int vk) {
     return mod+c;
 }
 
+struct PluginDesc {
+    PluginDesc(){}
+    PluginDesc(const TCHAR *n): name(n), key(n) {
+    }
+    CString key;
+    CString name;
+    CString desc;
+};
+
+void GetSubFolderList(const TCHAR *path, std::vector<CString> &subfolders) {
+    TCHAR szFullPattern[MAX_PATH];
+    WIN32_FIND_DATA FindFileData;
+    HANDLE hFindFile;
+    // first we are going to process any subdirectories
+    PathCombine(szFullPattern, path, _T("*"));
+    hFindFile = FindFirstFile(szFullPattern, &FindFileData);
+    if(hFindFile != INVALID_HANDLE_VALUE)
+    {
+        do
+        {
+            if(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY && CString(FindFileData.cFileName)!=L"." && CString(FindFileData.cFileName)!=L"..")
+                subfolders.push_back(FindFileData.cFileName);
+        } while(FindNextFile(hFindFile, &FindFileData));
+        FindClose(hFindFile);
+    }
+}
+
+
+void getSkinList(std::vector<CString> &skins) {
+    GetSubFolderList(L"skins",skins);
+}
+
+void getPluginList(std::vector<PluginDesc> &plugins) {
+    plugins.push_back(L"Filesystem");
+    plugins.push_back(L"IndexedFiles");
+    plugins.push_back(L"Network");
+    plugins.push_back(L"Contacts");
+    plugins.push_back(L"Websites");
+    plugins.push_back(L"FileHistory");
+    plugins.push_back(L"ExplorerSelection");
+    plugins.push_back(L"Windows");
+
+    plugins.push_back(L"EmailFile");
+    plugins.push_back(L"EmailText");
+    plugins.push_back(L"WebsiteSearch");
+
+    std::vector<CString> pluginsfolders;
+    GetSubFolderList(L"plugins",pluginsfolders);
+    for(std::vector<CString>::iterator it=pluginsfolders.begin();it!=pluginsfolders.end();it++) {
+        CString key(*it);
+        CString pluginxml=L"plugins\\"+*it+"\\plugin.xml";
+
+        pugi::xml_document d;
+        d.load_file(pluginxml);
+        CStringA name=d.select_single_node("settings").node().child_value("name");
+        CStringA desc=d.select_single_node("settings").node().child_value("description");        
+
+        PluginDesc pd;
+        pd.key=key;
+        if(name==L"") {            
+            pd.name=key;
+            pd.desc=UTF8toUTF16(desc);
+        } else {
+            pd.name=UTF8toUTF16(name);
+            pd.desc=UTF8toUTF16(desc);            
+        }
+        plugins.push_back(pd);
+    }
+}
+
+
 CString getGUID() {
     CLSID  clsid;
     CoCreateGuid(&clsid);
@@ -114,16 +185,53 @@ BOOL CALLBACK GeneralDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             OldHotKeyEditProc=SubclassWindowX(GetDlgItem(hWnd, IDC_HOTKEY1), HotKeyEditProc);
             CString txt=HotKeyToString(hotkeymodifiers,hotkeycode);
             SetDlgItemText(hWnd,IDC_HOTKEY1, txt);
+
+            int x=12;
+            int y=70;
+            //getSkinList
+            HWND hsskins=CreateWindow(L"STATIC",
+                         L"Skin :",
+                         WS_VISIBLE|WS_CHILD,
+                         x, y, 150, 20,
+                         hWnd,
+                         0,
+                         0,
+                         0);
+            HGDIOBJ hfDefault=GetStockObject(DEFAULT_GUI_FONT);
+		    SendMessage(hsskins, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
+            y+=20;
+
+            HWND hcbskin=CreateWindow(L"COMBOBOX",
+                         L"", 
+                         CBS_DROPDOWN | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE, 
+                         x, y, 153, 20,
+                         hWnd,
+                         (HMENU)IDC_SKINCB,
+                         0,
+                         0);
+            SendMessage(hcbskin, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
+            
+            std::vector<CString> skins;
+            getSkinList(skins);
+            for(int i=0;i<skins.size();i++) {
+                SendMessage(hcbskin,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM)skins[i].GetString()); 
+                if(g_pQatapult->m_skin==skins[i])
+                    SendMessage(hcbskin,(UINT)CB_SETCURSEL,(WPARAM) i,(LPARAM)i); 
+            }
             return TRUE;
         }
-        case WM_COMMAND:
+        case WM_SAVESETTINGS:
         {
-            if(wParam==IDC_SAVEHOTKEY) {
-                SetSettingsInt(L"hotKeys", L"toggleKey", hotkeycode);
-                SetSettingsInt(L"hotKeys", L"toggleModifier", hotkeymodifiers);
-                UnregisterHotKey(g_pUI->getHWND(), 1);
-                RegisterHotKey(g_pUI->getHWND(), 1, hotkeymodifiers, hotkeycode);                
-            }            
+            // save hotkey
+            SetSettingsInt(L"hotKeys", L"toggleKey", hotkeycode);
+            SetSettingsInt(L"hotKeys", L"toggleModifier", hotkeymodifiers);
+            UnregisterHotKey(g_pUI->getHWND(), 1);
+            RegisterHotKey(g_pUI->getHWND(), 1, hotkeymodifiers, hotkeycode);                
+            
+            // save skin
+            TCHAR skinname[1024];
+            GetDlgItemText(hWnd,IDC_SKINCB, skinname, sizeof(skinname));
+            SetSettingsString(L"general",L"skin",skinname);
         }        
     }
     return FALSE;
@@ -190,73 +298,6 @@ BOOL CALLBACK EmailDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     }
     return FALSE;
 }
-
-struct PluginDesc {
-    PluginDesc(){}
-    PluginDesc(const TCHAR *n): name(n), key(n) {
-    }
-    CString key;
-    CString name;
-    CString desc;
-};
-
-void GetSubFolderList(const TCHAR *path, std::vector<CString> &subfolders) {
-    TCHAR szFullPattern[MAX_PATH];
-    WIN32_FIND_DATA FindFileData;
-    HANDLE hFindFile;
-    // first we are going to process any subdirectories
-    PathCombine(szFullPattern, path, _T("*"));
-    hFindFile = FindFirstFile(szFullPattern, &FindFileData);
-    if(hFindFile != INVALID_HANDLE_VALUE)
-    {
-        do
-        {
-            if(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY && CString(FindFileData.cFileName)!=L"." && CString(FindFileData.cFileName)!=L"..")
-                subfolders.push_back(FindFileData.cFileName);
-        } while(FindNextFile(hFindFile, &FindFileData));
-        FindClose(hFindFile);
-    }
-}
-
-void getPluginList(std::vector<PluginDesc> &plugins) {
-    plugins.push_back(L"Filesystem");
-    plugins.push_back(L"IndexedFiles");
-    plugins.push_back(L"Network");
-    plugins.push_back(L"Contacts");
-    plugins.push_back(L"Websites");
-    plugins.push_back(L"FileHistory");
-    plugins.push_back(L"ExplorerSelection");
-    plugins.push_back(L"Windows");
-
-    plugins.push_back(L"EmailFile");
-    plugins.push_back(L"EmailText");
-    plugins.push_back(L"WebsiteSearch");
-
-    std::vector<CString> pluginsfolders;
-    GetSubFolderList(L"plugins",pluginsfolders);
-    for(std::vector<CString>::iterator it=pluginsfolders.begin();it!=pluginsfolders.end();it++) {
-        CString key(*it);
-        CString pluginxml=L"plugins\\"+*it+"\\plugin.xml";
-
-        pugi::xml_document d;
-        d.load_file(pluginxml);
-        CStringA name=d.select_single_node("settings").node().child_value("name");
-        CStringA desc=d.select_single_node("settings").node().child_value("description");        
-
-        PluginDesc pd;
-        pd.key=key;
-        if(name==L"") {            
-            pd.name=key;
-            pd.desc=UTF8toUTF16(desc);
-        } else {
-            pd.name=UTF8toUTF16(name);
-            pd.desc=UTF8toUTF16(desc);            
-        }
-        plugins.push_back(pd);
-    }
-}
-
-
 
 class PluginsDlg : public CDialogImpl<PluginsDlg>
 {
@@ -354,7 +395,7 @@ public:
 
 int objects=0;
 Qatapult::Qatapult():m_input(this), m_invalidatepending(false) {
-#ifdef DEBUG
+#ifdef VLD
     VLDMarkAllLeaksAsReported();
 #endif          
     g_pQatapult=this;
@@ -395,7 +436,7 @@ int Qatapult::GetCurPane() {
 CString Qatapult::getArgString(int c,const TCHAR *name) {
     if(c>=m_args.size())
         return L"";
-    return m_args[c].object->getString(name);
+    return m_args[c].object()->getString(name);
 }
 int Qatapult::getArgsCount() {
     return m_args.size();
@@ -457,6 +498,10 @@ searchfolder.Create(about.m_hWnd);
 */
 
 void Qatapult::Init() {
+    //CString tmp1=getShortcutPath(L"C:\\Users\\emmanuel\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Qatapult.exe - Raccourci.lnk");
+    //CString tmp2=getShortcutPath(L"C:\\Users\\emmanuel\\Desktop\\Qatapult.exe - Raccourci.lnk");
+    //CString tmp3=getShortcutPath(L"C:\\Users\\public\\Desktop\\GIMP 2.lnk");
+
     m_crawlprogress=0;
     g_textcolor=0xFFFFFFFF;
     m_fontsize=10.0f;
@@ -475,7 +520,7 @@ void Qatapult::Init() {
 
     g_fontfamily=GetSettingsString(L"general",L"font",L"Arial");
         
-    m_skin=L"skins/"+GetSettingsString(L"general",L"skin",L"default");
+    m_skin=GetSettingsString(L"general",L"skin",L"default");
   
     m_buffer.Create(640,800,32,PixelFormat32bppARGB);
 
@@ -490,7 +535,7 @@ void Qatapult::Init() {
 
     m_painter.Initialize(L"Qatapult",L"JScript");    
     m_painter.AddObject(L"qatapult",(IDispatch*)m_pQatapultScript);
-    m_painter.Require(m_skin+L"\\painter.js");
+    m_painter.Require(L"skins\\"+m_skin+L"\\painter.js");
 
     m_pPainterScript=PainterScript::Make(this);
     m_pPainterScript->AddRef();
@@ -628,13 +673,7 @@ void Qatapult::Init() {
 
     
     // create dialogs
-    CreateSettingsDlg();
-    
-
-    //CStringA *remoteversion=new CStringA;
-    //HttpGet(L"http://emmanuelcaradec.com/qatapult/currentversion.txt",remoteversion);
-    //PostMessage(g_pUI->getHWND(), WM_CURRENTVERSION, (WPARAM)remoteversion, 0);
-
+    CreateSettingsDlg();        
 
     // we shouldn't create a thread for each source, this is inefficient
     // crawl should be called with an empty index for each source
@@ -653,7 +692,7 @@ void Qatapult::Init() {
 
 SourceResult Qatapult::getEmptyResult() {
     SourceResult r(L"",L"",L"",m_emptysource,0,0,0);
-    r.object=new Object(L"EMPTY",L"EMPTY",m_emptysource,L"");
+    r.object()=new Object(L"EMPTY",L"EMPTY",m_emptysource,L"");
     return r;
 }
 
@@ -701,8 +740,8 @@ void Qatapult::Reset() {
     m_rules.clear();
 
     for(uint i=0;i<m_args.size();i++) {
-        if(m_args[i].source)
-            m_args[i].source->clear(m_args[i]);
+        if(m_args[i].source())
+            m_args[i].source()->clear(m_args[i]);
     }
     m_args.clear();
 
@@ -801,6 +840,11 @@ void Qatapult::addRule(Rule *r) {
 }
 uint __stdcall Qatapult::crawlProc(Qatapult *thiz) {    
     // personal copy of the settings file for the thread
+    
+    CStringA *remoteversion=new CStringA;
+    HttpGet(L"http://emmanuelcaradec.com/qatapult/currentversion.txt",remoteversion);
+    PostMessage(g_pUI->getHWND(), WM_CURRENTVERSION, (WPARAM)remoteversion, 0);
+
     settingsWT.load_file("settings.xml");
     MSG msg;
     msg.message=WM_INVALIDATEINDEX; // create a fake message on first pass
@@ -974,7 +1018,7 @@ void Qatapult::CollectItems(const CString &q, const uint pane, std::vector<Sourc
     int qlen=max(1, Q.GetLength());
     for(uint i=0;i<results.size();i++) {
         // pourcentage de chaine correspondante ?
-        results[i].source->rate(q,&results[i]);
+        results[i].source()->rate(q,&results[i]);
     }
 }
 
@@ -1015,16 +1059,18 @@ void Qatapult::ShowNextArg() {
 void Qatapult::setArg(uint pane, SourceResult &r) {
     if(pane==m_args.size()) {
         m_args.push_back(SourceResult());
-        r.source->copy(r,&m_args.back());
+        r.source()->copy(r,&m_args.back());
     } else {
-        m_args[pane].source->clear(m_args[pane]);
-        r.source->copy(r,&m_args[pane]);        
+        Source *s=m_args[pane].source();
+        if(s)
+            s->clear(m_args[pane]);
+        r.source()->copy(r,&m_args[pane]);        
     }
 }
 
 void Qatapult::setRetArg(uint pane, SourceResult &r) {
     while(m_retArgs.size()<=pane) m_retArgs.push_back(SourceResult());
-    m_retArgs[pane]=r;      
+    m_retArgs[pane]=r;
 }
 
 void Qatapult::OnSelChange(SourceResult *r) {        
@@ -1044,7 +1090,7 @@ CString Qatapult::getResString(int i, const TCHAR *name) {
         return L"";
     if(CString(name)==L"rank")
         return ItoS(m_results[i].rank);
-    return m_results[i].object->getString(name);
+    return m_results[i].object()->getString(name);
 }
 
 void Qatapult::setVisibleResCount(int i) {
@@ -1095,8 +1141,10 @@ void Qatapult::drawText(const TCHAR *text, INT x, INT y, INT w, INT h) {
     g.DrawString(text,-1,&f,RectF(float(x),float(y),float(w),float(h)),&sf,&SolidBrush(g_textcolor));
 }
 
-void Qatapult::drawItem(INT i, INT x, INT y, INT w, INT h){
+void Qatapult::drawItem(INT i, INT e, INT x, INT y, INT w, INT h){
     if(i>=m_args.size())
+        return;
+    if(e>=m_args[i].m_results.size())
         return;
 
     Graphics g(g_HDC);
@@ -1104,7 +1152,8 @@ void Qatapult::drawItem(INT i, INT x, INT y, INT w, INT h){
     g.SetInterpolationMode(InterpolationModeHighQualityBicubic);        
     g.SetCompositingQuality(CompositingQualityHighQuality);
 
-    m_args[i].object->drawItem(g, &m_args[i], RectF(float(x), float(y), float(w), float(h)));
+    Object *o=m_args[i].object(e);
+    o->drawItem(g, &m_args[i], RectF(float(x), float(y), float(w), float(h)),e);
 
     m_curWidth=max(m_curWidth,x+w);
     m_curHeight=max(m_curWidth,y+h);
@@ -1119,7 +1168,7 @@ void Qatapult::drawResItem(INT i, INT x, INT y, INT w, INT h){
     g.SetInterpolationMode(InterpolationModeHighQualityBicubic);        
     g.SetCompositingQuality(CompositingQualityHighQuality);
 
-    m_results[i].object->drawItem(g, &m_results[i], RectF(float(x), float(y), float(w), float(h)));
+    m_results[i].object()->drawItem(g, &m_results[i], RectF(float(x), float(y), float(w), float(h)));
 
     m_curWidth=max(m_curWidth,x+w);
     m_curHeight=max(m_curWidth,y+h);
@@ -1154,7 +1203,7 @@ void Qatapult::drawResults(INT x, INT y, INT w, INT h){
 
     for(int i=m_resultspos;i<m_resultspos+m_visibleresultscount;i++) {
         int p=i-m_resultspos;
-        m_results[i].object->drawListItem(g,&m_results[i],RectF(float(x),float(y+40*p),float(rw),float(40)),m_fontsize,m_focusedresult==i,g_textcolor,m_resultbgcolor,m_resultfocuscolor);
+        m_results[i].object()->drawListItem(g,&m_results[i],RectF(float(x),float(y+40*p),float(rw),float(40)),m_fontsize,m_focusedresult==i,g_textcolor,m_resultbgcolor,m_resultfocuscolor);
     }
     
     if(m_visibleresultscount<m_results.size()) {        
@@ -1179,10 +1228,10 @@ void Qatapult::Update() {
     // that means that the only element that may have an icon are in m_args
     for(uint i=0;i<m_args.size();i++) {
         SourceResult *r=&m_args[i];
-        if(r->icon==0 && r->source) {
-            r->icon=r->source->getIcon(r);
-            if(r->icon)
-                PremultAlpha(*r->icon);
+        if(r->icon()==0 && r->source()) {
+            r->icon()=r->source()->getIcon(r);
+            if(r->icon())
+                PremultAlpha(*r->icon());
         }
     }
 
@@ -1230,7 +1279,7 @@ SourceResult *Qatapult::GetSelectedItem() {
 }
 void Qatapult::ClearResults(std::vector<SourceResult> &results) {
     for(uint j=0;j<results.size();j++) {            
-        results[j].source->clear(results[j]);
+        results[j].source()->clear(results[j]);
     }
     results.clear();
 }
@@ -1302,7 +1351,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             } else {
                 SourceResult &r=getEmptyResult();
                 OnSelChange(&r);
-                r.source->clear(r);
+                r.source()->clear(r);
             }
             delete p;
         }
@@ -1314,7 +1363,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         if(m_request==p->request) {
             // remove all args beyond current pane
             while(m_pane+1<m_args.size()) {
-                m_args.back().source->clear(m_args.back());
+                m_args.back().source()->clear(m_args.back());
                 m_args.pop_back();
             }
 
@@ -1335,7 +1384,9 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     }
     else if(msg == WM_KEYDOWN && wParam == VK_RETURN)
     {
-        if((GetKeyState(VK_SHIFT)&0xa000)!=0) {
+        bool bShift=(GetKeyState(VK_SHIFT)&0xa000)!=0;
+        bool bCtrl=(GetKeyState(VK_CONTROL)&0xa000)!=0;
+        if(m_editmode==1 && bShift) {
             m_input.appendAtCaret(L"\n");
             return FALSE;
         }
@@ -1346,7 +1397,30 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         // handle null result
         if(r==0)
             return FALSE;
-        setArg(m_pane, *r);
+
+        if(m_pane==m_args.size()) {
+            m_args.push_back(SourceResult());
+            r->source()->copy(*r,&m_args.back());
+        } else {
+            // TODO : should clear the first item for leaks
+            if(bCtrl) {      
+                // append a new item
+                m_args[m_pane].m_results.push_back(SourceResult::Item());
+                r->source()->copy(*r,&m_args[m_pane]);
+            } else {
+                // clear and replace the current item
+                m_args[m_pane].source()->clear(m_args[m_pane]);
+                r->source()->copy(*r,&m_args[m_pane]);
+            }            
+        }
+
+        if(bCtrl) {
+            ClearResults(m_results);
+            ClearResults(m_nextresults);
+            Invalidate();
+            m_input.SetText(L"");  
+            return FALSE;
+        }
 
         // collect all active rules
         // might need to disambiguate here ?
@@ -1358,7 +1432,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 m_retArgs.clear();
                 if(m_rules[i]->execute(m_args)) {                                                
                     for(uint a=0;a<m_args.size(); a++) {
-                        m_args[a].source->validate(&m_args[a]);
+                        m_args[a].source()->validate(&m_args[a]);
                     }
 
                     ClearResults(m_results);
@@ -1484,11 +1558,11 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             if(!r)
                 return FALSE;
             CString q;
-            Source *s=r->source->getSource(*r,q);
+            Source *s=r->source()->getSource(*r,q);
             if(s!=0) {
                 SetCurrentSource(m_pane,s,q);
             } else {
-                m_input.SetText(r->object->getString(L"expand"));
+                m_input.SetText(r->object()->getString(L"expand"));
             }
         }
         return FALSE;
@@ -1602,16 +1676,16 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
                     m_input.appendAtCaret(clip);
                 }
-            } else if((wParam == L'/' || wParam == L'\\') && GetSelectedItem() && GetSelectedItem()->object && GetSelectedItem()->object->type==L"FILE")
+            } else if((wParam == L'/' || wParam == L'\\') && GetSelectedItem() && GetSelectedItem()->object() && GetSelectedItem()->object()->type==L"FILE")
             {
                 SourceResult *r=GetSelectedItem();
-                CString path=r->object->getString(L"expand");
+                CString path=r->object()->getString(L"expand");
                 m_input.SetText(path);
             }
-            else if((wParam == L'?') && GetSelectedItem() && GetSelectedItem()->object && GetSelectedItem()->object->type==L"FILE")
+            else if((wParam == L'?') && GetSelectedItem() && GetSelectedItem()->object() && GetSelectedItem()->object()->type==L"FILE")
             {
                 SourceResult *r=GetSelectedItem();
-                CString t(r->object->getString(L"expand"));
+                CString t(r->object()->getString(L"expand"));
                 t.TrimRight(L'\\');
                 CString d=t.Left(t.ReverseFind(L'\\'));
                 if(d==L"")

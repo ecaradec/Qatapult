@@ -14,13 +14,13 @@ struct DBSource : Source {
     }
     // get icon
     virtual Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) { 
-        return r->object->getIcon(flags);
+        return r->object()->getIcon(flags);
         //return Gdiplus::Bitmap::FromFile(L"icons\\"+r->source->getString(*r,L"icon")+".png");
     }
     void validate(SourceResult *r) {
         WCHAR buff[4096];
         char *zErrMsg = 0;
-        wsprintf(buff, L"UPDATE %s SET uses = uses+1 WHERE key=\"%s\"\n", CStringW(m_dbname).GetString(), r->object->key);        
+        wsprintf(buff, L"UPDATE %s SET uses = uses+1 WHERE key=\"%s\"\n", CStringW(m_dbname).GetString(), r->object()->key);        
         int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
@@ -44,7 +44,7 @@ struct DBSource : Source {
                                             0,                                                  // data
                                             sqlite3_column_int(stmt,4)));                       // uses
 
-            results.back().object=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+            results.back().object()=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
                                                  this,
                                                  UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
                                                  UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
@@ -55,6 +55,6 @@ struct DBSource : Source {
         sqlite3_finalize(stmt);         
     }
     CString getString(SourceResult &sr,const TCHAR *val) {
-        return sr.object->getString(val);
+        return sr.object()->getString(val);
     }
 };

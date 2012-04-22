@@ -14,7 +14,7 @@ struct TextObject : Object {
         sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
         Gdiplus::Font f(g_fontfamily, 10.0f); 
 
-        CString str(sr->display);
+        CString str(sr->display());
         if(str[0]==source->m_prefix)
             str=str.Mid(1);
 

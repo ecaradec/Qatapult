@@ -17,13 +17,13 @@ SourceResult getResultFromIDispatch(const CString &type_, const CString &key, ID
     }
 
     if(type==L"FILE")
-        sr.object=new FileObject(key,src,L"",L"",L"");
+        sr.object()=new FileObject(key,src,L"",L"",L"");
     else if(type==L"CONTACT")
-        sr.object=new ContactObject(key,src,L"",L"");
+        sr.object()=new ContactObject(key,src,L"",L"");
     else if(type==L"TEXT")
-        sr.object=new TextObject(key,src);
+        sr.object()=new TextObject(key,src);
     else
-        sr.object=new Object(key,type,src,L"");           
+        sr.object()=new Object(key,type,src,L"");           
 
     CComQIPtr<IDispatchEx> pargs(args);
 
@@ -39,13 +39,13 @@ SourceResult getResultFromIDispatch(const CString &type_, const CString &key, ID
         CString n(name);
         CString r(ret);
         if(n==L"text")
-            sr.display=r;
+            sr.display()=r;
         else if(n==L"expand")
-            sr.expand=r;
+            sr.expand()=r;
         else if(n==L"bonus")
-            sr.bonus=ret.intVal;
+            sr.bonus()=ret.intVal;
 
-        sr.object->values[CString(name)]=CString(ret);
+        sr.object()->values[CString(name)]=CString(ret);
     }
     return sr;    
 }

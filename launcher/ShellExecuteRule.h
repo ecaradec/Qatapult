@@ -37,7 +37,7 @@ struct ShellExecuteRule : Rule {
                     i++;
                 }
                                 
-                CString val=args[_ttoi(id)].source->getString(args[_ttoi(id)],arg);
+                CString val=args[_ttoi(id)].source()->getString(args[_ttoi(id)],arg);
                 tmp+=val;
                 tmp+=str[i];
             } else {

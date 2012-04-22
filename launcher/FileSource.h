@@ -45,13 +45,13 @@ struct FileSource : Source {
         // if we are matching exactly a directory without a ending slash add it
         if((q.Right(1)==L":" || q.Right(2)==L":\\") && q.GetLength()<=3) {
             SourceResult r;
-            r.display=d;
-            r.expand=d+L"\\";
-            r.source=this;
-            r.bonus=100;
+            r.display()=d;
+            r.expand()=d+L"\\";
+            r.source()=this;
+            r.bonus()=100;
             results.push_back(r);
 
-            results.back().object=new FileObject(d+L"\\",this,d,d+L"\\",d+L"\\");
+            results.back().object()=new FileObject(d+L"\\",this,d,d+L"\\",d+L"\\");
         }
 
         HANDLE h;
@@ -67,13 +67,13 @@ struct FileSource : Source {
 
                 if(FuzzyMatch(foldername,f) && f==L"") {
                     SourceResult r;                    
-                    r.display=foldername;
-                    r.expand=noslash+L"\\";
-                    r.source=this;
-                    r.bonus=100;
+                    r.display()=foldername;
+                    r.expand()=noslash+L"\\";
+                    r.source()=this;
+                    r.bonus()=100;
                     results.push_back(r);
 
-                    results.back().object=new FileObject(noslash+L"\\",this,foldername,noslash+L"\\",noslash+L"\\");
+                    results.back().object()=new FileObject(noslash+L"\\",this,foldername,noslash+L"\\",noslash+L"\\");
                 }
             } else if(CString(w32fd.cFileName)==L"..") {
             } else {
@@ -85,13 +85,13 @@ struct FileSource : Source {
 
                 if(FuzzyMatch(w32fd.cFileName,f)) {
                     SourceResult r;
-                    r.display=w32fd.cFileName;
-                    r.expand=expand;
-                    r.source=this;
+                    r.display()=w32fd.cFileName;
+                    r.expand()=expand;
+                    r.source()=this;
                     r.rank=10;
                     results.push_back(r);
 
-                    results.back().object=new FileObject(expand,this,w32fd.cFileName,expand,expand);
+                    results.back().object()=new FileObject(expand,this,w32fd.cFileName,expand,expand);
                 }
             }
             b=!!FindNextFile(h, &w32fd);
@@ -104,7 +104,7 @@ struct FileSource : Source {
         const char *unused=0;
         int rc;
 
-        CString path=r->source->getString(*r,L"path");
+        CString path=r->source()->getString(*r,L"path");
         path.TrimRight(L"\\");
         if((GetFileAttributes(path)&FILE_ATTRIBUTE_DIRECTORY)!=0)
             path+="\\";
@@ -134,10 +134,10 @@ struct FileSource : Source {
         // should scan the history and remove non available items
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return r->object->getIcon(flags);
+        return r->object()->getIcon(flags);
     }
     CString getString(SourceResult &sr, const TCHAR *val) {        
-        return sr.object->getString(val);
+        return sr.object()->getString(val);
     }
     void rate(const CString &q, SourceResult *r) {
         CString Q(q);
@@ -145,13 +145,13 @@ struct FileSource : Source {
         Q=Q.Mid(Q.ReverseFind(L'\\')+1);
 
         r->rank=0;
-        if(m_prefix!=0 && r->display[0]==m_prefix)
+        if(m_prefix!=0 && r->display()[0]==m_prefix)
             r->rank+=100;
 
-        CString P(r->object->getString(L"path"));
+        CString P(r->object()->getString(L"path"));
         P.TrimRight(L"\\");
         P=P.Mid(P.ReverseFind(L'\\')+1);        
-        r->rank=min(100,r->uses*5) + r->bonus + r->rank+100*evalMatch(P,Q);
+        r->rank=min(100,r->uses()*5) + r->bonus() + r->rank+100*evalMatch(P,Q);
     }
     sqlite3 *db;
 };
@@ -207,7 +207,7 @@ struct FileHistorySource : Source {
                                                0,                            // data                                               
                                                sqlite3_column_int(stmt,4)));                         // uses
 
-                results.back().object=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+                results.back().object()=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
                                                      this,
                                                      UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
                                                      UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
@@ -225,7 +225,7 @@ struct FileHistorySource : Source {
         const char *unused=0;
         int rc;
 
-        CString path=r->source->getString(*r,L"path");
+        CString path=r->source()->getString(*r,L"path");
         path.TrimRight(L"\\");
         
         CString key=md5(path);            
@@ -242,10 +242,10 @@ struct FileHistorySource : Source {
         // should scan the history and remove non available items
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return r->object->getIcon(flags);
+        return r->object()->getIcon(flags);
     }
     CString getString(SourceResult &sr, const TCHAR *val) {        
-        return sr.object->getString(val);
+        return sr.object()->getString(val);
     }
 
     sqlite3 *db;

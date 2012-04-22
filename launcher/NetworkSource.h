@@ -42,7 +42,7 @@ struct NetworkSource : Source {
                                             0,                                                  // data                                            
                                             sqlite3_column_int(stmt,4)));                       // uses
             
-            results.back().object=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+            results.back().object()=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
                                                     this,
                                                     UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
                                                     UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
@@ -92,13 +92,13 @@ struct NetworkSource : Source {
         sqlite3_free(zErrMsg);
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return r->object->getIcon(flags);
+        return r->object()->getIcon(flags);
     }
     CString getString(SourceResult &sr,const TCHAR *val_) {
-        return sr.object->getString(val_);
+        return sr.object()->getString(val_);
     }
     Source *getSource(SourceResult &r, CString &query) {
-        query=r.display+L"\\";
+        query=r.display()+L"\\";
         return (Source*)-1;
     }
     sqlite3 *db;

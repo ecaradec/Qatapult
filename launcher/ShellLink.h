@@ -3,22 +3,29 @@ inline CString getShortcutPath(const CString &lnk) {
 
     CComPtr<IShellLink> pSL;
 
-    pSL.CoCreateInstance(CLSID_ShellLink);
+    HRESULT hr=pSL.CoCreateInstance(CLSID_ShellLink);
     
     CComQIPtr<IPersistFile> pPF(pSL);
-    pPF->Load(lnk,STGM_READ);
+    hr=pPF->Load(lnk,STGM_READ);
 
-    PIDLIST_ABSOLUTE pidl=0;
-    pSL->GetIDList(&pidl);
+    TCHAR path[MAX_PATH];
+    int l=sizeof(path);
+    hr=pSL->GetPath(path,l,0,SLGP_RAWPATH);
+    CString tmp=path;
 
-    CComPtr<IShellFolder> pSF;
-    SHGetDesktopFolder(&pSF);
+    if(hr!=S_OK) {
+        PIDLIST_ABSOLUTE pidl=0;
+        hr=pSL->GetIDList(&pidl);
 
-    STRRET strret;
-    pSF->GetDisplayNameOf(pidl, SHGDN_FORPARSING, &strret);
-    CString tmp(strret.pOleStr);
-    CoTaskMemFree(strret.pOleStr);
+        CComPtr<IShellFolder> pSF;
+        SHGetDesktopFolder(&pSF);
 
+        STRRET strret;
+        hr=pSF->GetDisplayNameOf(pidl, SHGDN_FORPARSING, &strret);
+        tmp=(strret.pOleStr);
+        CoTaskMemFree(strret.pOleStr);
+    }
+    
     // ignore links to namespaced objects
     if(tmp.Left(2)==L"::")
         return lnk;

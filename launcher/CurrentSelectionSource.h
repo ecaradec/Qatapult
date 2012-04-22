@@ -34,12 +34,12 @@ struct CurrentSelectionSource : Source {
 
         CString q(query); q.MakeUpper();
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
-            if(FuzzyMatch(it->second.display,q)) {
+            if(FuzzyMatch(it->second.display(),q)) {
                 results.push_back(it->second);               
-                results.back().object=new FileObject(it->second.display,
+                results.back().object()=new FileObject(it->second.display(),
                                                      this,
-                                                     it->second.display,
-                                                     it->second.display,
+                                                     it->second.display(),
+                                                     it->second.display(),
                                                      getExplorerSelection(g_foregroundWnd));
             }
         }

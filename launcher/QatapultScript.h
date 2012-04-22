@@ -5,7 +5,7 @@ extern IDispatch *getDynamicWrapper();
 
 struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript),&CAtlModule::m_libid,0xFFFF,0xFFFF>, CComObjectRoot {
     BEGIN_COM_MAP(QatapultScript)
-        COM_INTERFACE_ENTRY(IDispatch)
+        COM_INTERFACE_ENTRY(IDispatch) 
         COM_INTERFACE_ENTRY(IQatapultScript)
     END_COM_MAP()
 
@@ -15,6 +15,10 @@ struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript)
     }    
     STDMETHOD(getArgValue)(INT c, BSTR name, VARIANT *v) {
         CComVariant(m_pUI->getArgString(c,name)).Detach(v);
+        return S_OK;
+    }
+    STDMETHOD(getArgItemCount)(INT c, INT *v) {
+        *v=(c<m_pUI->m_args.size()) ? m_pUI->m_args[c].m_results.size() : 0;
         return S_OK;
     }
     STDMETHOD(get_argscount)(INT *v) { 

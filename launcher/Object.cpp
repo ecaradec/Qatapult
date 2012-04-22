@@ -26,11 +26,11 @@ Gdiplus::Bitmap *Object::getIcon(long flags) {
 
     return Gdiplus::Bitmap::FromFile(L"icons\\default.png");
 }
-void Object::drawItem(Graphics &g, SourceResult *sr, RectF &r) {        
-    if(!sr->icon)
-        sr->icon=getIcon(0);
-    if(sr->icon)
-        g.DrawImage(sr->icon, r);
+void Object::drawItem(Graphics &g, SourceResult *sr, RectF &r, int e) {        
+    if(!sr->icon(e))
+        sr->icon(e)=getIcon(0);
+    if(sr->icon(e))
+        g.DrawImage(sr->icon(e), r);
     
     //if(getString(L"path").Right(4)==L".lnk")
     //    g_pUI->setStatus(getString(L"text"));
@@ -55,7 +55,7 @@ void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSiz
         
     REAL x=r.X+r.Height+5+10;
         
-    CString str(sr->object->getString(L"text"));
+    CString str(sr->object()->getString(L"text"));
     if(str[0]==source->m_prefix)
         str=str.Mid(1);
 
@@ -68,7 +68,7 @@ void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSiz
     Font pathfont(g_fontfamily, fontSize);
     StringFormat sfpath;
     sfpath.SetTrimming(StringTrimmingEllipsisPath);
-    CString path(sr->source->getString(*sr,L"path"));
+    CString path(sr->source()->getString(*sr,L"path"));
     path.TrimRight(L'\\');
     g.DrawString(path.Left(path.ReverseFind(L'\\')), -1, &pathfont, RectF(r.X+r.Height+40, r.Y+25, r.Width-(r.X+r.Height+40), 14), &sfpath, &SolidBrush(Color(textcolor)));
 }

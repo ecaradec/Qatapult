@@ -1,5 +1,5 @@
 # Tips
-- The default hotkey is CTRL+SPACE
+- The default hotkey is SHIFT+SPACE
 - A few options are in the top right corner of the default skin
 - A lot of other possibilities are discussed on the DonationCoder forum http://www.donationcoder.com/forum/index.php?board=308.0 
 

@@ -116,12 +116,12 @@ struct Source {
     }
     // get icon
     virtual Gdiplus::Bitmap *getIcon(SourceResult *r, long flags=ICON_SIZE_LARGE) { 
-        return r->object->getIcon(flags);
+        return r->object()->getIcon(flags);
     }
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
         // empty result may not have an object
-        if(sr->object)
-            sr->object->drawItem(g,sr,r);
+        if(sr->object())
+            sr->object()->drawItem(g,sr,r);
     }
     // get results
     // fuse index and bonus from the db
@@ -131,48 +131,54 @@ struct Source {
 
         CString q(query); q.MakeUpper();
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
-            if(FuzzyMatch(it->second.display,q)) {
+            if(FuzzyMatch(it->second.display(),q)) {
                 results.push_back(it->second);
-                Object *o=new Object(it->first,type,this,it->second.display);
-                o->values[L"expand"]=it->second.expand;
+                Object *o=new Object(it->first,type,this,it->second.display());
+                o->values[L"expand"]=it->second.expand();
                 o->values[L"iconname"]=it->second.iconname;
-                results.back().object=o;
+                results.back().object()=o;
             }
         }
     }    
     virtual void validate(SourceResult *r)  {}
     virtual void crawl() {}
     // copy makes a deep copy
-    virtual void copy(const SourceResult &r, SourceResult *out) {
-        *out=r;
-        if(r.icon)
-            out->icon=r.icon->Clone(0,0,r.icon->GetWidth(),r.icon->GetHeight(),r.icon->GetPixelFormat());
+    virtual void copy(SourceResult &r, SourceResult *out) {
+        //ASSERT(r.m_results.size()==1);
+        out->m_results.back()=r.m_results.back();
+        out->rank=r.rank;
+        out->dirty=r.dirty;
+        out->iconname=r.iconname;
+        
+        if(r.icon())
+            out->m_results.back().icon=r.icon()->Clone(0,0,r.icon()->GetWidth(),r.icon()->GetHeight(),r.icon()->GetPixelFormat());
         if(r.smallicon)
             out->smallicon=r.smallicon->Clone(0,0,r.smallicon->GetWidth(),r.smallicon->GetHeight(),r.smallicon->GetPixelFormat());
-        if(r.object)
-            out->object=r.object->clone();
+        if(r.object())
+            out->object()=r.object()->clone();
     }
     virtual void clear(SourceResult &r) {
-        delete r.icon; r.icon=0;
+        // FIXME : we need a clearItem and a clear
+        delete r.object(); r.object()=0;
+        delete r.icon(); r.icon()=0;
         delete r.smallicon; r.smallicon=0;
-        delete r.object;
     }
 
     // unused yet
     // get named data of various types
     virtual Source *getSource(SourceResult &sr, CString &q) { return 0; }
     virtual CString getString(SourceResult &sr, const TCHAR *val) { 
-        return sr.object->getString(val);
+        return sr.object()->getString(val);
     }
     virtual int getInt(const TCHAR *itemquery) { return false; }
 
     virtual void rate(const CString &q, SourceResult *r) {
         r->rank=0;
-        if(m_prefix!=0 && r->display[0]==m_prefix)
+        if(m_prefix!=0 && r->display()[0]==m_prefix)
             r->rank+=100;
 
-        CString T(r->object->getString(L"text"));
-        r->rank=min(100,r->uses*5) + r->bonus + r->rank+100*evalMatch(T,q);
+        CString T(r->object()->getString(L"text"));
+        r->rank=min(100,r->uses()*5) + r->bonus() + r->rank+100*evalMatch(T,q);
     }
     
     int                             def;

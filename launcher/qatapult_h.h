@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0555 */
-/* at Wed Mar 28 23:30:49 2012
+/* at Sun Apr 22 12:18:00 2012
  */
 /* Compiler settings for qatapult.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 7.00.0555 
@@ -109,6 +109,10 @@ EXTERN_C const IID IID_IQatapultScript;
             /* [in] */ BSTR str,
             /* [in] */ BSTR query,
             /* [retval][out] */ VARIANT_BOOL *b) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE getArgItemCount( 
+            /* [in] */ INT c,
+            /* [retval][out] */ INT *v) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE getArgValue( 
             /* [in] */ INT c,
@@ -232,6 +236,11 @@ EXTERN_C const IID IID_IQatapultScript;
             /* [in] */ BSTR str,
             /* [in] */ BSTR query,
             /* [retval][out] */ VARIANT_BOOL *b);
+        
+        HRESULT ( STDMETHODCALLTYPE *getArgItemCount )( 
+            IQatapultScript * This,
+            /* [in] */ INT c,
+            /* [retval][out] */ INT *v);
         
         HRESULT ( STDMETHODCALLTYPE *getArgValue )( 
             IQatapultScript * This,
@@ -359,6 +368,9 @@ EXTERN_C const IID IID_IQatapultScript;
 
 #define IQatapultScript_match(This,str,query,b)	\
     ( (This)->lpVtbl -> match(This,str,query,b) ) 
+
+#define IQatapultScript_getArgItemCount(This,c,v)	\
+    ( (This)->lpVtbl -> getArgItemCount(This,c,v) ) 
 
 #define IQatapultScript_getArgValue(This,c,name,v)	\
     ( (This)->lpVtbl -> getArgValue(This,c,name,v) ) 
@@ -610,6 +622,14 @@ EXTERN_C const IID IID_IPainterScript;
             /* [in] */ INT w,
             /* [in] */ INT h) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE drawSubItem( 
+            /* [in] */ INT arg,
+            /* [in] */ INT e,
+            /* [in] */ INT x,
+            /* [in] */ INT y,
+            /* [in] */ INT w,
+            /* [in] */ INT h) = 0;
+        
         virtual HRESULT STDMETHODCALLTYPE drawResItem( 
             /* [in] */ INT arg,
             /* [in] */ INT x,
@@ -749,6 +769,15 @@ EXTERN_C const IID IID_IPainterScript;
             /* [in] */ INT w,
             /* [in] */ INT h);
         
+        HRESULT ( STDMETHODCALLTYPE *drawSubItem )( 
+            IPainterScript * This,
+            /* [in] */ INT arg,
+            /* [in] */ INT e,
+            /* [in] */ INT x,
+            /* [in] */ INT y,
+            /* [in] */ INT w,
+            /* [in] */ INT h);
+        
         HRESULT ( STDMETHODCALLTYPE *drawResItem )( 
             IPainterScript * This,
             /* [in] */ INT arg,
@@ -869,6 +898,9 @@ EXTERN_C const IID IID_IPainterScript;
 
 #define IPainterScript_drawItem(This,arg,x,y,w,h)	\
     ( (This)->lpVtbl -> drawItem(This,arg,x,y,w,h) ) 
+
+#define IPainterScript_drawSubItem(This,arg,e,x,y,w,h)	\
+    ( (This)->lpVtbl -> drawSubItem(This,arg,e,x,y,w,h) ) 
 
 #define IPainterScript_drawResItem(This,arg,x,y,w,h)	\
     ( (This)->lpVtbl -> drawResItem(This,arg,x,y,w,h) ) 

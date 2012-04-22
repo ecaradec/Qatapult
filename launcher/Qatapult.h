@@ -1,6 +1,10 @@
 #pragma once
 
 #ifdef DEBUG
+//#define VLD
+#endif
+
+#ifdef VLD
 #include "vld.h"
 #endif
 
@@ -112,7 +116,7 @@ struct Qatapult : IWindowlessGUI, UI {
     void drawBitmap(const TCHAR *text, INT x, INT y, INT w, INT h);
     void drawInput(INT x, INT y, INT w, INT h);
     void drawText(const TCHAR *text, INT x, INT y, INT w, INT h);
-    void drawItem(INT c, INT x, INT y, INT w, INT h);
+    void drawItem(INT c, INT e, INT x, INT y, INT w, INT h);
     void drawResItem(INT i, INT x, INT y, INT w, INT h);
     void drawEmphased(const TCHAR *text, const TCHAR *highlight, int flag, INT x, INT y, INT w, INT h);
     void drawResults(INT x, INT y, INT w, INT h);

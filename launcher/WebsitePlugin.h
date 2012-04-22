@@ -42,7 +42,7 @@ struct WebsiteSource : DBSource {
             fo->values[L"href"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,2));
             fo->values[L"searchHref"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,3));
             fo->values[L"icon"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,4));
-            results.back().object=fo;   
+            results.back().object()=fo;   
         }
 
         const char *errmsg=sqlite3_errmsg(db) ;
@@ -52,7 +52,7 @@ struct WebsiteSource : DBSource {
 
 struct SearchWithVerbSource : Source {
     SearchWithVerbSource() : Source(L"SEARCHWITHVERB") {        
-        m_index[L"Search With"]=SourceResult(L"Search With", L"Search With", L"Search With", this, 0, 0, m_index[L"Search With"].bonus);
+        m_index[L"Search With"]=SourceResult(L"Search With", L"Search With", L"Search With", this, 0, 0, m_index[L"Search With"].bonus());
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
         return Gdiplus::Bitmap::FromFile(L"icons\\searchwith.png");
@@ -62,8 +62,8 @@ struct SearchWithVerbSource : Source {
 struct WebSearchRule : Rule {
     WebSearchRule() /*: Rule(Type(L"TEXT"), Type(L"Search With",L"icons\\searchwith.png"), Type(L"WEBSITE"))*/ {}
     virtual bool execute(std::vector<SourceResult> &args) {
-        CString searchURL=args[2].source->getString(args[2],L"searchHref");        
-        searchURL.Replace(L"%q", args[0].source->getString(args[0],L"text"));            
+        CString searchURL=args[2].source()->getString(args[2],L"searchHref");        
+        searchURL.Replace(L"%q", args[0].source()->getString(args[0],L"text"));            
         ShellExecute(0, 0, searchURL, 0, 0, SW_SHOWDEFAULT);
         return true;
     }

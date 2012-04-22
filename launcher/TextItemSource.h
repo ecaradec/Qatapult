@@ -21,12 +21,12 @@ struct TextItemSource : Source {
         sqlite3_close(db);
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        if(!r->object)
+        if(!r->object())
             return 0;
-        return Gdiplus::Bitmap::FromFile(m_index[r->object->key].iconname);
+        return Gdiplus::Bitmap::FromFile(m_index[r->object()->key].iconname);
     }
     void addItem(const TCHAR *str,const TCHAR *iconname) {
-        m_index[str]=SourceResult(str,str,str, this, 0, 0, m_index[str].bonus);
+        m_index[str]=SourceResult(str,str,str, this, 0, 0, m_index[str].bonus());
         m_index[str].iconname=iconname;
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
@@ -35,24 +35,24 @@ struct TextItemSource : Source {
 
         CString q(query); q.MakeUpper();
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
-            if(FuzzyMatch(it->second.display,q)) {
+            if(FuzzyMatch(it->second.display(),q)) {
                 results.push_back(it->second);
-                Object *o=new Object(it->second.expand, type, this, it->second.expand);
+                Object *o=new Object(it->second.expand(), type, this, it->second.expand());
                 o->values[L"icon"]=it->second.iconname;
-                results.back().object=o;
-                results.back().bonus=20; // special bonus for helping keywords
+                results.back().object()=o;
+                results.back().bonus()=20; // special bonus for helping keywords
 
                 int rc = sqlite3_bind_text16(getusesstmt, 1, o->key, -1, SQLITE_STATIC);                       
                 if(sqlite3_step(getusesstmt)==SQLITE_ROW) {
-                    results.back().uses=sqlite3_column_int(getusesstmt,0);                
+                    results.back().uses()=sqlite3_column_int(getusesstmt,0);                
                 }
                 sqlite3_reset(getusesstmt);
             }
         }
     }
     void validate(SourceResult *r) {        
-        int rc = sqlite3_bind_text16(validatestmt, 1, r->object->key, -1, SQLITE_STATIC);
-        rc = sqlite3_bind_text16(validatestmt, 2, r->object->key, -1, SQLITE_STATIC);
+        int rc = sqlite3_bind_text16(validatestmt, 1, r->object()->key, -1, SQLITE_STATIC);
+        rc = sqlite3_bind_text16(validatestmt, 2, r->object()->key, -1, SQLITE_STATIC);
         sqlite3_step(validatestmt);
         sqlite3_reset(validatestmt);
         const char *err=sqlite3_errmsg(db);

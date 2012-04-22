@@ -20,7 +20,11 @@ struct PainterScript : IDispatchImpl<IPainterScript,&__uuidof(IPainterScript),&C
         return S_OK;
     }
     STDMETHOD(drawItem)(INT arg, INT x, INT y, INT w, INT h) {        
-        m_pUI->drawItem(arg,x,y,w,h);
+        m_pUI->drawItem(arg,0,x,y,w,h);
+        return S_OK;
+    }
+    STDMETHOD(drawSubItem)(INT arg, INT e, INT x, INT y, INT w, INT h) {        
+        m_pUI->drawItem(arg,e,x,y,w,h);
         return S_OK;
     }
     STDMETHOD(drawResItem)(INT i, INT x, INT y, INT w, INT h) {        

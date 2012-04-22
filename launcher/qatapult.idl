@@ -11,6 +11,7 @@ import "ocidl.idl";
 interface IQatapultScript : IDispatch
 {
     HRESULT match([in] BSTR str, [in] BSTR query, [out,retval] VARIANT_BOOL *b);
+    HRESULT getArgItemCount([in] INT c, [out,retval] INT *v);
     HRESULT getArgValue([in] INT c, [in] BSTR name, [out,retval] VARIANT *v);
     [propget] HRESULT argscount([out,retval] INT *v);
     HRESULT getFocus([out,retval] INT *v);
@@ -60,6 +61,7 @@ interface IPainterScript : IDispatch
     HRESULT drawInput([in] INT x, [in] INT y, [in] INT w, [in] INT h);
     HRESULT drawText([in] BSTR text,[in] INT x, [in] INT y, [in] INT w, [in] INT h);
     HRESULT drawItem([in] INT arg, [in] INT x, [in] INT y, [in] INT w, [in] INT h);
+    HRESULT drawSubItem([in] INT arg, [in] INT e, [in] INT x, [in] INT y, [in] INT w, [in] INT h);
     HRESULT drawResItem([in] INT arg, [in] INT x, [in] INT y, [in] INT w, [in] INT h);
     HRESULT drawEmphased([in] BSTR text, [in] BSTR highlight, [in] INT x, [in] INT y, [in] INT w, [in] INT h, [in,defaultvalue(1)] INT flag);
     HRESULT drawResults([in] INT x, [in] INT y, [in] INT w, [in] INT h);

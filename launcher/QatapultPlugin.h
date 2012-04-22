@@ -14,11 +14,11 @@ void CenterWindow(HWND hwnd) {
 struct QatapultRule : Rule {
     QatapultRule() {}
     virtual bool execute(std::vector<SourceResult> &args) {
-        if(args[1].display==L"Quit")
+        if(args[1].display()==L"Quit")
             PostQuitMessage(0);
-        else if(args[1].display==L"Reload")
+        else if(args[1].display()==L"Reload")
             g_pUI->Reload();
-        else if(args[1].display==L"Options") {
+        else if(args[1].display()==L"Options") {
             ::CenterWindow(g_pQatapult->m_hwndsettings);
             ShowWindow(g_pQatapult->m_hwndsettings,SW_SHOW);
             ShowWindow(g_pQatapult->m_hwnd, SW_HIDE);

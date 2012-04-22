@@ -47,9 +47,9 @@ struct JScriptSource : Source {
         sqlite3_stmt *stmt=0;
         const char *unused=0;
         int rc;        
-        rc = sqlite3_bind_text16(validatestmt, 1, r->object->key, -1, SQLITE_STATIC);
-        rc = sqlite3_bind_text16(validatestmt, 2, r->object->key, -1, SQLITE_STATIC);
-        rc = sqlite3_bind_text16(validatestmt, 3, r->object->key, -1, SQLITE_STATIC);
+        rc = sqlite3_bind_text16(validatestmt, 1, r->object()->key, -1, SQLITE_STATIC);
+        rc = sqlite3_bind_text16(validatestmt, 2, r->object()->key, -1, SQLITE_STATIC);
+        rc = sqlite3_bind_text16(validatestmt, 3, r->object()->key, -1, SQLITE_STATIC);
         sqlite3_step(validatestmt);
         const char *errmsg=sqlite3_errmsg(db);
         sqlite3_reset(validatestmt);
@@ -73,9 +73,9 @@ struct JScriptSource : Source {
             SourceResult *r=&results[i];
 
             CString q(query);            
-            int rc = sqlite3_bind_text16(getusesstmt, 1, r->object->key, -1, SQLITE_STATIC);                       
+            int rc = sqlite3_bind_text16(getusesstmt, 1, r->object()->key, -1, SQLITE_STATIC);                       
             if(sqlite3_step(getusesstmt)==SQLITE_ROW) {
-                r->uses=sqlite3_column_int(getusesstmt,0);                
+                r->uses()=sqlite3_column_int(getusesstmt,0);                
             }
             sqlite3_reset(getusesstmt);
         }        

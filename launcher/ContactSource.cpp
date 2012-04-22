@@ -210,7 +210,7 @@ void ContactSource::collect(const TCHAR *query, std::vector<SourceResult> &resul
                                         sqlite3_column_int(stmt,3)));                       // uses
                                         
 
-        results.back().object=new ContactObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+        results.back().object()=new ContactObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
                                                 this,
                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,2)));
@@ -220,5 +220,5 @@ void ContactSource::collect(const TCHAR *query, std::vector<SourceResult> &resul
     sqlite3_finalize(stmt);         
 }
 Gdiplus::Bitmap *ContactSource::getIcon(SourceResult *r, long flags) {
-    return r->object->getIcon(flags);
+    return r->object()->getIcon(flags);
 }

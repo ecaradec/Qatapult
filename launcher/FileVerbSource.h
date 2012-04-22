@@ -46,9 +46,9 @@ struct FileVerbSource : Source {
     void conditionalAddObject(std::vector<SourceResult> &results, const CString &name, const CString &q) {
         if(FuzzyMatch(name,q)) {
             results.push_back(SourceResult(name, name, name, this, 0, 0, 0));
-            results.back().object=new Object(name,L"FILEVERB",this,name);
-            results.back().uses=getItemUses(name);
-            results.back().bonus=20;
+            results.back().object()=new Object(name,L"FILEVERB",this,name);
+            results.back().uses()=getItemUses(name);
+            results.back().bonus()=20;
         }        
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
@@ -63,7 +63,7 @@ struct FileVerbSource : Source {
         conditionalAddObject(results,L"Properties",q);
     }
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        Gdiplus::Bitmap *bmp=Gdiplus::Bitmap::FromFile(L"icons\\"+r->object->key+L".png");
+        Gdiplus::Bitmap *bmp=Gdiplus::Bitmap::FromFile(L"icons\\"+r->object()->key+L".png");
         if(bmp->GetLastStatus()!=Gdiplus::Ok) {
             delete bmp;
             bmp=Gdiplus::Bitmap::FromFile(L"icons\\defaultverb.png");
@@ -71,8 +71,8 @@ struct FileVerbSource : Source {
         return bmp;
     }
     void validate(SourceResult *r) {        
-        int rc = sqlite3_bind_text16(validatestmt, 1, r->object->key, -1, SQLITE_STATIC);
-        rc = sqlite3_bind_text16(validatestmt, 2, r->object->key, -1, SQLITE_STATIC);
+        int rc = sqlite3_bind_text16(validatestmt, 1, r->object()->key, -1, SQLITE_STATIC);
+        rc = sqlite3_bind_text16(validatestmt, 2, r->object()->key, -1, SQLITE_STATIC);
         sqlite3_step(validatestmt);
         sqlite3_reset(validatestmt);
         const char *err=sqlite3_errmsg(db);

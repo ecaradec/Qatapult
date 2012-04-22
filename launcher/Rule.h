@@ -33,8 +33,11 @@ struct Type {
             CString N(n); N.MakeUpper();
             switch(it->m_operator) {
             case 0: {
-                if(N != it->m_value )
+                //CString txt; txt.Format(L"Testing equal predicate : %s = %s => %s", N, it->m_value, (N == it->m_value)?L"true":L"false");
+                //OutputDebugString(txt);
+                if(N != it->m_value ) {
                     return false;
+                }
                 break;
             }
             case 1:
@@ -74,7 +77,7 @@ struct Rule {
     int match(std::vector<SourceResult> &args, int l) {
         uint i; 
         for(i=0;i<args.size() && i<m_types.size() ;i++) {
-            if(args[i].object && !m_types[i].match(args[i].object))
+            if(args[i].object() && !m_types[i].match(args[i].object()))
                 break;
         }
 

@@ -13,17 +13,17 @@ struct SourceOfSources : Source {
         for(std::vector<Source*>::iterator it=m_sources.begin(); it!=m_sources.end(); it++) {
             if(FuzzyMatch((*it)->m_name,q)) {
                 SourceResult r;
-                r.expand=r.display=(*it)->m_name;
-                r.source=this;
-                r.data=*it;
+                r.expand()=r.display()=(*it)->m_name;
+                r.source()=this;
+                r.data()=*it;
                 results.push_back(r);
-                results.back().object=new Object((*it)->m_name,type,this,(*it)->m_name);
+                results.back().object()=new Object((*it)->m_name,type,this,(*it)->m_name);
             }        
         }
     }
     virtual Source *getSource(SourceResult &sr, CString &q) {
         q=L"";
-        return (Source*)sr.data;
+        return (Source*)sr.data();
     }
     std::vector<Source*> m_sources;
 };
