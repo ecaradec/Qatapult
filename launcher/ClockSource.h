@@ -67,7 +67,7 @@ struct ClockSource : Source {
 
 struct ClockRule : Rule {
     ClockRule() {}
-    bool execute(std::vector<SourceResult> &args) {
+    bool execute(std::vector<RuleArg> &args) {
         return true;
     }
 };

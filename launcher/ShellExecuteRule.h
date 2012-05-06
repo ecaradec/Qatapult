@@ -7,7 +7,7 @@ struct ShellExecuteRule : Rule {
     ShellExecuteRule(const CString &cmd,const CString &args, const CString &workdir):m_command(cmd),m_args(args),m_workdir(workdir) {
         m_command.Trim();
     } // the type must be precised later
-    bool execute(std::vector<SourceResult> &args) {
+    bool execute(std::vector<RuleArg> &args) {
         CString cmd=expand(m_command,args);
         CString arg=expand(m_args,args);
         CString workdir=expand(m_workdir,args);
@@ -19,7 +19,7 @@ struct ShellExecuteRule : Rule {
         ShellExecute(0, 0, cmd, arg, workdir, SW_SHOWDEFAULT);
         return true;
     }
-    CString expand(const CString &str, std::vector<SourceResult> &args) {
+    CString expand(const CString &str, std::vector<RuleArg> &args) {
         CString tmp;
         for(int i=0;i<str.GetLength();i++) {
             TCHAR c=str[i];
@@ -37,7 +37,7 @@ struct ShellExecuteRule : Rule {
                     i++;
                 }
                                 
-                CString val=args[_ttoi(id)].source()->getString(args[_ttoi(id)],arg);
+                CString val=args[_ttoi(id)].source()->getString(args[_ttoi(id)].item(0),arg);
                 tmp+=val;
                 tmp+=str[i];
             } else {

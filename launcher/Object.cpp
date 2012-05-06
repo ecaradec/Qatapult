@@ -26,11 +26,11 @@ Gdiplus::Bitmap *Object::getIcon(long flags) {
 
     return Gdiplus::Bitmap::FromFile(L"icons\\default.png");
 }
-void Object::drawItem(Graphics &g, SourceResult *sr, RectF &r, int e) {        
-    if(!sr->icon(e))
-        sr->icon(e)=getIcon(0);
-    if(sr->icon(e))
-        g.DrawImage(sr->icon(e), r);
+void Object::drawItem(Graphics &g, SourceResult *sr, RectF &r) {        
+    if(!sr->icon())
+        sr->icon()=getIcon(1);
+    if(sr->icon())
+        g.DrawImage(sr->icon(), r);
     
     //if(getString(L"path").Right(4)==L".lnk")
     //    g_pUI->setStatus(getString(L"text"));
@@ -47,11 +47,11 @@ void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSiz
     else
         g.FillRectangle(&SolidBrush(Color(bgcolor)), r);
 
-    if(!sr->smallicon)
-        sr->smallicon=source->getIcon(sr,ICON_SIZE_SMALL);
+    if(!sr->smallicon())
+        sr->smallicon()=source->getIcon(sr,ICON_SIZE_SMALL);
         
-    if(sr->smallicon)
-        g.DrawImage(sr->smallicon, RectF(r.X+10, r.Y, r.Height, r.Height)); // height not a bug, think a minute
+    if(sr->smallicon())
+        g.DrawImage(sr->smallicon(), RectF(r.X+10, r.Y, r.Height, r.Height)); // height not a bug, think a minute
         
     REAL x=r.X+r.Height+5+10;
         
@@ -63,7 +63,7 @@ void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSiz
         
     StringFormat sfscore;
     sfscore.SetAlignment(StringAlignmentNear);
-    g.DrawString(ItoS(sr->rank), -1, &itemscoreFont, RectF(r.X+r.Height+5+10, r.Y+25, r.Width, r.Height), &sfscore, &SolidBrush(Color(textcolor)));
+    g.DrawString(ItoS(sr->rank()), -1, &itemscoreFont, RectF(r.X+r.Height+5+10, r.Y+25, r.Width, r.Height), &sfscore, &SolidBrush(Color(textcolor)));
 
     Font pathfont(g_fontfamily, fontSize);
     StringFormat sfpath;

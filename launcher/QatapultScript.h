@@ -106,6 +106,11 @@ struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript)
         m_pUI->setRetArg(0, getResultFromIDispatch(L"",L"",p,m_pUI->m_inputsource));
         return S_OK;
     }
+    STDMETHOD(setSkinSize)(INT w, INT h) {
+        m_pUI->m_buffer.Destroy();
+        m_pUI->m_buffer.Create(640,800,32,PixelFormat32bppARGB);
+        return S_OK;
+    }
     static QatapultScript *Make(Qatapult *pUI) {
         CComObject<QatapultScript> *pImpl=0;
         CComObject<QatapultScript>::CreateInstance(&pImpl);

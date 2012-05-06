@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0555 */
-/* at Sun Apr 22 12:18:00 2012
+/* at Sat Apr 28 11:26:47 2012
  */
 /* Compiler settings for qatapult.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 7.00.0555 
@@ -182,6 +182,10 @@ EXTERN_C const IID IID_IQatapultScript;
         virtual HRESULT STDMETHODCALLTYPE setInput( 
             /* [in] */ IDispatch *p) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE setSkinSize( 
+            /* [in] */ INT w,
+            /* [in] */ INT h) = 0;
+        
     };
     
 #else 	/* C style interface */
@@ -330,6 +334,11 @@ EXTERN_C const IID IID_IQatapultScript;
             IQatapultScript * This,
             /* [in] */ IDispatch *p);
         
+        HRESULT ( STDMETHODCALLTYPE *setSkinSize )( 
+            IQatapultScript * This,
+            /* [in] */ INT w,
+            /* [in] */ INT h);
+        
         END_INTERFACE
     } IQatapultScriptVtbl;
 
@@ -431,6 +440,9 @@ EXTERN_C const IID IID_IQatapultScript;
 
 #define IQatapultScript_setInput(This,p)	\
     ( (This)->lpVtbl -> setInput(This,p) ) 
+
+#define IQatapultScript_setSkinSize(This,w,h)	\
+    ( (This)->lpVtbl -> setSkinSize(This,w,h) ) 
 
 #endif /* COBJMACROS */
 

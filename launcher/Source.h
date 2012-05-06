@@ -135,7 +135,7 @@ struct Source {
                 results.push_back(it->second);
                 Object *o=new Object(it->first,type,this,it->second.display());
                 o->values[L"expand"]=it->second.expand();
-                o->values[L"iconname"]=it->second.iconname;
+                o->values[L"iconname"]=it->second.iconname();
                 results.back().object()=o;
             }
         }
@@ -143,17 +143,14 @@ struct Source {
     virtual void validate(SourceResult *r)  {}
     virtual void crawl() {}
     // copy makes a deep copy
-    virtual void copy(SourceResult &r, SourceResult *out) {
-        //ASSERT(r.m_results.size()==1);
-        out->m_results.back()=r.m_results.back();
-        out->rank=r.rank;
-        out->dirty=r.dirty;
-        out->iconname=r.iconname;
+    virtual void copy(SourceResult &r, RuleArg *out) {
+        //assert(r.m_results.size()==1);
+        out->m_results.back()=r;
         
         if(r.icon())
-            out->m_results.back().icon=r.icon()->Clone(0,0,r.icon()->GetWidth(),r.icon()->GetHeight(),r.icon()->GetPixelFormat());
-        if(r.smallicon)
-            out->smallicon=r.smallicon->Clone(0,0,r.smallicon->GetWidth(),r.smallicon->GetHeight(),r.smallicon->GetPixelFormat());
+            out->m_results.back().icon()=r.icon()->Clone(0,0,r.icon()->GetWidth(),r.icon()->GetHeight(),r.icon()->GetPixelFormat());
+        if(r.smallicon())
+            out->smallicon()=r.smallicon()->Clone(0,0,r.smallicon()->GetWidth(),r.smallicon()->GetHeight(),r.smallicon()->GetPixelFormat());
         if(r.object())
             out->object()=r.object()->clone();
     }
@@ -161,7 +158,7 @@ struct Source {
         // FIXME : we need a clearItem and a clear
         delete r.object(); r.object()=0;
         delete r.icon(); r.icon()=0;
-        delete r.smallicon; r.smallicon=0;
+        delete r.smallicon(); r.smallicon()=0;
     }
 
     // unused yet
@@ -173,12 +170,12 @@ struct Source {
     virtual int getInt(const TCHAR *itemquery) { return false; }
 
     virtual void rate(const CString &q, SourceResult *r) {
-        r->rank=0;
+        r->rank()=0;
         if(m_prefix!=0 && r->display()[0]==m_prefix)
-            r->rank+=100;
+            r->rank()+=100;
 
         CString T(r->object()->getString(L"text"));
-        r->rank=min(100,r->uses()*5) + r->bonus() + r->rank+100*evalMatch(T,q);
+        r->rank()=min(100,r->uses()*5) + r->bonus() + r->rank()+100*evalMatch(T,q);
     }
     
     int                             def;

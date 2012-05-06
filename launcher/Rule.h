@@ -10,7 +10,7 @@ struct Type {
             else if(op==L"~=") {
                 m_operator=1;
             }
-        } 
+        }
         int             m_operator;
         CString         m_name;
         CString         m_value;            
@@ -19,17 +19,34 @@ struct Type {
     Type(const CString &type, std::vector<Predicat> &predicates=std::vector<Predicat>()) {
         m_type=type;
         m_predicates=predicates;
+        m_multi=false;
     }
     Type(const CString &type, const CString &icon, std::vector<Predicat> &predicates=std::vector<Predicat>()) {
         m_type=type;
         m_icon=icon;
+        m_multi=false;
         m_predicates=predicates;
     }
-    bool match(Object *o) {
-        if(o->type != m_type)
+    bool match(RuleArg *o) {
+        if(o->m_results.size()==0)
             return false;
+
+        // no type at all: this is an empty object, it doesn't match anything
+        if(o->m_results[0].object()==0)
+            return false;
+
+        // there can't be multiple types in the results : the first one is the reference type and there is always at least one
+        CString type=o->m_results[0].object()->type;
+        if(type == L"")
+            return false;
+
+        // no match if the argument doesn't match this type               
+        if(type != m_type)
+            return false;
+
+        // no match if a property predicate fail
         for(std::vector<Predicat>::iterator it=m_predicates.begin(); it!=m_predicates.end(); it++) {
-            CString n(o->getString(it->m_name));
+            CString n(o->object()->getString(it->m_name));
             CString N(n); N.MakeUpper();
             switch(it->m_operator) {
             case 0: {
@@ -49,8 +66,11 @@ struct Type {
                 break;
             }
         }
+
+        // match
         return true;
     }
+    bool                  m_multi;
     CString               m_type;
     CString               m_icon;
     std::vector<Predicat> m_predicates;
@@ -74,10 +94,10 @@ struct Rule {
     }
     virtual ~Rule() {
     }
-    int match(std::vector<SourceResult> &args, int l) {
+    int match(std::vector<RuleArg> &args, int l) {
         uint i; 
         for(i=0;i<args.size() && i<m_types.size() ;i++) {
-            if(args[i].object() && !m_types[i].match(args[i].object()))
+            if(!m_types[i].match(&args[i]))
                 break;
         }
 
@@ -92,9 +112,9 @@ struct Rule {
 
         return 0;
     }
-    virtual bool execute(std::vector<SourceResult> &args) { return true; }
+    virtual bool execute(std::vector<RuleArg> &args) { return true; }
 
     // add an default icon here ???
-    std::vector<Type>          m_types;
-    std::vector<SourceResult> *m_pArgs;
+    std::vector<Type>     m_types;
+    std::vector<RuleArg> *m_pArgs;
 };

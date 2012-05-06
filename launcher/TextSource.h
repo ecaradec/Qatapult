@@ -23,6 +23,6 @@ struct TextSource : Source {
     }
     void rate(const CString &q, SourceResult *r) {
         if(r->id()==0)
-            r->rank=0;
+            r->rank()=0;
     }
 };

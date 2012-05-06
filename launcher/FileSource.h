@@ -88,7 +88,7 @@ struct FileSource : Source {
                     r.display()=w32fd.cFileName;
                     r.expand()=expand;
                     r.source()=this;
-                    r.rank=10;
+                    r.rank()=10;
                     results.push_back(r);
 
                     results.back().object()=new FileObject(expand,this,w32fd.cFileName,expand,expand);
@@ -144,14 +144,14 @@ struct FileSource : Source {
 
         Q=Q.Mid(Q.ReverseFind(L'\\')+1);
 
-        r->rank=0;
+        r->rank()=0;
         if(m_prefix!=0 && r->display()[0]==m_prefix)
-            r->rank+=100;
+            r->rank()+=100;
 
         CString P(r->object()->getString(L"path"));
         P.TrimRight(L"\\");
         P=P.Mid(P.ReverseFind(L'\\')+1);        
-        r->rank=min(100,r->uses()*5) + r->bonus() + r->rank+100*evalMatch(P,Q);
+        r->rank()=min(100,r->uses()*5) + r->bonus() + r->rank()+100*evalMatch(P,Q);
     }
     sqlite3 *db;
 };

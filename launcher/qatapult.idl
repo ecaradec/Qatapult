@@ -33,6 +33,7 @@ interface IQatapultScript : IDispatch
     HRESULT trace([in] BSTR str);
     HRESULT getBuffer([in] INT l, [out,retval] BSTR *pstr);
     HRESULT setInput([in] IDispatch *p);
+    HRESULT setSkinSize([in] INT w, [in] INT h);
 };
 
 [

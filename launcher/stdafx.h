@@ -24,6 +24,8 @@
 // #define _AFX_ALL_WARNINGS
 
 #include <windows.h>         // MFC core and standard components
+#include <assert.h>
+
 
 #include <commctrl.h>
 #include <commoncontrols.h>
@@ -52,6 +54,7 @@
 #include <vector>
 #include <list>
 #include <algorithm>
+#include <memory>
 
 #include <gdiplus.h>
 
@@ -70,3 +73,4 @@ typedef unsigned int uint;
 #include <atlapp.h>
 #include <atlwinx.h>
 #include <atldlgs.h>
+#include <assert.h>

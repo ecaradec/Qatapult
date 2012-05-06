@@ -3,98 +3,155 @@
 struct Source;
 struct Object;
 
+
 struct SourceResult {
-    SourceResult() { 
-        m_results.push_back(Item());
-        rank=0;
-        smallicon=0;
-        dirty=false;
+    void clear() {
+        m_source=0;
+        m_object=0;
+        m_bonus=0;
+        m_uses=0;
+        m_id=0;
+        m_data=0;
+        m_icon=0;
+        m_rank=0;
+        m_smallicon=0;
+    }
+    SourceResult() {
+        clear();
+    }
+    SourceResult(Source *s_, Object *o_, const CString &d_, const CString &e_, int b_, int u_, int id_, void *data_) {
+        clear();
+        m_source=s_;
+        m_object=o_;
+        m_data=data_;
+        m_expand=e_;
+        m_bonus=b_;
+        m_uses=u_;
+        m_id=id_;
     }
     SourceResult(const CString &_key, const CString &_display, const CString &_expand, Source *_s, int _id=0, void *_data=0, int _uses=0) { 
-        //key=_key;
-        m_results.push_back(Item(_s,0,_display,_expand,0, _uses, _id, _data));
-        rank=0;
-        smallicon=0;
-        dirty=false;
+        clear();
+        m_source=_s;
+        m_display=_display;
+        m_expand=_expand;
+        m_id=_id;
+        m_data=_data;
+        m_uses=_uses;
     }
-    SourceResult(const SourceResult &s) {
+
+    Object *&object() {
+        return m_object;
+    }
+    Gdiplus::Bitmap *&icon() {
+        return m_icon;
+    }
+    Gdiplus::Bitmap *&smallicon() {
+        return m_smallicon;
+    }
+    Source *&source() {
+        return m_source;
+    }
+    CString &display() {
+        return m_display;
+    }
+    CString &expand() {
+        return m_expand;
+    }
+    CString &iconname() {
+        return m_iconname;
+    }
+    int &bonus() {
+        return m_bonus;
+    }
+    int &uses() {
+        return m_uses;
+    }
+    int &id() {
+        return m_uses;
+    }
+    void *&data() {
+        return m_data;
+    }
+    int &rank() {
+        return m_rank;
+    }
+
+    Source          *m_source;
+    Object          *m_object;
+    CString          m_display;
+    CString          m_expand;
+    int              m_bonus;
+    int              m_uses;
+    int              m_id;
+    void            *m_data; // must be cloned if needed
+    Gdiplus::Bitmap *m_icon;
+
+    // temporary for automatic
+    CString          m_iconname;
+
+    // no saving required (and no copy )
+    int              m_rank;
+    Gdiplus::Bitmap *m_smallicon;
+};
+
+struct RuleArg {
+    RuleArg() { 
+        //m_results.push_back(SourceResult());
+    }
+    RuleArg(const CString &_key, const CString &_display, const CString &_expand, Source *_s, int _id=0, void *_data=0, int _uses=0) { 
+        //key=_key;
+        m_results.push_back(SourceResult(_s,0,_display,_expand,0, _uses, _id, _data));
+    }
+    RuleArg(const RuleArg &s) {
         *this=s; // copy all fields stupidly
     }
 
-    // must save        
+    // easy access to the current object on RuleArg
     Object *&object(int i=0) {
-        return item(i).object;
+        return item(i).m_object;
     }
     Gdiplus::Bitmap *&icon(int i=0) {
-        return item(i).icon;
+        return item(i).m_icon;
+    }
+    Gdiplus::Bitmap *&smallicon(int i=0) {
+        return item(i).m_smallicon;
     }
     Source *&source(int i=0) {
-        return item(i).source;
+        return item(i).m_source;
     }
     CString &display(int i=0) {
-        return item(i).display;
+        return item(i).m_display;
     }
     CString &expand(int i=0) {
-        return item(i).expand;
+        return item(i).m_expand;
+    }
+    CString &iconname(int i=0) {
+        return item(i).m_iconname;
     }
     int &bonus(int i=0) {
-        return item(i).bonus;
+        return item(i).m_bonus;
     }
     int &uses(int i=0) {
-        return item(i).uses;
+        return item(i).m_uses;
     }
     int &id(int i=0) {
-        return item(i).uses;
+        return item(i).m_uses;
     }
     void *&data(int i=0) {
-        return item(i).data;
+        return item(i).m_data;
+    }
+    int &rank(int i=0) {
+        return item(i).m_rank;
+    }
+    bool isEmpty() {
+        return m_results.size()==0;
     }
 
-    struct Item {
-        Item() {
-            source=0;
-            object=0;
-            bonus=0;
-            uses=0;
-            id=0;
-            data=0;
-            icon=0;
-        }
-
-        Item(Source *s_, Object *o_, const CString &d_, const CString &e_, int b_, int u_, int id_, void *data_) {
-            source=s_;
-            object=o_;
-            id=id_;
-            expand=e_;
-            bonus=b_;
-            uses=u_;
-            id=id_;
-            data=data_;
-            icon=0;
-        }
-        Source  *source;
-        Object  *object;
-        CString  display;
-        CString  expand;
-        int      bonus;
-        int      uses;
-        int      id;
-        void    *data; // must be cloned if needed
-        Gdiplus::Bitmap *icon;
-    };
-    Item &item(int i) {
+    SourceResult &item(int i) {
         return m_results[m_results.size()-1-i];
     }
 
-    std::vector<Item> m_results;
-
-    // temporary for automatic
-    CString  iconname;
-
-    // no saving required (and no copy )
-    int      rank;
-    bool     dirty;    
-    Gdiplus::Bitmap *smallicon;
+    std::vector<SourceResult> m_results;
 };
 
 

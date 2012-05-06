@@ -23,11 +23,11 @@ struct TextItemSource : Source {
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
         if(!r->object())
             return 0;
-        return Gdiplus::Bitmap::FromFile(m_index[r->object()->key].iconname);
+        return Gdiplus::Bitmap::FromFile(m_index[r->object()->key].iconname());
     }
     void addItem(const TCHAR *str,const TCHAR *iconname) {
         m_index[str]=SourceResult(str,str,str, this, 0, 0, m_index[str].bonus());
-        m_index[str].iconname=iconname;
+        m_index[str].iconname()=iconname;
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
@@ -38,7 +38,7 @@ struct TextItemSource : Source {
             if(FuzzyMatch(it->second.display(),q)) {
                 results.push_back(it->second);
                 Object *o=new Object(it->second.expand(), type, this, it->second.expand());
-                o->values[L"icon"]=it->second.iconname;
+                o->values[L"icon"]=it->second.iconname();
                 results.back().object()=o;
                 results.back().bonus()=20; // special bonus for helping keywords
 

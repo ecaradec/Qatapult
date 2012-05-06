@@ -94,7 +94,7 @@ struct Qatapult : IWindowlessGUI, UI {
     void InvalidateIndex() ;
     void Invalidate();
     void CreateSettingsDlg();
-    void CollectItems(const CString &q, const uint pane, std::vector<SourceResult> &args, std::vector<SourceResult> &results, int def);
+    void CollectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, std::vector<SourceResult> &results, int def);
     static int ResultSourceCmp(SourceResult &r1, SourceResult &r2);
     void OnQueryChange(const CString &q);
     void ShowNextArg() ;
@@ -155,8 +155,8 @@ struct Qatapult : IWindowlessGUI, UI {
     // runtime source and rules
     std::vector<Source*>       m_sources;
     std::vector<Rule*>         m_rules;
-    std::vector<SourceResult>  m_args;     // validated results
-    std::vector<SourceResult>  m_retArgs;     // validated results
+    std::vector<RuleArg>       m_args;     // validated results
+    std::vector<RuleArg>       m_retArgs;     // validated results
     
     // ui status    
     int                        m_focusedresult;
