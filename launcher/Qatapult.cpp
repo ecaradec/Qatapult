@@ -269,12 +269,12 @@ BOOL CALLBACK SettingsDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                     // Get the next window. Use it.
                     hwndChild = ::GetWindow( hwndChild, GW_HWNDNEXT );
                 }
-                g_pQatapult->Reload();
+                g_pQatapult->reload();
                 //g_pUI->InvalidateIndex();
                 ::EndDialog(hWnd, 0);
             } else if(wParam==IDCANCEL) {
                 ::EndDialog(hWnd, 0);
-                g_pQatapult->Show();
+                g_pQatapult->show();
             }
         return TRUE;
         case WM_NOTIFY:
@@ -422,15 +422,15 @@ Qatapult::Qatapult():m_input(this), m_invalidatepending(false) {
 
     CreateDirectory(L"skins", 0);        
 
-    Init();
+    init();
 
     // repaint dialog
-    Invalidate();
+    invalidate();
 }
 Qatapult::~Qatapult() {        
-    Reset();
+    reset();
 }
-int Qatapult::GetCurPane() {
+int Qatapult::getCurPane() {
     return m_pane;
 }
 CString Qatapult::getArgString(int c,const TCHAR *name) {
@@ -497,7 +497,7 @@ about.ShowWindow(SW_SHOW);
 searchfolder.Create(about.m_hWnd);
 */
 
-void Qatapult::Init() {
+void Qatapult::init() {
     //CString tmp1=getShortcutPath(L"C:\\Users\\emmanuel\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Qatapult.exe - Raccourci.lnk");
     //CString tmp2=getShortcutPath(L"C:\\Users\\emmanuel\\Desktop\\Qatapult.exe - Raccourci.lnk");
     //CString tmp3=getShortcutPath(L"C:\\Users\\public\\Desktop\\GIMP 2.lnk");
@@ -624,7 +624,7 @@ void Qatapult::Init() {
     // define hotkey
     RegisterHotKey(g_pUI->getHWND(), 1, hotkeymodifiers, hotkeycode);
 
-    LoadRules(settings);
+    loadRules(settings);
 
     // load plugins rules & sources
     std::vector<CString> pluginsfolders;
@@ -638,7 +638,7 @@ void Qatapult::Init() {
         if(FileExists(folder+L"\\plugin.xml")) {
             pugi::xml_document d;
             d.load_file(folder+L"\\plugin.xml");
-            LoadRules(d);
+            loadRules(d);
         }
 
         std::vector<CString> collectors;
@@ -671,12 +671,14 @@ void Qatapult::Init() {
 
     m_args.push_back(RuleArg());
     m_args.back().m_results.push_back(SourceResult());
+
+    m_queries.push_back(L"");
     
-    OnQueryChange(L"");
+    onQueryChange(L"");
 
     
     // create dialogs
-    CreateSettingsDlg();        
+    createSettingsDlg();        
 
     // we shouldn't create a thread for each source, this is inefficient
     // crawl should be called with an empty index for each source
@@ -693,25 +695,23 @@ void Qatapult::Init() {
     //PostQuitMessage(0);
 }
 
-SourceResult Qatapult::getEmptyResult() {
-    SourceResult r(L"",L"",L"",m_emptysource,0,0,0);
-    r.object()=new Object(L"EMPTY",L"EMPTY",m_emptysource,L"");
-    return r;
-}
-
 PluginsDlg pluginsdlg;
 SearchFoldersDlg searchfolderdlg;
 
-void ClearRuleArg(RuleArg &r) {
+void clearSourceResult(SourceResult &r) {
+    if(r.source())
+        r.source()->clear(r);
+}
+
+void clearRuleArg(RuleArg &r) {
     for(int i=0;i<r.m_results.size();i++) {
-        if(r.m_results[i].source())
-            r.m_results[i].source()->clear(r.m_results[i]);
+        clearSourceResult(r.m_results[i]);
     }
     r.m_results.clear();
     r.m_results.push_back(SourceResult());
 }
 
-void Qatapult::Reset() {
+void Qatapult::reset() {
     if(pluginsdlg.IsWindow())
         pluginsdlg.DestroyWindow();
 
@@ -743,8 +743,8 @@ void Qatapult::Reset() {
     // bitmaps
     UnregisterHotKey(m_hwnd,1);
 
-    ClearResults(m_results);
-    ClearResults(m_nextresults);
+    clearResults(m_results);
+    clearResults(m_nextresults);
 
     for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++) {
         delete *it;
@@ -752,7 +752,7 @@ void Qatapult::Reset() {
     m_rules.clear();
     
     for(uint i=0;i<m_args.size();i++) {        
-        ClearRuleArg(m_args[i]);
+        clearRuleArg(m_args[i]);
     }
     m_args.clear();
 
@@ -763,7 +763,7 @@ void Qatapult::Reset() {
     m_sources.clear();
 }
 
-void Qatapult::LoadRules(pugi::xml_document &settings) {
+void Qatapult::loadRules(pugi::xml_document &settings) {
     pugi::xpath_node_set ns=settings.select_nodes("/settings/rules/rule");
     for(pugi::xpath_node_set::const_iterator it=ns.begin(); it!=ns.end(); it++) {
         Rule *r=0;
@@ -815,7 +815,7 @@ void Qatapult::LoadRules(pugi::xml_document &settings) {
         }
     }
 }
-void Qatapult::Reload() {
+void Qatapult::reload() {
     PostMessage(getHWND(),WM_RELOAD,0,0);
 }
 Source *Qatapult::addSource(Source *s) {
@@ -900,10 +900,10 @@ uint __stdcall Qatapult::crawlProc(Qatapult *thiz) {
 HWND Qatapult::getHWND() {
     return m_hwnd;
 }
-void Qatapult::InvalidateIndex() {
+void Qatapult::invalidateIndex() {
     PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
 }
-void Qatapult::Invalidate() {
+void Qatapult::invalidate() {
     if(m_invalidatepending==false) {
         PostMessage(m_hwnd, WM_INVALIDATEDISPLAY, 0, 0);        
         m_invalidatepending=true;
@@ -911,7 +911,7 @@ void Qatapult::Invalidate() {
 }
 
 extern BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-void Qatapult::CreateSettingsDlg() {
+void Qatapult::createSettingsDlg() {
     m_hwndsettings=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_SETTINGS), 0, (DLGPROC)SettingsDlgProc);  //CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GET_GMAILAUTHCODE), 0, DlgProc);
     HWND hTreeView=GetDlgItem(m_hwndsettings, IDC_TREE);    
 
@@ -968,8 +968,8 @@ void Qatapult::CreateSettingsDlg() {
     BOOL b=TreeView_SelectItem(hTreeView, htreeG);
 }
 
-void Qatapult::CollectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, std::vector<SourceResult> &results, int def) {
-    ClearResults(results);
+void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, std::vector<SourceResult> &results, int def) {
+    clearResults(results);
 
     // collect all active rules (match could have an args that tell how much to match )
     // i should probably ignore the current pane for the match or just match until pane-1  
@@ -1044,7 +1044,7 @@ void Qatapult::CollectItems(const CString &q, const uint pane, std::vector<RuleA
     }
 }
 
-int Qatapult::ResultSourceCmp(SourceResult &r1, SourceResult &r2) {
+int Qatapult::resultSourceCmp(SourceResult &r1, SourceResult &r2) {
     return r1.rank() > r2.rank();
 }
 
@@ -1054,7 +1054,9 @@ struct Results {
     std::vector<SourceResult>  results;
 };
 
-void Qatapult::OnQueryChange(const CString &q) {
+void Qatapult::onQueryChange(const CString &q) {
+    m_queries.back()=q;
+
     m_request++;
     m_focusedresult=0;
 
@@ -1062,52 +1064,83 @@ void Qatapult::OnQueryChange(const CString &q) {
     presults->request=m_request;
     presults->pane=m_pane;
 
-    CollectItems(q, m_pane, m_args, presults->results, 0);        
+    collectItems(q, m_pane, m_args, presults->results, 0);        
 
     PostMessage(getHWND(), WM_PUSHRESULT,(WPARAM)presults,0);
 }
-void Qatapult::ShowNextArg() {
-    // check if there is extra args     
+void Qatapult::showNextArg() {
+    // check if there is extra args
     if(m_args.size()>0) {
         Results *presults=new Results;
         presults->request=m_request;
         presults->pane=m_pane+1;
 
-        CollectItems(L"", m_pane+1, m_args, presults->results, 1);
+        collectItems(L"", m_pane+1, m_args, presults->results, 1);
 
         PostMessage(getHWND(), WM_PUSHRESULT2,(WPARAM)presults,0);
     }
 }
-void Qatapult::setArg(uint pane, SourceResult &r) {
-    if(pane==m_args.size()) {
-        m_args.push_back(RuleArg());
-        m_args.back().m_results.push_back(SourceResult());
-        r.source()->copy(r,&m_args.back());
-    } else {
-        ClearRuleArg(m_args[pane]);
-        m_args[pane].m_results.push_back(SourceResult());
-        r.source()->copy(r,&m_args[pane]);
+
+// TODO : move to rulearg ??
+void copySourceResult(RuleArg &ra, SourceResult &r) {
+    if(ra.m_results.size()>0)
+        clearSourceResult(ra.m_results.back());
+    if(r.source())
+        r.source()->copy(r,&ra);
+    else
+        ra.m_results.back()=r;
+}
+
+void Qatapult::ensureArgsCount(std::vector<RuleArg> &ral, int l, int flags) {
+    if(flags&EA_REMOVE_EXTRA) {
+        while(ral.size()>l) {
+            clearRuleArg(ral.back());
+            ral.pop_back();
+        }
     }
+    while(ral.size()<l) {
+        ral.push_back(RuleArg());
+        ral.back().m_results.push_back(SourceResult());
+    } 
+}
+
+void Qatapult::cancelResult() {
+    // cancel args beyond the current
+    ensureArgsCount(m_args,m_pane+1);
+
+    // cancel one result
+    if(m_args.back().m_results.size()>0) {
+        if( m_args.back().m_results.back().source()!=0 ) {
+            m_args.back().m_results.back().source()->clear(m_args.back().m_results.back());
+        }
+        m_args.back().m_results.pop_back();
+    }
+
+    // if there are no result left, cancel one arg
+    if(m_args.back().m_results.size()==0) {
+        m_args.pop_back();        
+    }
+
+    // ensure there is at least one arg
+    ensureArgsCount(m_args,1,EA_NO_REMOVE_EXTRA);
+    m_queries.resize(m_args.size());
+
+    // set current focus
+    m_pane=m_args.size()-1;
+
+    assert(m_queries.size()>m_pane);
+    m_input.setText(m_queries[m_pane]);
+}
+
+// setarg should not be used for appending objects
+void Qatapult::setResult(uint pane, SourceResult &r) {
+    ensureArgsCount(m_args,pane+1,EA_NO_REMOVE_EXTRA);
+    copySourceResult(m_args[pane],r);
 }
 
 void Qatapult::setRetArg(uint pane, SourceResult &r) {
-    while(m_retArgs.size()<=pane) { m_retArgs.push_back(RuleArg()); }
-    m_retArgs[pane].m_results.push_back(r);
-}
-
-void Qatapult::OnSelChange(SourceResult *r) {
-    if(m_pane==m_args.size()) {
-        m_args.push_back(RuleArg());
-        m_args.back().m_results.push_back(SourceResult());
-    }        
-    // TODO : clear current m_args[m_pane] object
-    // a copy is not enough if there is deep data because the results are cleaned after the query   
-    if(r->source())
-        r->source()->copy(*r,&m_args[m_pane]);
-    else
-        m_args[m_pane].m_results.back()=*r;
-    ShowNextArg();
-    Invalidate();
+    ensureArgsCount(m_retArgs,pane+1,EA_NO_REMOVE_EXTRA);
+    copySourceResult(m_retArgs[pane],r);
 }
 
 CString Qatapult::getResString(int i, const TCHAR *name) {
@@ -1121,6 +1154,29 @@ CString Qatapult::getResString(int i, const TCHAR *name) {
 
 void Qatapult::setVisibleResCount(int i) {
     m_visibleresultscount=i;
+}
+
+Object *Qatapult::getArgObject(int i, int e) {
+    if(i>=m_args.size())
+        return 0;
+    if(e>=m_args[i].m_results.size())
+        return 0;
+    return m_args[i].object(e);
+}
+
+Object *Qatapult::getResObject(int i) {
+    if(i>=m_results.size())
+        return 0;
+
+    return m_results[i].object();
+}
+
+
+
+void Qatapult::onSelChange(SourceResult *r) {
+    setResult(m_pane,*r);
+    showNextArg();
+    invalidate();
 }
 
 static HDC   g_HDC;
@@ -1150,7 +1206,7 @@ void Qatapult::drawInput(INT x, INT y, INT w, INT h){
 
     Graphics g(g_HDC);
     g.SetTextRenderingHint(TextRenderingHint(m_textrenderinghint));
-    m_input.Draw(g, RectF(float(x),float(y),float(w),float(h)), sf, L'',m_fontsize,g_textcolor); /*m_args[m_pane].source->m_prefix*/
+    m_input.draw(g, RectF(float(x),float(y),float(w),float(h)), sf, L'',m_fontsize,g_textcolor); /*m_args[m_pane].source->m_prefix*/
 
     m_curWidth=max(m_curWidth,x+w);
     m_curHeight=max(m_curWidth,y+h);
@@ -1168,12 +1224,7 @@ void Qatapult::drawText(const TCHAR *text, INT x, INT y, INT w, INT h) {
 }
 
 void Qatapult::drawItem(INT i, INT e, INT x, INT y, INT w, INT h){
-    if(i>=m_args.size())
-        return;
-    if(e>=m_args[i].m_results.size())
-        return;
-
-    Object *o=m_args[i].object(e);
+    Object *o=getArgObject(i,e);
     if(!o)
         return;
 
@@ -1189,10 +1240,7 @@ void Qatapult::drawItem(INT i, INT e, INT x, INT y, INT w, INT h){
 }
 
 void Qatapult::drawResItem(INT i, INT x, INT y, INT w, INT h){
-    if(i>=m_results.size())
-        return;
-
-    Object *o=m_results[i].object();
+    Object *o=getResObject(i);
     if(!o)
         return;
 
@@ -1236,7 +1284,7 @@ void Qatapult::drawResults(INT x, INT y, INT w, INT h){
 
     for(int i=m_resultspos;i<m_resultspos+m_visibleresultscount;i++) {
         int p=i-m_resultspos;
-        m_results[i].object()->drawListItem(g,&m_results[i],RectF(float(x),float(y+40*p),float(rw),float(40)),m_fontsize,m_focusedresult==i,g_textcolor,m_resultbgcolor,m_resultfocuscolor);
+        getResObject(i)->drawListItem(g,&m_results[i],RectF(float(x),float(y+40*p),float(rw),float(40)),m_fontsize,m_focusedresult==i,g_textcolor,m_resultbgcolor,m_resultfocuscolor);
     }
     
     if(m_visibleresultscount<m_results.size()) {        
@@ -1253,7 +1301,7 @@ void Qatapult::fillRectangle(INT x, INT y, INT w, INT h, DWORD c){
     g.FillRectangle(&SolidBrush(Color(c)),x,y,w,h);
 }
 
-void Qatapult::Update() {
+void Qatapult::update() {
     CString str;
     m_invalidatepending=false;        
 
@@ -1306,24 +1354,24 @@ void Qatapult::Update() {
     m_buffer.ReleaseDC();
 }    
 CString Qatapult::getQuery(int p) {
-    if(p==m_queries.size())
+    if(p==m_pane)
         return m_input.m_text;
     else if(p>m_queries.size())
         return L"";
     return m_queries[p];
 }
-SourceResult *Qatapult::GetSelectedItem() {
+SourceResult *Qatapult::getSelectedItem() {
     if(m_results.size()==0)
         return 0;
     return &m_results[m_focusedresult];
 }
-void Qatapult::ClearResults(std::vector<SourceResult> &results) {
+void Qatapult::clearResults(std::vector<SourceResult> &results) {
     for(uint j=0;j<results.size();j++) {            
         results[j].source()->clear(results[j]);
     }
     results.clear();
 }
-void Qatapult::SetCurrentSource(int pane,Source *s,CString &q) {
+void Qatapult::setCurrentSource(int pane,Source *s,CString &q) {
     if(m_customsources.size()<=uint(pane))
         m_customsources.resize(pane+1);
 
@@ -1331,14 +1379,14 @@ void Qatapult::SetCurrentSource(int pane,Source *s,CString &q) {
         m_customsources[pane]=0;
     else
         m_customsources[pane]=s;
-    m_input.SetText(q);
-    Invalidate();
+    m_input.setText(q);
+    invalidate();
 }
-void Qatapult::Show() {
+void Qatapult::show() {
     ShowWindow(m_hwnd, SW_SHOW);
     SetForegroundWindow(m_hwnd);
 }
-void Qatapult::Hide() {
+void Qatapult::hide() {
     ShowWindow(m_hwnd, SW_HIDE);
     KillTimer(m_hwnd, 1);
     //ShowWindow(m_listhosthwnd, SW_HIDE);
@@ -1354,6 +1402,9 @@ void Qatapult::showMenu(int xPos,int yPos) {
     TrackPopupMenu(hmenu, TPM_LEFTALIGN, p.x, p.y, 0, m_hwnd, 0);
 }
 LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {   
+    bool bShift=(GetKeyState(VK_SHIFT)&0xa000)!=0;
+    bool bCtrl=(GetKeyState(VK_CONTROL)&0xa000)!=0;
+    
     if(msg == WM_KEYDOWN) {        
         CComSafeArray<VARIANT> ary;
         CComVariant ret;
@@ -1361,7 +1412,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         m_painter.Run(L"onKeyDown",ary.GetSafeArrayPtr(),&ret);
         if(ret.vt==VT_BOOL)
             return ret.boolVal;
-    }    
+    }
     
     if(msg == WM_CURRENTVERSION)
     {
@@ -1376,121 +1427,108 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     {
         Results *p=(Results*)wParam;
         if(m_request==p->request) {
-            // because there is only one set of results for the moment this is enough
-            // if we post from things with delay like timer or httprequest we should only
-            // clear on the first message
-            ClearResults(m_results);            
-            
+            // remove all results and add new ones
+            clearResults(m_results);
             for(int i=0;i<p->results.size();i++) {
                 m_results.push_back(p->results[i]);
             }
-            std::sort(m_results.begin(), m_results.end(), ResultSourceCmp);
+            std::sort(m_results.begin(), m_results.end(), resultSourceCmp);
 
-            if(m_results.size()>0) {
-                OnSelChange(&m_results.front());
-            } else {
-                OnSelChange(&SourceResult());
-            }
-            delete p;
+            // select the first result if any
+            onSelChange(m_results.size()>0?&m_results.front():&SourceResult());
         }
+        delete p;
         return TRUE;
     }
     else if(msg == WM_PUSHRESULT2)
     {
         Results *p=(Results*)wParam;
         if(m_request==p->request) {
-            // remove all args beyond current pane
-            while(m_pane+1<m_args.size()) {
-                ClearRuleArg(m_args.back());
-                m_args.pop_back();
-            }
+            // remove all args beyond next pane
+            ensureArgsCount(m_args,m_pane+1);
 
-            ClearResults(m_nextresults);
-
+            // remove all results and add new ones
+            clearResults(m_nextresults);
             for(int i=0;i<p->results.size();i++) {
                 m_nextresults.push_back(p->results[i]);
             }
-            std::sort(m_nextresults.begin(), m_nextresults.end(), ResultSourceCmp);
+            std::sort(m_nextresults.begin(), m_nextresults.end(), resultSourceCmp);
 
-            if(m_nextresults.size()!=0) {
-                setArg(m_pane+1,m_nextresults.front());
-            }
-
-            delete p;
+            // initialize the second result, let empty if nothing match to prevent tabbing to it
+            if(m_nextresults.size()>0)
+                setResult(m_pane+1,m_nextresults.front());
         }
+        delete p;
         return TRUE;
     }
-    else if(msg == WM_KEYDOWN && wParam == VK_RETURN)
+    else if(msg == WM_KEYDOWN && wParam == VK_RETURN && bCtrl)
     {
-        bool bShift=(GetKeyState(VK_SHIFT)&0xa000)!=0;
-        bool bCtrl=(GetKeyState(VK_CONTROL)&0xa000)!=0;
+        //
+        // stack an object on the current rule argument, if there is at least one multi rule matching this type
+        //
+
+        // find if we have a multi rule that match arg, exit if there isn't
+        bool allowmulti=false;        
+        for(uint i=0;i<m_rules.size();i++)
+            if(m_rules[i]->match(m_args, m_pane+1)>=1) {
+                if(m_rules[i]->m_types[m_pane].m_multi) {
+                    allowmulti=true;
+                    break;
+                }
+            }
+        if(!allowmulti)
+            return FALSE;
+            
+        // when we press return the object is already focused, we don't need to assign it to m_args again
+        // just add a free slot to add something else
+        m_args[m_pane].m_results.push_back(SourceResult());
+
+        m_input.setText(L"");
+        clearResults(m_results);
+        clearResults(m_nextresults);
+        invalidate();            
+        return FALSE;
+    }
+    else if(msg == WM_KEYDOWN && wParam == VK_RETURN && !bCtrl)
+    {
         if(m_editmode==1 && bShift) {
             m_input.appendAtCaret(L"\n");
             return FALSE;
         }
-        // return is the way to run commands
-        // left and right are the way to navigate command
         
-        // if ctrl is pressed, the add an empty item on the stack and don't run the commont
-        if(bCtrl) {
-            bool allowmulti=false;
-
-            // find if we have a multi rule that match arg
-            for(uint i=0;i<m_rules.size();i++)
-                if(m_rules[i]->match(m_args, m_pane+1)>=1) {
-                    if(m_rules[i]->m_types[m_pane].m_multi) {
-                        allowmulti=true;
-                        break;
-                    }
-                }
-            if(!allowmulti)
-                return FALSE;
-
-            // permettre d'ajouter si il existe une regle incluant le type de r accessible en mode multi
-            if(m_pane==m_args.size()) {
-                m_args.push_back(RuleArg());
-            }
-            m_args[m_pane].m_results.push_back(SourceResult());
-
-            m_input.SetText(L"");
-            ClearResults(m_results);
-            ClearResults(m_nextresults);
-            Invalidate();            
-            return FALSE;
-        }
-
         // collect all active rules
         // might need to disambiguate here ?
         for(uint i=0;i<m_rules.size();i++)
             if(m_rules[i]->match(m_args, m_args.size())>1) {
                 // found one rule
-                Hide();
+                hide();
 
                 m_retArgs.clear();
                 if(m_rules[i]->execute(m_args)) {
                     for(uint a=0;a<m_args.size(); a++) {
-                        m_args[a].source()->validate(&m_args[a].item(0));
+                        for(uint r=0;r<m_args[a].m_results.size(); r++) {
+                            if(m_args[a].source())
+                                m_args[a].source()->validate(&m_args[a].item(r));
+                        }
                     }
+                    
+                    clearResults(m_results);
+                    clearResults(m_nextresults);
 
-                    ClearResults(m_results);
-                    ClearResults(m_nextresults);
+                    // clear all args
+                    ensureArgsCount(m_args,0);
+                    m_queries.clear();
+                    m_queries.resize(1);
+                    m_input.setText(L"");
 
-                    // don't clear args if 
-                    if(m_retArgs.size() == 0) {
-                        m_args.clear();
-                        m_pane=0;
-                        m_queries.clear();
-                    } else {
+                    // if there is ret args copy them and show interface
+                    if(m_retArgs.size() != 0) {
                         m_args=m_retArgs;
-                        m_pane=m_args.size();
-                        m_queries.clear();
-                        m_queries.resize(m_args.size());
-                        Invalidate();
-                        Show();
+                        m_pane=m_args.size();                        
+                        invalidate();
+                        show();
                     }
-
-                    m_input.SetText(L"");                    
-
+                                        
                     return FALSE;
                 }
             }
@@ -1500,7 +1538,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     {
         if(m_pane<m_customsources.size() && m_customsources[m_pane]!=0) {
             m_customsources[m_pane]=0;
-            m_input.SetText(L"");
+            m_input.setText(L"");
             return FALSE;
         }
         
@@ -1508,30 +1546,21 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             m_editmode=0;
             if(m_input.m_text[0]==L'.')
                 m_input.m_text=m_input.m_text.Mid(1);
-            Invalidate();
+            invalidate();
             return FALSE;
         }
-
-        if(m_pane==0 && m_args.size()==1 && m_args[0].m_results.size()==1) {
+        
+        cancelResult();
+        
+        if(m_pane==0 && m_args.size()==1 && m_args[0].m_results.size()==1 && m_args[0].m_results.back().source()==0) {
             ShowWindow(m_hwnd, SW_HIDE);
-            m_input.SetText(L"");
+            m_input.setText(L"");
             return FALSE;
         }
 
-        m_args[m_pane].m_results.pop_back();
+        showNextArg();
+        invalidate();
 
-        if(m_args[m_pane].m_results.size()==0) {
-            CString query=m_queries.size()==0?L"":m_queries.back();                
-
-            m_pane--;
-            m_args.pop_back();
-            m_queries.pop_back();
-            m_input.SetText(query);
-        }                           
-            
-        ShowNextArg();
-        Invalidate();
-            
         return FALSE;
     }
     else if(msg == WM_KEYDOWN && wParam == VK_TAB)
@@ -1547,29 +1576,21 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
                 if(p<m_args.size()) {
                     m_queries.push_back(m_input.m_text);
-                    m_input.SetText(L"");
+                    m_input.setText(L"");
                 } else {
                     m_queries.push_back(L"");
-                    m_input.SetText(L"");
-                }   
+                    m_input.setText(L"");
+                }
             }
-                
-            // alternate cyclic move with tab (ewemoa proposition )
-            //m_pane=(m_pane+1)%m_args.size();
-            //uint p=m_pane;
-
         } else {
             if(m_pane==0)
                 return FALSE;
 
             if(m_pane>0)
                 m_pane--;
-            // alternate cyclic move with tab (ewemoa proposition )
-            //m_pane=(m_pane-1)%m_args.size();
 
-            m_input.SetText(m_queries[m_pane]);
+            m_input.setText(m_queries[m_pane]);
             m_queries.pop_back();
-            
         }
             
         return FALSE;
@@ -1581,8 +1602,8 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             m_input.moveCaretLeft(bCtrl);
         } else if(m_pane<m_customsources.size()) {
             m_customsources[m_pane]=0;
-            m_input.SetText(L"");
-            Invalidate();
+            m_input.setText(L"");
+            invalidate();
         }
         return FALSE;
     }
@@ -1592,15 +1613,15 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
             m_input.moveCaretRight(bCtrl);
         } else {
-            SourceResult *r=GetSelectedItem();
+            SourceResult *r=getSelectedItem();
             if(!r)
                 return FALSE;
             CString q;
             Source *s=r->source()->getSource(*r,q);
             if(s!=0) {
-                SetCurrentSource(m_pane,s,q);
+                setCurrentSource(m_pane,s,q);
             } else {
-                m_input.SetText(r->object()->getString(L"expand"));
+                m_input.setText(r->object()->getString(L"expand"));
             }
         }
         return FALSE;
@@ -1635,8 +1656,8 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 m_resultspos=m_focusedresult-m_visibleresultscount+1;
     
             if(m_results.size()>0)
-                OnSelChange(&m_results[m_focusedresult]);
-            Invalidate();
+                onSelChange(&m_results[m_focusedresult]);
+            invalidate();
         }
         return FALSE;
     }
@@ -1657,8 +1678,8 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 m_resultspos=m_focusedresult;
 
             if(m_results.size()>m_focusedresult)
-                OnSelChange(&m_results[m_focusedresult]);
-            Invalidate();
+                onSelChange(&m_results[m_focusedresult]);
+            invalidate();
         }
         return FALSE;
     }
@@ -1679,7 +1700,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         m_editmode=m_editmode?0:1;
         if(m_editmode==0)
             m_input.m_caretpos=m_input.m_text.GetLength();
-        Invalidate();
+        invalidate();
     }
     else if(msg==WM_KEYDOWN && wParam=='E' && !!(GetKeyState(VK_CONTROL)&0x8000))
     {
@@ -1714,22 +1735,22 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
                     m_input.appendAtCaret(clip);
                 }
-            } else if((wParam == L'/' || wParam == L'\\') && GetSelectedItem() && GetSelectedItem()->object() && GetSelectedItem()->object()->type==L"FILE")
+            } else if((wParam == L'/' || wParam == L'\\') && getSelectedItem() && getSelectedItem()->object() && getSelectedItem()->object()->type==L"FILE")
             {
-                SourceResult *r=GetSelectedItem();
+                SourceResult *r=getSelectedItem();
                 CString path=r->object()->getString(L"expand");
-                m_input.SetText(path);
+                m_input.setText(path);
             }
-            else if((wParam == L'?') && GetSelectedItem() && GetSelectedItem()->object() && GetSelectedItem()->object()->type==L"FILE")
+            else if((wParam == L'?') && getSelectedItem() && getSelectedItem()->object() && getSelectedItem()->object()->type==L"FILE")
             {
-                SourceResult *r=GetSelectedItem();
+                SourceResult *r=getSelectedItem();
                 CString t(r->object()->getString(L"expand"));
                 t.TrimRight(L'\\');
                 CString d=t.Left(t.ReverseFind(L'\\'));
                 if(d==L"")
-                    m_input.SetText(L"");
+                    m_input.setText(L"");
                 else
-                    m_input.SetText(d+L"\\");
+                    m_input.setText(d+L"\\");
             } else if(wParam<VK_SPACE) {
                 ;
             } else {
@@ -1738,10 +1759,10 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
             // any query change cause new search
             if(wParam!=VK_RETURN)
-                OnQueryChange(m_input.m_text);
+                onQueryChange(m_input.m_text);
 
             //Update();
-            Invalidate();
+            invalidate();
         }
             
         if(wParam!=VK_ESCAPE && wParam!=VK_TAB) {
@@ -1756,12 +1777,12 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     }
     else if(msg==WM_INVALIDATEDISPLAY)
     {
-        Update();
+        update();
     }
     else if(msg==WM_RELOAD)
     {
-        Reset();
-        Init();
+        reset();
+        init();
         ShowWindow(m_hwnd, SW_SHOW);
     }
     else if(msg==WM_COMMAND)
@@ -1792,12 +1813,12 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             m_pane=0;
             m_args.clear();
             m_queries.clear();
-            m_input.SetText(L"");
+            m_input.setText(L"");
             m_customsources.clear();
 
-            Hide();
+            hide();
         } else {
-            Show();
+            show();
         }
     }
     else if(msg==WM_UPDATEINDEX)
@@ -1814,7 +1835,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         else
             m_indexing=L"";
 
-        Invalidate();
+        invalidate();
     }
     else if(msg == WM_NCHITTEST)
     {
@@ -1838,13 +1859,13 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     else if(msg==WM_TIMER && wParam==2)
     {
         if(IsWindowVisible(m_hwnd)) {
-            Invalidate();
+            invalidate();
         }
     }
     else if(msg == WM_KILLFOCUS)
     {
         // TODO : call the painter to signal focus lost
-        Invalidate();
+        invalidate();
     }
 
     return ::DefWindowProc(hwnd, msg, wParam, lParam);

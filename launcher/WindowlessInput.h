@@ -4,7 +4,7 @@ struct WindowlessInput {
         m_text=L"";
         m_caretpos=0;
     }
-    void Draw(Graphics &g, const RectF &r, StringFormat &sf, TCHAR prefix, float fontsize, Color c=0xFFFFFFFF) {
+    void draw(Graphics &g, const RectF &r, StringFormat &sf, TCHAR prefix, float fontsize, Color c=0xFFFFFFFF) {
         Gdiplus::Font f(g_fontfamily, fontsize);
         
         int caretpos=m_caretpos;
@@ -43,17 +43,17 @@ struct WindowlessInput {
         
         g.FillRectangle(&SolidBrush(Color(c)), r1);
     }
-    void SetText(const CString &txt) {
+    void setText(const CString &txt) {
         m_text=txt;
         m_caretpos=m_text.GetLength();
-        m_pParent->OnQueryChange(m_text);
-        m_pParent->Invalidate();        
+        m_pParent->onQueryChange(m_text);
+        m_pParent->invalidate();        
     }
     void appendText(const CString &text) {
         m_text.Append(text);
         m_caretpos=m_text.GetLength();
-        m_pParent->OnQueryChange(m_text);
-        m_pParent->Invalidate();
+        m_pParent->onQueryChange(m_text);
+        m_pParent->invalidate();
     }
     void back(bool ctrl) {
         int oldpos=m_caretpos;
@@ -76,7 +76,7 @@ struct WindowlessInput {
         m_caretpos=max(m_caretpos, 0);
         m_caretpos=min(m_caretpos, m_text.GetLength());
         m_text=m_text.Left(m_caretpos)+m_text.Mid(oldpos);
-        m_pParent->Invalidate();
+        m_pParent->invalidate();
     }
     void del(bool ctrl) {
         int nextword=m_text.GetLength();
@@ -98,7 +98,7 @@ struct WindowlessInput {
         }
 
         m_text=m_text.Left(m_caretpos)+m_text.Mid(nextword);
-        m_pParent->Invalidate();
+        m_pParent->invalidate();
     }
     void moveCaretRight(bool ctrl) {
         if(ctrl) {
@@ -118,7 +118,7 @@ struct WindowlessInput {
             m_caretpos++;
 
         m_caretpos=min(m_caretpos, m_text.GetLength());
-        m_pParent->Invalidate();
+        m_pParent->invalidate();
     }
     void moveCaretLeft(bool ctrl) {
         if(ctrl) {
@@ -137,21 +137,21 @@ struct WindowlessInput {
         } else 
             m_caretpos--;
         m_caretpos=max(m_caretpos,0);
-        m_pParent->Invalidate();
+        m_pParent->invalidate();
     }
     void appendAtCaret(const CString &s) {
         m_text=m_text.Left(m_caretpos)+s+m_text.Mid(m_caretpos);
         m_caretpos=m_text.Left(m_caretpos).GetLength()+s.GetLength();
         //m_pParent->OnQueryChange(m_text);
-        m_pParent->Invalidate();
+        m_pParent->invalidate();
     }
     void home() {
         m_caretpos=0;
-        m_pParent->Invalidate();
+        m_pParent->invalidate();
     }
     void end() {
         m_caretpos=m_text.GetLength();
-        m_pParent->Invalidate();
+        m_pParent->invalidate();
     }
     IWindowlessGUI  *m_pParent;
     CString          m_text;

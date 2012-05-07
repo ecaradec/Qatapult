@@ -33,11 +33,11 @@ struct UI {
     virtual int getFocus() = 0;
     virtual CString getQuery(int p) = 0;
     // settings dialog    
-    virtual void InvalidateIndex() = 0;
-    virtual void Reload() = 0;
-    virtual void SetCurrentSource(int pane, Source *s,CString &q) = 0;
-    virtual void Show() = 0;
-    virtual int  GetCurPane() = 0;
+    virtual void invalidateIndex() = 0;
+    virtual void reload() = 0;
+    virtual void setCurrentSource(int pane, Source *s,CString &q) = 0;
+    virtual void show() = 0;
+    virtual int  getCurPane() = 0;
     virtual CString getArgString(int c, const TCHAR *name) = 0;
     virtual int  getArgsCount() = 0;
 };

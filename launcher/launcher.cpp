@@ -60,7 +60,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     }
     
     UnregisterClass(L"GUI",0);
-    gui.Reset();
+    gui.reset();
     Gdiplus::GdiplusShutdown(gdiplusToken);
     CoUninitialize();
     return 0;

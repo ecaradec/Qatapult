@@ -71,6 +71,9 @@ struct QatapultScript;
 struct PainterScript;
 struct SourceOfSources;
 
+#define EA_NO_REMOVE_EXTRA 0
+#define EA_REMOVE_EXTRA 1
+
 struct Qatapult : IWindowlessGUI, UI {
     Qatapult();
     ~Qatapult();
@@ -78,11 +81,10 @@ struct Qatapult : IWindowlessGUI, UI {
     
     bool isSourceEnabled(const char *name);
     bool isSourceByDefault(const char *name);
-    void Init();
-    SourceResult getEmptyResult();
-    void Reset();
-    void LoadRules(pugi::xml_document &settings);
-    void Reload();
+    void init();
+    void reset();
+    void loadRules(pugi::xml_document &settings);
+    void reload();
     Source *addSource(Source *s);
     Source *addSource(const TCHAR *name,Source *s) ;
     void addRule(Type arg0,Type arg1,Type arg2,Rule *r);
@@ -91,19 +93,29 @@ struct Qatapult : IWindowlessGUI, UI {
     void addRule(Rule *r);
     static uint __stdcall crawlProc(Qatapult *thiz);
     HWND getHWND();
-    void InvalidateIndex() ;
-    void Invalidate();
-    void CreateSettingsDlg();
-    void CollectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, std::vector<SourceResult> &results, int def);
-    static int ResultSourceCmp(SourceResult &r1, SourceResult &r2);
-    void OnQueryChange(const CString &q);
-    void ShowNextArg() ;
-    void setArg(uint pane, SourceResult &r);
-    void setRetArg(uint pane, SourceResult &r);
-    void OnSelChange(SourceResult *r);
+    void invalidateIndex() ;
+    void invalidate();
+    void createSettingsDlg();
+    void collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, std::vector<SourceResult> &results, int def);
+    static int resultSourceCmp(SourceResult &r1, SourceResult &r2);
+    void onQueryChange(const CString &q);
+    void showNextArg() ;
+    
+    void onSelChange(SourceResult *r);
+    void setRetArg(uint pane, SourceResult &r);    
+
+    // stack modification function
+    void setResult(uint pane, SourceResult &r);
+    void addEmptyResult(uint pane);
+    void cancelResult();
+    
+    // helpers
+    Object *getArgObject(int i, int e);
+    Object *getResObject(int i);
+    void ensureArgsCount(std::vector<RuleArg> &ral,int l, int flags=EA_REMOVE_EXTRA);    
 
     // arg querying
-    int GetCurPane();
+    int getCurPane();
     CString getArgString(int c,const TCHAR *name);
     int getArgsCount();
     CString getResString(INT c, const TCHAR* name);
@@ -124,14 +136,14 @@ struct Qatapult : IWindowlessGUI, UI {
 
     void showMenu(int xPos,int yPos);
 
-    void Update();
+    void update();
     CString getQuery(int pane);
     int getFocus() { return m_pane; }
-    SourceResult *GetSelectedItem();
-    void ClearResults(std::vector<SourceResult> &results);
-    void SetCurrentSource(int pane,Source *s,CString &q);
-    void Show();
-    void Hide();
+    SourceResult *getSelectedItem();
+    void clearResults(std::vector<SourceResult> &results);
+    void setCurrentSource(int pane,Source *s,CString &q);
+    void show();
+    void hide();
     LRESULT WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     LRESULT ListBoxWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     static LRESULT _WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {

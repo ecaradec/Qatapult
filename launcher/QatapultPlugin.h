@@ -17,7 +17,7 @@ struct QatapultRule : Rule {
         if(args[1].display()==L"Quit")
             PostQuitMessage(0);
         else if(args[1].display()==L"Reload")
-            g_pUI->Reload();
+            g_pUI->reload();
         else if(args[1].display()==L"Options") {
             ::CenterWindow(g_pQatapult->m_hwndsettings);
             ShowWindow(g_pQatapult->m_hwndsettings,SW_SHOW);

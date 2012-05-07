@@ -36,7 +36,7 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 SetSettingsStringA("gmailContacts", "accessToken", accessToken);
                 SetSettingsStringA("gmailContacts", "refreshToken", refreshToken);
                 
-                g_pUI->InvalidateIndex();
+                g_pUI->invalidateIndex();
             }
         return TRUE;
     }
@@ -55,39 +55,6 @@ Gdiplus::Bitmap *ContactObject::getIcon(long flags) {
         return Gdiplus::Bitmap::FromFile(L"photos\\"+key+".jpg");
     return Gdiplus::Bitmap::FromFile(L"icons\\contact.png");
 }
-/*void ContactObject::drawItem(Graphics &g, SourceResult *sr, RectF &r) {
-    float fontsize=10.0f;
-
-    Gdiplus::Font f(g_fontfamily,fontsize);
-    Gdiplus::Font f2(g_fontfamily, 7.0f);         
-
-    float textheight=f.GetHeight(&g);
-    bool h=(float(r.Width)/r.Height)>2;
-
-    RectF ricon=getStdIconPos(r,h,f.GetHeight(&g)+f2.GetHeight(&g));
-    RectF rtext0=getStdTextPos(r,h,f.GetHeight(&g));
-    RectF rtext=getStdTitlePos(r,h,f.GetHeight(&g)+f2.GetHeight(&g));
-    RectF rtext2=getStdSubTitlePos(r,h,f2.GetHeight(&g));
-
-    StringFormat sfcenter;
-    sfcenter.SetAlignment(StringAlignmentNear);
-    sfcenter.SetFormatFlags(StringFormatFlagsNoWrap);        
-    sfcenter.SetTrimming(StringTrimmingEllipsisCharacter);
-
-    ricon.Y+=10;
-
-    if(sr->icon)
-        g.DrawImage(sr->icon, ricon);
-        
-    CString email=getString(L"email");        
-    if(email==L"") {
-        drawEmphased(g, sr->display, g_pUI->getQuery(g_pUI->getFocus()), rtext0, DE_UNDERLINE,StringAlignmentNear, fontsize);
-    } else {
-        drawEmphased(g, sr->display, g_pUI->getQuery(g_pUI->getFocus()), rtext, DE_UNDERLINE,StringAlignmentNear, fontsize);
-        g.DrawString(email, email.GetLength(), &f2, rtext2, &sfcenter, &SolidBrush(Color(0x88FFFFFF)));
-    }
-}*/
-
 ContactSource::ContactSource() : DBSource(L"CONTACT",L"Contacts (Catalog )", L"contacts") {
     char *zErrMsg = 0;
     sqlite3_exec(db, "CREATE TABLE contacts(key TEXT PRIMARY KEY ASC, display TEXT, email TEXT, bonus INTEGER)", 0, 0, &zErrMsg);

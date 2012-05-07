@@ -82,7 +82,7 @@ struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript)
         return S_OK;
     }
     STDMETHOD(invalidate)() {
-        m_pUI->Invalidate();
+        m_pUI->invalidate();
         return S_OK;
     }
     STDMETHOD(getObject)(BSTR q, IDispatch **p) {

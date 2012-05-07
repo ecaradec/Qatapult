@@ -35,6 +35,10 @@ struct Type {
         if(o->m_results[0].object()==0)
             return false;
 
+        // multi results only match if the type is not multi
+        if(!m_multi && o->m_results.size()>1)
+            return false;
+
         // there can't be multiple types in the results : the first one is the reference type and there is always at least one
         CString type=o->m_results[0].object()->type;
         if(type == L"")
