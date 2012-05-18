@@ -49,3 +49,11 @@ SourceResult getResultFromIDispatch(const CString &type_, const CString &key, ID
     }
     return sr;    
 }
+
+SourceResult getResultFromFilePath(const CString &path, Source *s) {
+    CString filename=path.Right(path.GetLength() - (path.ReverseFind(L'\\')+1));
+    
+    SourceResult sr(path,filename,filename,s);
+    sr.object()=new FileObject(path, s, filename, filename, path);
+    return sr;
+}

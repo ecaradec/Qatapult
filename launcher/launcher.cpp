@@ -44,7 +44,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             }
         }*/
 
-    CoInitialize(0);
+    OleInitialize(0);
+    //CoInitialize(0);
 
     ULONG_PTR gdiplusToken;
     Gdiplus::GdiplusStartupInput gdiplusStartupInput;
@@ -62,6 +63,9 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     UnregisterClass(L"GUI",0);
     gui.reset();
     Gdiplus::GdiplusShutdown(gdiplusToken);
-    CoUninitialize();
+    
+    
+    OleUninitialize();
+    //CoUninitialize();
     return 0;
 }

@@ -74,7 +74,9 @@ struct SourceOfSources;
 #define EA_NO_REMOVE_EXTRA 0
 #define EA_REMOVE_EXTRA 1
 
-struct Qatapult : IWindowlessGUI, UI {
+void copySourceResult(RuleArg &ra, SourceResult &r);
+
+struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     Qatapult();
     ~Qatapult();
     HANDLE m_workerthread;
@@ -98,7 +100,7 @@ struct Qatapult : IWindowlessGUI, UI {
     void createSettingsDlg();
     void collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, std::vector<SourceResult> &results, int def);
     static int resultSourceCmp(SourceResult &r1, SourceResult &r2);
-    void onQueryChange(const CString &q);
+    void onQueryChange(const CString &q, bool select=true);
     void showNextArg() ;
     
     void onSelChange(SourceResult *r);
@@ -150,6 +152,27 @@ struct Qatapult : IWindowlessGUI, UI {
         return ((Qatapult*)GetWindowLongPtr(hwnd, GWLP_USERDATA))->WndProc(hwnd,msg,wParam,lParam);
     }
 
+    // drag&drop
+	STDMETHOD_(ULONG, AddRef)() {
+		return 0;
+	}
+	STDMETHOD_(ULONG, Release)() {
+		return 0;
+	}
+	STDMETHOD(QueryInterface)(REFIID, void**) {
+		return E_NOINTERFACE;
+	}
+    STDMETHOD(DragEnter)(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) {
+        return S_OK;
+    }        
+    STDMETHOD(DragOver)(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)  {
+        return S_OK;
+    }        
+    STDMETHOD(DragLeave)() {
+        return S_OK;
+    }        
+    STDMETHOD(Drop)(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect);
+
     // text input
     int                        m_editmode;
     WindowlessInput            m_input; 
@@ -168,7 +191,7 @@ struct Qatapult : IWindowlessGUI, UI {
     std::vector<Source*>       m_sources;
     std::vector<Rule*>         m_rules;
     std::vector<RuleArg>       m_args;     // validated results
-    std::vector<RuleArg>       m_retArgs;     // validated results
+    std::vector<RuleArg>       m_retArgs;  // validated results
     
     // ui status    
     int                        m_focusedresult;

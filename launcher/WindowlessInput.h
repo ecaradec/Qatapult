@@ -46,14 +46,10 @@ struct WindowlessInput {
     void setText(const CString &txt) {
         m_text=txt;
         m_caretpos=m_text.GetLength();
-        m_pParent->onQueryChange(m_text);
-        m_pParent->invalidate();        
     }
     void appendText(const CString &text) {
         m_text.Append(text);
         m_caretpos=m_text.GetLength();
-        m_pParent->onQueryChange(m_text);
-        m_pParent->invalidate();
     }
     void back(bool ctrl) {
         int oldpos=m_caretpos;
@@ -142,7 +138,6 @@ struct WindowlessInput {
     void appendAtCaret(const CString &s) {
         m_text=m_text.Left(m_caretpos)+s+m_text.Mid(m_caretpos);
         m_caretpos=m_text.Left(m_caretpos).GetLength()+s.GetLength();
-        //m_pParent->OnQueryChange(m_text);
         m_pParent->invalidate();
     }
     void home() {

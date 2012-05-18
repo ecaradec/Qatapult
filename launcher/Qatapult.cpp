@@ -502,6 +502,8 @@ void Qatapult::init() {
     //CString tmp2=getShortcutPath(L"C:\\Users\\emmanuel\\Desktop\\Qatapult.exe - Raccourci.lnk");
     //CString tmp3=getShortcutPath(L"C:\\Users\\public\\Desktop\\GIMP 2.lnk");
 
+    m_pane=0;
+
     m_crawlprogress=0;
     g_textcolor=0xFFFFFFFF;
     m_fontsize=10.0f;
@@ -524,10 +526,13 @@ void Qatapult::init() {
   
     m_buffer.Create(640,800,32,PixelFormat32bppARGB);
 
+    HRESULT hr;
     if(m_hwnd==0) {
         m_hwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"", /*WS_VISIBLE|*/WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
         ::SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, (LONG)_WndProc);
         ::SetWindowLongPtr(m_hwnd, GWLP_USERDATA, (LONG)this);
+        hr=RegisterDragDrop(m_hwnd, this);
+        //Enabledrop
     }    
 
     m_pQatapultScript=QatapultScript::Make(this);
@@ -1054,8 +1059,10 @@ struct Results {
     std::vector<SourceResult>  results;
 };
 
-void Qatapult::onQueryChange(const CString &q) {
-    m_queries.back()=q;
+void Qatapult::onQueryChange(const CString &q, bool select) {
+    if(m_queries.size()<m_pane)
+        m_queries.resize(m_pane+1);
+    m_queries[m_pane]=q;
 
     m_request++;
     m_focusedresult=0;
@@ -1066,7 +1073,7 @@ void Qatapult::onQueryChange(const CString &q) {
 
     collectItems(q, m_pane, m_args, presults->results, 0);        
 
-    PostMessage(getHWND(), WM_PUSHRESULT,(WPARAM)presults,0);
+    PostMessage(getHWND(), WM_PUSHRESULT,(WPARAM)presults,!select);
 }
 void Qatapult::showNextArg() {
     // check if there is extra args
@@ -1106,30 +1113,31 @@ void Qatapult::ensureArgsCount(std::vector<RuleArg> &ral, int l, int flags) {
 
 void Qatapult::cancelResult() {
     // cancel args beyond the current
-    ensureArgsCount(m_args,m_pane+1);
+    ensureArgsCount(m_args,m_pane+1,EA_NO_REMOVE_EXTRA);
 
     // cancel one result
-    if(m_args.back().m_results.size()>0) {
-        if( m_args.back().m_results.back().source()!=0 ) {
-            m_args.back().m_results.back().source()->clear(m_args.back().m_results.back());
+    if(m_args[m_pane].m_results.size()>0) {
+        if( m_args[m_pane].m_results.back().source()!=0 ) {
+            m_args[m_pane].m_results.back().source()->clear(m_args[m_pane].m_results.back());
         }
-        m_args.back().m_results.pop_back();
+        m_args[m_pane].m_results.pop_back();
     }
 
     // if there are no result left, cancel one arg
     if(m_args.back().m_results.size()==0) {
-        m_args.pop_back();        
+        m_args.pop_back();
+        // set current focus
+        if(m_pane>0)
+            m_pane--;
     }
 
     // ensure there is at least one arg
     ensureArgsCount(m_args,1,EA_NO_REMOVE_EXTRA);
     m_queries.resize(m_args.size());
 
-    // set current focus
-    m_pane=m_args.size()-1;
-
     assert(m_queries.size()>m_pane);
     m_input.setText(m_queries[m_pane]);
+    invalidate();
 }
 
 // setarg should not be used for appending objects
@@ -1435,7 +1443,10 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             std::sort(m_results.begin(), m_results.end(), resultSourceCmp);
 
             // select the first result if any
-            onSelChange(m_results.size()>0?&m_results.front():&SourceResult());
+            if(lParam==0)
+                onSelChange(m_results.size()>0?&m_results.front():&SourceResult());
+
+            invalidate();
         }
         delete p;
         return TRUE;
@@ -1457,6 +1468,8 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             // initialize the second result, let empty if nothing match to prevent tabbing to it
             if(m_nextresults.size()>0)
                 setResult(m_pane+1,m_nextresults.front());
+
+            invalidate();
         }
         delete p;
         return TRUE;
@@ -1493,6 +1506,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     {
         if(m_editmode==1 && bShift) {
             m_input.appendAtCaret(L"\n");
+            invalidate();
             return FALSE;
         }
         
@@ -1518,8 +1532,9 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     // clear all args
                     ensureArgsCount(m_args,0);
                     m_queries.clear();
-                    m_queries.resize(1);
+                    m_queries.push_back(L"");
                     m_input.setText(L"");
+                    invalidate();
 
                     // if there is ret args copy them and show interface
                     if(m_retArgs.size() != 0) {
@@ -1539,6 +1554,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         if(m_pane<m_customsources.size() && m_customsources[m_pane]!=0) {
             m_customsources[m_pane]=0;
             m_input.setText(L"");
+            invalidate();
             return FALSE;
         }
         
@@ -1555,6 +1571,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         if(m_pane==0 && m_args.size()==1 && m_args[0].m_results.size()==1 && m_args[0].m_results.back().source()==0) {
             ShowWindow(m_hwnd, SW_HIDE);
             m_input.setText(L"");
+            invalidate();
             return FALSE;
         }
 
@@ -1574,13 +1591,10 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             if(p+1<m_args.size()) {
                 m_pane++;
 
-                if(p<m_args.size()) {
-                    m_queries.push_back(m_input.m_text);
-                    m_input.setText(L"");
-                } else {
-                    m_queries.push_back(L"");
-                    m_input.setText(L"");
-                }
+                if(m_pane>=m_queries.size())
+                    m_queries.resize(m_pane+1);
+
+                m_input.setText(m_queries[m_pane]);
             }
         } else {
             if(m_pane==0)
@@ -1588,11 +1602,12 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
             if(m_pane>0)
                 m_pane--;
-
-            m_input.setText(m_queries[m_pane]);
-            m_queries.pop_back();
-        }
             
+            m_input.setText(m_queries[m_pane]);            
+        }
+        
+        onQueryChange(m_queries[m_pane],false);
+
         return FALSE;
     }
     else if(msg == WM_KEYDOWN && wParam == VK_LEFT)
@@ -1600,6 +1615,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         if(m_editmode==1) {
             bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
             m_input.moveCaretLeft(bCtrl);
+            invalidate();
         } else if(m_pane<m_customsources.size()) {
             m_customsources[m_pane]=0;
             m_input.setText(L"");
@@ -1624,18 +1640,21 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 m_input.setText(r->object()->getString(L"expand"));
             }
         }
+        invalidate();
         return FALSE;
     }
     else if(msg == WM_KEYDOWN && wParam == VK_BACK)
     {
         bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
-        m_input.back(bCtrl);            
+        m_input.back(bCtrl);
+        invalidate();
         return FALSE;
     }        
     else if(msg == WM_KEYDOWN && wParam == VK_DELETE)
     {
         bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
         m_input.del(bCtrl);
+        invalidate();
         return FALSE;
     }
     else if(msg == WM_KEYDOWN && (wParam == VK_DOWN || wParam==VK_NEXT))
@@ -1687,12 +1706,14 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     {
         if(m_editmode==1) {
             m_input.home();
+            invalidate();
         }
     }
     else if(msg == WM_KEYDOWN && wParam == VK_END)
     { 
         if(m_editmode==1) {
             m_input.end();
+            invalidate();
         }
     }
     else if(msg == WM_KEYDOWN && wParam == VK_INSERT)
@@ -1710,6 +1731,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             m_editmode=0;
         if(m_editmode==0)
             m_input.m_caretpos=m_input.m_text.GetLength();
+        invalidate();
     }
     else if(msg == WM_CHAR)
     {
@@ -1758,7 +1780,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             }
 
             // any query change cause new search
-            if(wParam!=VK_RETURN)
+            if(wParam!=VK_RETURN && wParam!=VK_TAB && wParam!=VK_ESCAPE)
                 onQueryChange(m_input.m_text);
 
             //Update();
@@ -1813,8 +1835,10 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             m_pane=0;
             m_args.clear();
             m_queries.clear();
+            m_queries.push_back(L"");
             m_input.setText(L"");
             m_customsources.clear();
+            invalidate();
 
             hide();
         } else {
@@ -1869,4 +1893,39 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     }
 
     return ::DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+
+HRESULT Qatapult::Drop(IDataObject *pDataObj, DWORD grfKeyState, POINTL pt, DWORD *pdwEffect) {
+    HRESULT hres = E_FAIL;
+    FORMATETC fmte = {CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
+    STGMEDIUM medium;
+
+    if (pDataObj && SUCCEEDED (pDataObj->GetData(&fmte, &medium)))
+    {
+        TCHAR szFileDropped [MAX_PATH];
+        int filecount=DragQueryFile((HDROP)medium.hGlobal,-1, 0,0);
+        ensureArgsCount(m_args, m_pane+1);
+        for(int i=0;i<filecount;i++) {
+            DragQueryFile((HDROP)medium.hGlobal, i, szFileDropped, sizeof (szFileDropped));
+
+            CString path=szFileDropped;
+
+            if(m_args[m_pane].m_results.back().source()==0)
+                m_args[m_pane].m_results.back()=getResultFromFilePath(path,m_inputsource);
+            else
+                m_args[m_pane].m_results.push_back(getResultFromFilePath(path,m_inputsource));
+        }
+
+        if (medium.pUnkForRelease)
+            medium.pUnkForRelease->Release ();
+        else
+            GlobalFree(medium.hGlobal);
+    }        
+        
+    //onSelChange(&m_args[m_pane].m_results.back());
+    ensureArgsCount(m_args,m_pane+1,EA_NO_REMOVE_EXTRA);
+    showNextArg();
+    invalidate();
+    return S_OK;
 }
