@@ -98,6 +98,8 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     void invalidateIndex() ;
     void invalidate();
     void createSettingsDlg();
+    int  getActiveRules(int pane, std::vector<RuleArg> &args, std::vector<Rule*> &activerules);
+    bool allowType(const CString &type);
     void collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, std::vector<SourceResult> &results, int def);
     static int resultSourceCmp(SourceResult &r1, SourceResult &r2);
     void onQueryChange(const CString &q, bool select=true);
@@ -166,7 +168,7 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
         return S_OK;
     }        
     STDMETHOD(DragOver)(DWORD grfKeyState, POINTL pt, DWORD *pdwEffect)  {
-        return S_OK;
+        return allowType(L"FILE") ? S_OK : S_FALSE;
     }        
     STDMETHOD(DragLeave)() {
         return S_OK;

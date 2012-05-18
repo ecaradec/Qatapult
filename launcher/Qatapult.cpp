@@ -973,6 +973,32 @@ void Qatapult::createSettingsDlg() {
     BOOL b=TreeView_SelectItem(hTreeView, htreeG);
 }
 
+int Qatapult::getActiveRules(int pane, std::vector<RuleArg> &args, std::vector<Rule*> &activerules) {
+    // get the length of the args : increment if args[i] is not an empty stack (a stacked results is considered a selection as if tabbed )
+    int arglen=pane;
+    if(arglen<args.size() && args[arglen].m_results.size()>1)
+        arglen++;
+
+    // find the active rules
+    for(uint i=0;i<m_rules.size();i++) {
+        if(m_rules[i]->match(args, arglen)>0)
+            activerules.push_back(m_rules[i]);
+    }
+
+    return activerules.size();
+}
+
+bool Qatapult::allowType(const CString &type) {
+    std::vector<Rule*> activerules;
+    getActiveRules(m_pane,m_args,activerules);
+
+    for(uint i=0;i<activerules.size();i++) {
+        if(m_pane<activerules[i]->m_types.size() && activerules[i]->m_types[m_pane].m_type==type)
+            return true;
+    }
+    return false;
+}
+
 void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, std::vector<SourceResult> &results, int def) {
     clearResults(results);
 
@@ -981,20 +1007,8 @@ void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleA
 
     // collect displayable items
     if(pane>=m_customsources.size() || m_customsources[pane]==0) {
-
-        // get the length of the args : increment if args[i] is not an empty stack (a stacked results is considered a selection as if tabbed )
-        int arglen=pane;
-        if(arglen<args.size() && args[arglen].m_results.size()>1)
-            arglen++;
-
-        // find the active rules
         std::vector<Rule *> activerules;
-        for(uint i=0;i<m_rules.size();i++) {
-            if(m_rules[i]->match(args, arglen)>0)
-                activerules.push_back(m_rules[i]);
-        }
-
-        if(activerules.size()==0) {
+        if(getActiveRules(pane,args,activerules)==0) {
             return;
         }
 
@@ -1008,7 +1022,7 @@ void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleA
             return;
         }
 
-        // get results for each sources 
+        // get results for each sources
         // - sources need to filter by themselve from the 'activesources' arguments => this allows sources to output different types at once
         for(std::vector<Source*>::iterator it=m_sources.begin();it!=m_sources.end();it++) {                
             if(pane==0 && q==L"")
