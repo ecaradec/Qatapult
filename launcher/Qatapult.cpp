@@ -26,6 +26,8 @@ HWND    g_foregroundWnd;
 CString g_fontfamily;
 DWORD   g_textcolor;
 
+#define WM_ICON_NOTIFY WM_APP+10
+
 struct QatapultAtlModule : CAtlModule {
     HRESULT AddCommonRGSReplacements(IRegistrarBase *) {
         return S_OK;
@@ -35,14 +37,14 @@ struct QatapultAtlModule : CAtlModule {
 
 CString HotKeyToString(int modifier, int vk) {    
     CString mod;
-    if(modifier&MOD_SHIFT)
-        mod+=L"SHIFT+";
-    if(modifier&MOD_CONTROL)
-        mod+=L"CONTROL+";
-    if(modifier&MOD_ALT)
-        mod+=L"ALT+";
     if(modifier&MOD_WIN)
         mod+=L"WIN+";
+    if(modifier&MOD_CONTROL)
+        mod+=L"CTRL+";
+    if(modifier&MOD_ALT)
+        mod+=L"ALT+";
+    if(modifier&MOD_SHIFT)
+        mod+=L"SHIFT+";
 
     CString c;
     if(vk==VK_SPACE)
@@ -50,7 +52,23 @@ CString HotKeyToString(int modifier, int vk) {
     else if(vk==VK_PAUSE)
         c=L"PAUSE";
     else if(vk==VK_ESCAPE)
-        c=L"ESCAPE";            
+        c=L"ESCAPE";
+    else if(vk==VK_RETURN)
+        c=L"RETURN";
+    else if(vk==VK_TAB)
+        c=L"TAB";
+    else if(vk==VK_LEFT)
+        c=L"LEFT";
+    else if(vk==VK_RIGHT)
+        c=L"RIGHT";
+    else if(vk==VK_UP)
+        c=L"UP";
+    else if(vk==VK_DOWN)
+        c=L"DOWN";
+    else if(vk==VK_PRIOR)
+        c=L"PAGEUP";
+    else if(vk==VK_NEXT)
+        c=L"PAGEDOWN";
     else
         c=CString((TCHAR)vk);
             
@@ -135,6 +153,8 @@ CString getGUID() {
     return szGuid;
 }
 
+int lastEditHotkey=0;
+int lastEditHotkeyModifier=0;
 
 BOOL CALLBACK HotKeyEditProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     if(msg==WM_KEYDOWN) {
@@ -143,29 +163,29 @@ BOOL CALLBACK HotKeyEditProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             return TRUE;
 
         if(wParam>VK_MENU) {
-            hotkeymodifiers=0;
+            lastEditHotkeyModifier=0;
             CString mod;
             BOOL bShift = GetKeyState(VK_SHIFT) & 0x8000;
             if(bShift) {
-                hotkeymodifiers|=MOD_SHIFT;
+                lastEditHotkeyModifier|=MOD_SHIFT;
             }
             BOOL bCtl = GetKeyState(VK_CONTROL) & 0x8000;
             if(bCtl) {
-                hotkeymodifiers|=MOD_CONTROL;
+                lastEditHotkeyModifier|=MOD_CONTROL;
             }
             BOOL bAlt = GetKeyState(VK_MENU) & 0x8000;
             if(bAlt) {
-                hotkeymodifiers|=MOD_ALT;
+                lastEditHotkeyModifier|=MOD_ALT;
             }
             BOOL blWin= GetKeyState(VK_LWIN) & 0x8000;
             BOOL brWin= GetKeyState(VK_RWIN) & 0x8000;
             if(blWin ||brWin) {
-                hotkeymodifiers|=MOD_WIN;
+                lastEditHotkeyModifier|=MOD_WIN;
             }
 
-            hotkeycode=wParam;
+            lastEditHotkey=wParam;
             
-            SetWindowText(hWnd,HotKeyToString(hotkeymodifiers, hotkeycode));            
+            SetWindowText(hWnd,HotKeyToString(lastEditHotkeyModifier, lastEditHotkey));
         }
         return TRUE;
     } else if(msg==WM_KEYUP) {
@@ -221,8 +241,10 @@ BOOL CALLBACK GeneralDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
             return TRUE;
         }
         case WM_SAVESETTINGS:
-        {
+        {            
             // save hotkey
+            hotkeycode = lastEditHotkey; hotkeymodifiers = lastEditHotkeyModifier;
+
             SetSettingsInt(L"hotKeys", L"toggleKey", hotkeycode);
             SetSettingsInt(L"hotKeys", L"toggleModifier", hotkeymodifiers);
             UnregisterHotKey(g_pUI->getHWND(), 1);
@@ -478,24 +500,6 @@ std::vector<T> Array(T &t0,T &t1, T &t2) {
 
 #include <atlrx.h>
 
-/*
-class CSearchFoldersDlg : public CDialogImpl<CSearchFoldersDlg>
-{
-    public:
-    enum { IDD = IDD_GMAILCONTACTS };
- 
-    BEGIN_MSG_MAP(CSearchFoldersDlg)
-    END_MSG_MAP()
-};
-
-*/
-/*
-CAboutDlg about;    
-CSearchFoldersDlg searchfolder;
-about.Create(0);    
-about.ShowWindow(SW_SHOW);
-searchfolder.Create(about.m_hWnd);
-*/
 
 void Qatapult::init() {
     //CString tmp1=getShortcutPath(L"C:\\Users\\emmanuel\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Qatapult.exe - Raccourci.lnk");
@@ -536,7 +540,7 @@ void Qatapult::init() {
     }    
 
     m_pQatapultScript=QatapultScript::Make(this);
-    m_pQatapultScript->AddRef();    
+    m_pQatapultScript->AddRef();     
 
     m_painter.Initialize(L"Qatapult",L"JScript");    
     m_painter.AddObject(L"qatapult",(IDispatch*)m_pQatapultScript);
@@ -576,7 +580,7 @@ void Qatapult::init() {
     addSource(new FileVerbSource);    
 
     //addRule(L"CLOCK", new ClockRule);
-    addRule(Type(L"FILE"), Type(L"FILEVERB"), new FileVerbRule); 
+    addRule(Type(L"FILE",true), Type(L"FILEVERB"), new FileVerbRule); 
                 
     TextItemSource *t;
 
@@ -586,7 +590,7 @@ void Qatapult::init() {
     t->addItem(L"Reload",L"icons\\reload.png");
     t->addItem(L"Options",L"icons\\options.png");
     //t->def=true;
-    addRule(Type(L"FILE", Array(Type::Predicat(L"rfilename", L"QATAPULT.EXE"))), Type(L"QATAPULTVERB"), new QatapultRule);
+    addRule(Type(L"FILE", false, Array(Type::Predicat(L"rfilename", L"QATAPULT.EXE"))), Type(L"QATAPULTVERB"), new QatapultRule);
 
     if(isSourceEnabled("EmailFile")) {
         t=new TextItemSource(L"EMAILFILEVERB");
@@ -680,10 +684,14 @@ void Qatapult::init() {
     m_queries.push_back(L"");
     
     onQueryChange(L"");
-
     
     // create dialogs
-    createSettingsDlg();        
+    createSettingsDlg();
+
+    HINSTANCE hinst=GetModuleHandle(NULL);
+    HICON hicon=LoadIcon(hinst,MAKEINTRESOURCE(IDR_MAINFRAME));
+    m_systray.Create(hinst, 0, WM_ICON_NOTIFY, L"Qatapult", hicon, IDR_SYSTRAY);
+    m_systray.SetTargetWnd(m_hwnd);
 
     // we shouldn't create a thread for each source, this is inefficient
     // crawl should be called with an empty index for each source
@@ -699,9 +707,158 @@ void Qatapult::init() {
     //PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
     //PostQuitMessage(0);
 }
+/*
+int SHIFT = MOD_SHIFT;
+int CTRL  = MOD_CONTROL;
+int ALT   = MOD_ALT;
+*/
+int appendvk    = VK_RETURN;
+int appendmod   = MOD_CONTROL;
+
+int validatevk  = VK_RETURN;
+int validatemod = 0;
+    
+int escapevk    = VK_ESCAPE;
+int escapemod   = 0;
+
+int nextpanevk  = VK_TAB;
+int nextpanemod = 0;
+
+int prevpanevk  = VK_TAB;
+int prevpanemod = MOD_SHIFT;
+
+int exitsourcevk = VK_LEFT;
+int exitsourcemod = 0;
+    
+int expandvk = VK_RIGHT; // expand or complete a result or a source
+int expandmod = 0;
+
+int nextresultvk = VK_DOWN;
+int nextresultmod = 0;
+
+int nextpageresultvk = VK_NEXT;
+int nextpageresultmod = 0;
+
+int prevresultvk = VK_UP;
+int prevresultmod = 0;
+
+int prevpageresultvk = VK_PRIOR;
+int prevpageresultmod = 0;
+
+int toggleeditmodevk = 'E';
+int toggleeditmodemod = MOD_CONTROL;
+
+class ShortcutDlg : public CDialogImpl<ShortcutDlg>
+{
+public:
+    enum { IDD = IDD_EMPTY };
+ 
+    BEGIN_MSG_MAP(ShortcutDlg)
+        MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+        MESSAGE_HANDLER(WM_NOTIFY, OnNotify)
+    END_MSG_MAP()
+
+    HWND hListView;
+
+    void addItem(const CString &hotkey, const CString &desc) {
+        LVITEM lvi;
+        memset(&lvi, 0, sizeof(lvi));
+        lvi.pszText=(LPWSTR)hotkey.GetString();
+        lvi.mask=LVFIF_TEXT;
+        lvi.iItem=10000;
+        int item=ListView_InsertItem(hListView, &lvi);
+
+        ListView_SetItemText(hListView, item, 1, (LPWSTR)desc.GetString());
+    }
+
+    LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    { 
+        RECT rcClient;                       // The parent window's client area.
+        GetClientRect(&rcClient);
+
+        /*HWND hdesc=::CreateWindow(L"STATIC", L"Qatapult shortcuts :", WS_CHILD|WS_VISIBLE, rcClient.left, rcClient.top, rcClient.right - rcClient.left, 20, m_hWnd, 0, 0, NULL);
+        HGDIOBJ hfDefault=GetStockObject(DEFAULT_GUI_FONT);
+		SendMessage(hdesc, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));*/
+
+        CRect r;
+        INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
+        icex.dwICC = ICC_LISTVIEW_CLASSES;
+        InitCommonControlsEx(&icex);
+
+        //rcClient.top+=20;
+
+        // Create the list-view window in report view with label editing enabled.
+        hListView = ::CreateWindow(WC_LISTVIEW, 
+                                        L"",
+                                        WS_CHILD | LVS_REPORT | LVS_EDITLABELS | WS_VISIBLE | WS_BORDER,
+                                        rcClient.left, rcClient.top,
+                                        rcClient.right - rcClient.left,
+                                        rcClient.bottom - rcClient.top,
+                                        m_hWnd,
+                                        0,
+                                        0,
+                                        NULL); 
+
+
+
+        ::GetClientRect(hListView, &r);
+
+        LVCOLUMN lvc;
+        lvc.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+        lvc.pszText=L"Hotkey";
+        lvc.cx=100;
+        ListView_InsertColumn(hListView, 0, &lvc);
+
+        lvc.pszText=L"Description";
+        lvc.cx=r.Width()-100;
+        lvc.fmt = LVCFMT_LEFT;
+        ListView_InsertColumn(hListView, 1, &lvc);
+
+
+        addItem(HotKeyToString(hotkeymodifiers,   hotkeycode),       L"Show/hide Qatapult");
+        addItem(HotKeyToString(validatemod,       validatevk),       L"Execute the current action if possible");
+        addItem(HotKeyToString(appendmod,         appendvk),         L"Stack the current selection and select another object (multi selection )");
+        addItem(HotKeyToString(escapemod,         escapevk),         L"Cancel a result, cancel a pane, close if empty");
+        addItem(HotKeyToString(nextpanemod,       nextpanevk),       L"Move to next pane");
+        addItem(HotKeyToString(prevpanemod,       prevpanevk),       L"Move to previous pane");
+        addItem(HotKeyToString(exitsourcemod,     exitsourcevk),     L"Exit a source (on a source result only )");
+        addItem(HotKeyToString(expandmod,         expandvk),         L"Expand a result or enter a source");
+        addItem(HotKeyToString(nextresultmod,     nextresultvk),     L"Show the result pane or focus the next result");
+        addItem(HotKeyToString(prevresultmod,     prevresultvk),     L"Select the previous result");
+        addItem(HotKeyToString(nextpageresultmod, nextpageresultvk), L"Next page of results");
+        addItem(HotKeyToString(prevpageresultmod, prevpageresultvk), L"Previous page of results");
+        addItem(HotKeyToString(toggleeditmodemod, toggleeditmodevk), L"Toggle edit mode");
+
+        return S_OK;
+    }
+    LRESULT OnNotify(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        if(((NMHDR*)lParam)->code==LVN_BEGINLABELEDIT) {
+            HWND hEdit=ListView_GetEditControl(hListView);
+            WNDPROC OldHotKeyEditProc=SubclassWindowX(hEdit, HotKeyEditProc);
+        } else if(((NMHDR*)lParam)->code==LVN_ENDLABELEDIT) {
+            switch( ((NMLVDISPINFO*)lParam)->item.iItem ) {
+                case 0:  hotkeycode       = lastEditHotkey; hotkeymodifiers   = lastEditHotkeyModifier; break;
+                case 1:  validatevk       = lastEditHotkey; validatemod       = lastEditHotkeyModifier; break;
+                case 2:  appendvk         = lastEditHotkey; appendmod         = lastEditHotkeyModifier; break;
+                case 3:  escapevk         = lastEditHotkey; escapemod         = lastEditHotkeyModifier; break;
+                case 4:  prevpanevk       = lastEditHotkey; prevpanevk        = lastEditHotkeyModifier; break;
+                case 5:  exitsourcevk     = lastEditHotkey; exitsourcemod     = lastEditHotkeyModifier; break;
+                case 6:  expandvk         = lastEditHotkey; expandmod         = lastEditHotkeyModifier; break;
+                case 7:  nextresultvk     = lastEditHotkey; nextresultmod     = lastEditHotkeyModifier; break;
+                case 8:  prevresultvk     = lastEditHotkey; prevresultmod     = lastEditHotkeyModifier; break;
+                case 9:  nextpageresultvk = lastEditHotkey; nextpageresultmod = lastEditHotkeyModifier; break;
+                case 10: prevpageresultvk = lastEditHotkey; prevpageresultmod = lastEditHotkeyModifier; break;
+                case 11: toggleeditmodevk = lastEditHotkey; toggleeditmodemod = lastEditHotkeyModifier; break;
+            }
+        }
+        return S_OK;
+    }
+};
 
 PluginsDlg pluginsdlg;
 SearchFoldersDlg searchfolderdlg;
+//ShortcutDlg shortcutdlg;
 
 void clearSourceResult(SourceResult &r) {
     if(r.source())
@@ -722,6 +879,8 @@ void Qatapult::reset() {
 
     if(searchfolderdlg.IsWindow())
         searchfolderdlg.DestroyWindow();
+    //if(shortcutdlg.IsWindow())
+    //    shortcutdlg.DestroyWindow();
 
     m_buffer.Destroy();
 
@@ -802,7 +961,7 @@ void Qatapult::loadRules(pugi::xml_document &settings) {
                     preds.push_back(Type::Predicat(name,value,op));
                 }
                 
-                r->m_types.push_back(Type(type,preds));
+                r->m_types.push_back(Type(type,false,preds));
             } else {
                 pugi::xpath_node_set elts=itarg->node().select_nodes("item");
                 TextItemSource *t=new TextItemSource(getGUID());
@@ -932,6 +1091,9 @@ void Qatapult::createSettingsDlg() {
     searchfolderdlg.Create(m_hwndsettings);
     searchfolderdlg.SetWindowPos(0, 160, 11, 0, 0, SWP_NOSIZE);
 
+    //shortcutdlg.Create(m_hwndsettings);
+    //shortcutdlg.SetWindowPos(0, 160, 11, 0, 0, SWP_NOSIZE);
+
     HWND hwndG=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GENERAL), m_hwndsettings, (DLGPROC)GeneralDlgProc);
     SetWindowPos(hwndG, 0, 160, 0, 0, 0, SWP_NOSIZE);
 
@@ -951,6 +1113,10 @@ void Qatapult::createSettingsDlg() {
     tviis.item.pszText = L"General";
     tviis.item.lParam=(LPARAM)hwndG;
     HTREEITEM htreeG=TreeView_InsertItem(hTreeView, &tviis);
+
+    //tviis.item.pszText = L"Shortcuts";
+    //tviis.item.lParam=(LPARAM)shortcutdlg.m_hWnd;
+    //HTREEITEM htreeShortcuts=TreeView_InsertItem(hTreeView, &tviis);
 
     tviis.item.pszText = L"Plugins";
     tviis.item.lParam=(LPARAM)pluginsdlg.m_hWnd;
@@ -1135,33 +1301,38 @@ void Qatapult::cancelResult() {
             m_args[m_pane].m_results.back().source()->clear(m_args[m_pane].m_results.back());
         }
         m_args[m_pane].m_results.pop_back();
+
+        m_queries[m_pane]=L"";
     }
 
     // if there are no result left, cancel one arg
     if(m_args.back().m_results.size()==0) {
-        m_args.pop_back();
+        m_args.pop_back();        
         // set current focus
         if(m_pane>0)
             m_pane--;
-    }
+    }    
 
     // ensure there is at least one arg
-    ensureArgsCount(m_args,1,EA_NO_REMOVE_EXTRA);
+    ensureArgsCount(m_args,1,EA_REMOVE_EXTRA);
     m_queries.resize(m_args.size());
 
     assert(m_queries.size()>m_pane);
     m_input.setText(m_queries[m_pane]);
+
     invalidate();
 }
 
 // setarg should not be used for appending objects
 void Qatapult::setResult(uint pane, SourceResult &r) {
     ensureArgsCount(m_args,pane+1,EA_NO_REMOVE_EXTRA);
+    if(m_args[pane].m_results.size()==0) m_args[pane].m_results.push_back(SourceResult());
     copySourceResult(m_args[pane],r);
 }
 
 void Qatapult::setRetArg(uint pane, SourceResult &r) {
     ensureArgsCount(m_retArgs,pane+1,EA_NO_REMOVE_EXTRA);
+    if(m_retArgs[pane].m_results.size()==0) m_retArgs[pane].m_results.push_back(SourceResult());
     copySourceResult(m_retArgs[pane],r);
 }
 
@@ -1228,7 +1399,7 @@ void Qatapult::drawInput(INT x, INT y, INT w, INT h){
 
     Graphics g(g_HDC);
     g.SetTextRenderingHint(TextRenderingHint(m_textrenderinghint));
-    m_input.draw(g, RectF(float(x),float(y),float(w),float(h)), sf, L'',m_fontsize,g_textcolor); /*m_args[m_pane].source->m_prefix*/
+    m_input.draw(g, RectF(float(x),float(y),float(w),float(h)), sf, L'',m_fontsize,g_textcolor,m_textrenderinghint); /*m_args[m_pane].source->m_prefix*/
 
     m_curWidth=max(m_curWidth,x+w);
     m_curHeight=max(m_curWidth,y+h);
@@ -1287,6 +1458,7 @@ void Qatapult::drawEmphased(const TCHAR *text, const TCHAR *highlight, INT flag,
 void Qatapult::drawResults(INT x, INT y, INT w, INT h){
     Graphics g(g_HDC);
     g.SetTextRenderingHint(TextRenderingHint(m_textrenderinghint));
+    //g.SetTextRenderingHint(TextRenderingHintClearTypeGridFit );
 
     m_focusedresult=max(0,m_focusedresult);
     m_focusedresult=min(m_results.size()-1,m_focusedresult);
@@ -1416,8 +1588,8 @@ void Qatapult::hide() {
 void Qatapult::showMenu(int xPos,int yPos) {
     HMENU hmenu=CreatePopupMenu();
 
-    AppendMenu(hmenu, MF_STRING, 1, L"Options");
-    AppendMenu(hmenu, MF_STRING, 0, L"Quit");
+    AppendMenu(hmenu, MF_STRING, ID_SYSTRAY_OPTIONS, L"Show Options");
+    AppendMenu(hmenu, MF_STRING, ID_SYSTRAY_QUIT, L"Quit");
                 
     POINT p={xPos,yPos};
     ClientToScreen(m_hwnd, &p);
@@ -1426,6 +1598,15 @@ void Qatapult::showMenu(int xPos,int yPos) {
 LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {   
     bool bShift=(GetKeyState(VK_SHIFT)&0xa000)!=0;
     bool bCtrl=(GetKeyState(VK_CONTROL)&0xa000)!=0;
+    bool bAlt=(GetKeyState(VK_MENU)&0xa000)!=0;
+    
+    int mod = 0;
+    if( bShift )
+        mod |= MOD_SHIFT;
+    if( bCtrl )
+        mod |= MOD_CONTROL;
+    if( bAlt )
+        mod |= MOD_ALT;
     
     if(msg == WM_KEYDOWN) {        
         CComSafeArray<VARIANT> ary;
@@ -1488,7 +1669,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         delete p;
         return TRUE;
     }
-    else if(msg == WM_KEYDOWN && wParam == VK_RETURN && bCtrl)
+    else if(msg == WM_KEYDOWN && wParam == appendvk && mod == appendmod)
     {
         //
         // stack an object on the current rule argument, if there is at least one multi rule matching this type
@@ -1516,7 +1697,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         invalidate();            
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && wParam == VK_RETURN && !bCtrl)
+    else if(msg == WM_KEYDOWN && wParam == validatevk && mod == validatemod)
     {
         if(m_editmode==1 && bShift) {
             m_input.appendAtCaret(L"\n");
@@ -1563,7 +1744,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             }
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && wParam == VK_ESCAPE)
+    else if(msg == WM_KEYDOWN && wParam == escapevk && mod == escapemod)
     {
         if(m_pane<m_customsources.size() && m_customsources[m_pane]!=0) {
             m_customsources[m_pane]=0;
@@ -1594,72 +1775,59 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && wParam == VK_TAB)
+    else if(msg == WM_KEYDOWN && wParam == nextpanevk && mod == nextpanemod)
     {
         // clear the idle
         KillTimer(m_hwnd, 1);
 
         m_editmode=0;
-        if((GetKeyState(VK_SHIFT)&0xa000)==0) {
-            uint p=m_pane;
-            if(p+1<m_args.size()) {
-                m_pane++;
+        uint p=m_pane;
+        if(p+1<m_args.size()) {
+            m_pane++;
 
-                if(m_pane>=m_queries.size())
-                    m_queries.resize(m_pane+1);
+            if(m_pane>=m_queries.size())
+                m_queries.resize(m_pane+1);
 
-                m_input.setText(m_queries[m_pane]);
-            }
-        } else {
-            if(m_pane==0)
-                return FALSE;
-
-            if(m_pane>0)
-                m_pane--;
-            
-            m_input.setText(m_queries[m_pane]);            
+            m_input.setText(m_queries[m_pane]);
         }
+        onQueryChange(m_queries[m_pane],false);
+
+        return FALSE;
+    }
+    else if(msg == WM_KEYDOWN && wParam == prevpanevk && mod == prevpanemod )
+    {
+        // clear the idle
+        KillTimer(m_hwnd, 1);
+
+        m_editmode=0;
+
+        if(m_pane==0)
+            return FALSE;
+
+        if(m_pane>0)
+            m_pane--;
+            
+        m_input.setText(m_queries[m_pane]);            
         
         onQueryChange(m_queries[m_pane],false);
 
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && wParam == VK_LEFT)
+    // input & edit mode
+    else if(msg == WM_KEYDOWN && m_editmode==1 && wParam == VK_LEFT)
     {
-        if(m_editmode==1) {
-            bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
-            m_input.moveCaretLeft(bCtrl);
-            invalidate();
-        } else if(m_pane<m_customsources.size()) {
-            m_customsources[m_pane]=0;
-            m_input.setText(L"");
-            invalidate();
-        }
+        m_input.moveCaretLeft(bCtrl);
+        invalidate();
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && wParam == VK_RIGHT)
+    else if(msg == WM_KEYDOWN && m_editmode==1 && wParam == VK_RIGHT)
     {
-        if(m_editmode==1) {
-            bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
-            m_input.moveCaretRight(bCtrl);
-        } else {
-            SourceResult *r=getSelectedItem();
-            if(!r)
-                return FALSE;
-            CString q;
-            Source *s=r->source()->getSource(*r,q);
-            if(s!=0) {
-                setCurrentSource(m_pane,s,q);
-            } else {
-                m_input.setText(r->object()->getString(L"expand"));
-            }
-        }
+        m_input.moveCaretRight(bCtrl);
         invalidate();
         return FALSE;
     }
     else if(msg == WM_KEYDOWN && wParam == VK_BACK)
     {
-        bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
         m_input.back(bCtrl);
         invalidate();
         return FALSE;
@@ -1669,51 +1837,6 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
         m_input.del(bCtrl);
         invalidate();
-        return FALSE;
-    }
-    else if(msg == WM_KEYDOWN && (wParam == VK_DOWN || wParam==VK_NEXT))
-    {	
-        if(m_editmode==1) {
-            ;
-        } else {
-            if(wParam == VK_DOWN) {
-                m_focusedresult++;
-            } else if(wParam == VK_NEXT) {
-                m_focusedresult+=m_visibleresultscount;
-            }
-
-            if(m_focusedresult>=m_results.size())
-                m_focusedresult=m_results.size()-1;
-
-            if(m_focusedresult>=m_resultspos+m_visibleresultscount)
-                m_resultspos=m_focusedresult-m_visibleresultscount+1;
-    
-            if(m_results.size()>0)
-                onSelChange(&m_results[m_focusedresult]);
-            invalidate();
-        }
-        return FALSE;
-    }
-    else if(msg == WM_KEYDOWN && (wParam == VK_UP || wParam == VK_PRIOR))
-    {	
-        if(m_editmode==1) {
-            ;
-        } else {
-            if(wParam == VK_UP)
-                m_focusedresult--;
-            else if(wParam == VK_PRIOR)
-                m_focusedresult-=m_visibleresultscount;
-
-            if(m_focusedresult<0)
-                m_focusedresult=0;
-
-            if(m_focusedresult<m_resultspos)
-                m_resultspos=m_focusedresult;
-
-            if(m_results.size()>m_focusedresult)
-                onSelChange(&m_results[m_focusedresult]);
-            invalidate();
-        }
         return FALSE;
     }
     else if(msg == WM_KEYDOWN && wParam == VK_HOME)
@@ -1737,7 +1860,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             m_input.m_caretpos=m_input.m_text.GetLength();
         invalidate();
     }
-    else if(msg==WM_KEYDOWN && wParam=='E' && !!(GetKeyState(VK_CONTROL)&0x8000))
+    else if(msg==WM_KEYDOWN &&  wParam == toggleeditmodevk && mod == toggleeditmodemod)
     {
         if(m_editmode==0)
             m_editmode=1;
@@ -1747,9 +1870,71 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             m_input.m_caretpos=m_input.m_text.GetLength();
         invalidate();
     }
+    // source exploration
+    else if(msg == WM_KEYDOWN && wParam == exitsourcevk && mod == exitsourcemod && m_pane<m_customsources.size())
+    {
+        m_customsources[m_pane]=0;
+        m_input.setText(L"");
+        invalidate();
+        return FALSE;
+    }
+    else if(msg == WM_KEYDOWN && wParam == expandvk && mod == expandmod)
+    {
+        SourceResult *r=getSelectedItem();
+        if(!r)
+            return FALSE;
+        CString q;
+        Source *s=r->source()->getSource(*r,q);
+        if(s!=0) {
+            setCurrentSource(m_pane,s,q);
+        } else {
+            m_input.setText(r->object()->getString(L"expand"));
+        }
+        invalidate();
+        return FALSE;
+    }
+    else if(msg == WM_KEYDOWN && m_editmode!=1 && (wParam == nextresultvk && mod == nextresultmod) || (wParam == nextpageresultvk && mod == nextpageresultmod) )
+    {	
+        if(wParam == nextresultvk && mod == nextresultmod) {
+            m_focusedresult++;
+        } else if(wParam == nextpageresultvk && mod == nextpageresultmod) {
+            m_focusedresult+=m_visibleresultscount;
+        }
+
+        if(m_focusedresult>=m_results.size())
+            m_focusedresult=m_results.size()-1;
+
+        if(m_focusedresult>=m_resultspos+m_visibleresultscount)
+            m_resultspos=m_focusedresult-m_visibleresultscount+1;
+    
+        if(m_results.size()>0)
+            onSelChange(&m_results[m_focusedresult]);
+        invalidate();
+
+        return FALSE;
+    }
+    else if(msg == WM_KEYDOWN && m_editmode!=1 && (wParam == prevresultvk && mod == prevresultmod) || (wParam == prevpageresultvk && mod == prevpageresultmod))
+    {	
+        if(wParam == prevresultvk && mod == prevresultmod)
+            m_focusedresult--;
+        else if(wParam == prevpageresultvk && mod == prevpageresultmod)
+            m_focusedresult-=m_visibleresultscount;
+
+        if(m_focusedresult<0)
+            m_focusedresult=0;
+
+        if(m_focusedresult<m_resultspos)
+            m_resultspos=m_focusedresult;
+
+        if(m_results.size()>m_focusedresult)
+            onSelChange(&m_results[m_focusedresult]);
+        invalidate();
+        return FALSE;
+    }
     else if(msg == WM_CHAR)
     {
         if(msg==WM_CHAR) {
+
             if(wParam>VK_F12 && wParam<=VK_LAUNCH_APP2) {
                 ;
             } else if(wParam==22) { // ctrl+v
@@ -1798,7 +1983,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 onQueryChange(m_input.m_text);
 
             //Update();
-            invalidate();
+            invalidate(); 
         }
             
         if(wParam!=VK_ESCAPE && wParam!=VK_TAB) {
@@ -1823,9 +2008,11 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     }
     else if(msg==WM_COMMAND)
     {
-        if(wParam==0)
+        if(wParam==ID_SYSTRAY_SHOW) {
+            show();
+        } else if(wParam==ID_SYSTRAY_QUIT) {
             PostQuitMessage(0);
-        else if(wParam==1) {    
+        } else if(wParam==ID_SYSTRAY_OPTIONS) {    
             CenterWindow(m_hwndsettings);
             ShowWindow(m_hwndsettings,SW_SHOW);
             ShowWindow(m_hwnd, SW_HIDE);

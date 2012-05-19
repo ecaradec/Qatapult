@@ -68,7 +68,7 @@ typedef unsigned int uint;
 
 
 #define     SubclassWindowX(hwnd, lpfn)       \
-              ((WNDPROC)SetWindowLongPtr((hwnd), GWLP_WNDPROC, (LPARAM)(WNDPROC)(lpfn)))
+              ((WNDPROC)::SetWindowLongPtr((hwnd), GWLP_WNDPROC, (LPARAM)(WNDPROC)(lpfn)))
 
 #include <atlapp.h>
 #include <atlwinx.h>

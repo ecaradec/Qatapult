@@ -35,6 +35,7 @@
 #include "IWindowlessGUI.h"
 #include "WindowlessInput.h"
 #include "TextSource.h"
+#include "SystemTraySDK.h"
 
 #include "ContactSource.h"
 #include "SendEmail.h"
@@ -230,4 +231,8 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
      
     // actions
     ActiveScriptHost           m_commandsHost;
+
+
+    // gui stuff
+    CSystemTray                m_systray;
 };

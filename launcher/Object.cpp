@@ -31,14 +31,9 @@ void Object::drawItem(Graphics &g, SourceResult *sr, RectF &r) {
         sr->icon()=getIcon(1);
     if(sr->icon())
         g.DrawImage(sr->icon(), r);
-    
-    //if(getString(L"path").Right(4)==L".lnk")
-    //    g_pUI->setStatus(getString(L"text"));
-    //else
-    //    g_pUI->setStatus(getString(L"path"));
 }
 
-void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSize, bool selected, DWORD textcolor, DWORD bgcolor, DWORD focuscolor) {
+void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSize, bool selected, DWORD textcolor, DWORD bgcolor, DWORD focuscolor) {    
     Gdiplus::Font itemlistFont(g_fontfamily, fontSize, FontStyleBold, UnitPoint);
     Gdiplus::Font itemscoreFont(g_fontfamily, fontSize);
 

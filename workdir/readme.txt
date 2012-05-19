@@ -12,6 +12,16 @@ http://www.jeffkastner.com/2010/01/blat-stunnel-and-gmail/ to configure blat.
 Rules are defined into settings.xml. There are already a few defined that you can use for inspiration. Qatapult usually 
 will use a series of types and keywords with an action that fetch the various information from the selected panes on match.
 
+# This project contains third party code
+- Sqlite 3 http://www.sqlite.org/
+- pugixml http://code.google.com/p/pugixml/
+- A modified dynawrap for calling native code from javascript plugins : http://glsft.free.fr/index.php?option=com_content&task=view&id=47&Itemid=33
+- WTL http://wtl.sourceforge.net/
+- Systray http://www.codeproject.com/Articles/74/Adding-Icons-to-the-System-Tray
+- MD5 http://bzflag.org/
+
+And some inspirations from Quicksilver, FindAndRunRobot and AlfredApp
+
 Source of icons :
 
 amazon:

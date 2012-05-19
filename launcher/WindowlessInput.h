@@ -4,7 +4,7 @@ struct WindowlessInput {
         m_text=L"";
         m_caretpos=0;
     }
-    void draw(Graphics &g, const RectF &r, StringFormat &sf, TCHAR prefix, float fontsize, Color c=0xFFFFFFFF) {
+    void draw(Graphics &g, const RectF &r, StringFormat &sf, TCHAR prefix, float fontsize, Color c=0xFFFFFFFF, DWORD textrendering=TextRenderingHintAntiAlias) {
         Gdiplus::Font f(g_fontfamily, fontsize);
         
         int caretpos=m_caretpos;
@@ -15,6 +15,7 @@ struct WindowlessInput {
             caretpos=max(caretpos,0);
         }        
 
+        g.SetTextRenderingHint(TextRenderingHint(textrendering));
         g.DrawString(text, -1, &f, r, &sf, &SolidBrush(c));        
 
         Gdiplus::RectF r1;

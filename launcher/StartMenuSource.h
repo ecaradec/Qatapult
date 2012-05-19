@@ -210,21 +210,33 @@ public:
     HWND hListView;
 
     LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-    {
+    { 
+
+        RECT rcClient;                       // The parent window's client area.
+        GetClientRect(&rcClient); 
+
+        HWND hdesc=::CreateWindow(L"STATIC", L"This is the place where you can add extra folders to index. Click twice to edit a already defined path.", WS_CHILD|WS_VISIBLE, rcClient.left+110, rcClient.top, rcClient.right - rcClient.left - 110, 40, m_hWnd, 0, 0, NULL);
+        HGDIOBJ hfDefault=GetStockObject(DEFAULT_GUI_FONT);
+		SendMessage(hdesc, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
+
+        hdesc=::CreateWindow(L"BUTTON", L"Add", WS_CHILD|WS_VISIBLE, rcClient.left, rcClient.top, 50, 30, m_hWnd, (HMENU)10001, 0, NULL);
+        SendMessage(hdesc, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
+
+        hdesc=::CreateWindow(L"BUTTON", L"Delete", WS_CHILD|WS_VISIBLE, rcClient.left+55, rcClient.top, 50, 30, m_hWnd, (HMENU)10000, 0, NULL);
+        SendMessage(hdesc, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
+
         CRect r;
         INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
         icex.dwICC = ICC_LISTVIEW_CLASSES;
         InitCommonControlsEx(&icex);
 
-        RECT rcClient;                       // The parent window's client area.
-
-        GetClientRect(&rcClient); 
+        rcClient.top+=40;
 
         // Create the list-view window in report view with label editing enabled.
         hListView = ::CreateWindow(WC_LISTVIEW, 
                                         L"",
                                         WS_CHILD | LVS_REPORT | LVS_EDITLABELS | WS_VISIBLE | WS_BORDER,
-                                        0, 0,
+                                        rcClient.left, rcClient.top,
                                         rcClient.right - rcClient.left,
                                         rcClient.bottom - rcClient.top,
                                         m_hWnd,
@@ -291,6 +303,11 @@ public:
 
             SaveSearchFolders(hListView);
             return TRUE;
+        }
+        else if(wParam==10001) {
+            int itemcount=SaveSearchFolders(hListView);
+            ::SetFocus(hListView);
+            ListView_EditLabel(hListView, itemcount-1);
         }
         return FALSE;
     }

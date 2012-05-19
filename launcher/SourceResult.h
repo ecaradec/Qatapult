@@ -77,6 +77,7 @@ struct SourceResult {
     }
 
     Source          *m_source;
+    //std::shared_ptr<Object> m_object;
     Object          *m_object;
     CString          m_display;
     CString          m_expand;

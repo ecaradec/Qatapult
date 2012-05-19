@@ -207,6 +207,9 @@
     <ClInclude Include="QatapultPlugin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SystemTraySDK.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="launcher.cpp">
@@ -267,6 +270,9 @@
       <Filter>Header Files</Filter>
     </ClCompile>
     <ClCompile Include="makeObject.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemTraySDK.cpp">
       <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>

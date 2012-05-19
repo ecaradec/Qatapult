@@ -16,15 +16,15 @@ struct Type {
         CString         m_value;            
     };
 
-    Type(const CString &type, std::vector<Predicat> &predicates=std::vector<Predicat>()) {
+    Type(const CString &type, bool multi=false, std::vector<Predicat> &predicates=std::vector<Predicat>()) {
         m_type=type;
         m_predicates=predicates;
-        m_multi=false;
+        m_multi=multi;
     }
-    Type(const CString &type, const CString &icon, std::vector<Predicat> &predicates=std::vector<Predicat>()) {
+    Type(const CString &type, const CString &icon, bool multi=false, std::vector<Predicat> &predicates=std::vector<Predicat>()) {
         m_type=type;
         m_icon=icon;
-        m_multi=false;
+        m_multi=multi;
         m_predicates=predicates;
     }
     bool match(RuleArg *o) {

@@ -2,11 +2,17 @@
 
 struct TextObject : Object {
     TextObject(const CString &text,Source *s):Object(text,L"TEXT",s,text) {
+        source->m_icon = L"icons\\text.png";
     }
     TextObject *clone() {
         return new TextObject(*this);
     }
-    void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
+    /*void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
+        if(!sr->icon())
+            sr->icon()=getIcon(1);
+        if(sr->icon())
+            g.DrawImage(sr->icon(), r);
+
         RectF r1(r);
         
         StringFormat sfcenter;
@@ -21,5 +27,5 @@ struct TextObject : Object {
         r1.Height = int(r1.Height/f.GetHeight(&g))*f.GetHeight(&g);
 
         g.DrawString(str, -1, &f, r1, &sfcenter, &SolidBrush(Color(0xFFFFFFFF)));
-    }
+    }*/
 };
