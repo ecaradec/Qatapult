@@ -136,30 +136,23 @@ struct Source {
                 Object *o=new Object(it->first,type,this,it->second.display());
                 o->values[L"expand"]=it->second.expand();
                 o->values[L"iconname"]=it->second.iconname();
-                results.back().object()=o;
+                results.back().object().reset(o);
             }
         }
     }    
     virtual void validate(SourceResult *r)  {}
     virtual void crawl() {}
     // copy makes a deep copy
-    virtual void copy(SourceResult &r, RuleArg *out) {
+    /*virtual void copy(SourceResult &r, RuleArg *out) {
         //assert(r.m_results.size()==1);
         out->m_results.back()=r;
-        
-        if(r.icon())
-            out->m_results.back().icon()=r.icon()->Clone(0,0,r.icon()->GetWidth(),r.icon()->GetHeight(),r.icon()->GetPixelFormat());
-        if(r.smallicon())
-            out->smallicon()=r.smallicon()->Clone(0,0,r.smallicon()->GetWidth(),r.smallicon()->GetHeight(),r.smallicon()->GetPixelFormat());
-        if(r.object())
-            out->object()=r.object()->clone();
-    }
-    virtual void clear(SourceResult &r) {
+    }*/
+    /*virtual void clear(SourceResult &r) {
         // FIXME : we need a clearItem and a clear
-        delete r.object(); r.object()=0;
-        delete r.icon(); r.icon()=0;
-        delete r.smallicon(); r.smallicon()=0;
-    }
+        //delete r.object(); r.object()=0;
+        //delete r.icon(); r.icon()=0;
+        //delete r.smallicon(); r.smallicon()=0;
+    }*/
 
     // unused yet
     // get named data of various types

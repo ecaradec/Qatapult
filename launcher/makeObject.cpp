@@ -17,13 +17,13 @@ SourceResult getResultFromIDispatch(const CString &type_, const CString &key, ID
     }
 
     if(type==L"FILE")
-        sr.object()=new FileObject(key,src,L"",L"",L"");
+        sr.object().reset(new FileObject(key,src,L"",L"",L""));
     else if(type==L"CONTACT")
-        sr.object()=new ContactObject(key,src,L"",L"");
+        sr.object().reset(new ContactObject(key,src,L"",L""));
     else if(type==L"TEXT")
-        sr.object()=new TextObject(key,src);
+        sr.object().reset(new TextObject(key,src));
     else
-        sr.object()=new Object(key,type,src,L"");           
+        sr.object().reset(new Object(key,type,src,L""));
 
     CComQIPtr<IDispatchEx> pargs(args);
 
@@ -54,6 +54,6 @@ SourceResult getResultFromFilePath(const CString &path, Source *s) {
     CString filename=path.Right(path.GetLength() - (path.ReverseFind(L'\\')+1));
     
     SourceResult sr(path,filename,filename,s);
-    sr.object()=new FileObject(path, s, filename, filename, path);
+    sr.object().reset(new FileObject(path, s, filename, filename, path));
     return sr;
 }

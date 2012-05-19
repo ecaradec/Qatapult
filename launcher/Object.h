@@ -47,7 +47,6 @@ struct Object {
         objects++;
     }
     virtual ~Object();
-    virtual Object *clone();
     virtual CString getString(const TCHAR *val_);
     virtual Gdiplus::Bitmap *getIcon(long flags);
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r);

@@ -6,9 +6,6 @@
 Object::~Object() {
     objects--;
 }
-Object *Object::clone() {
-    return new Object(*this);
-}
 CString Object::getString(const TCHAR *val_) {
     CString v(val_);
     if(v==L"type")
@@ -28,9 +25,9 @@ Gdiplus::Bitmap *Object::getIcon(long flags) {
 }
 void Object::drawItem(Graphics &g, SourceResult *sr, RectF &r) {        
     if(!sr->icon())
-        sr->icon()=getIcon(1);
+        sr->icon().reset( sr->source()->getIcon(sr,ICON_SIZE_LARGE) );
     if(sr->icon())
-        g.DrawImage(sr->icon(), r);
+        g.DrawImage(sr->icon().get(), r);
 }
 
 void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSize, bool selected, DWORD textcolor, DWORD bgcolor, DWORD focuscolor) {    
@@ -43,10 +40,10 @@ void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSiz
         g.FillRectangle(&SolidBrush(Color(bgcolor)), r);
 
     if(!sr->smallicon())
-        sr->smallicon()=source->getIcon(sr,ICON_SIZE_SMALL);
+        sr->smallicon().reset(source->getIcon(sr,ICON_SIZE_SMALL));
         
     if(sr->smallicon())
-        g.DrawImage(sr->smallicon(), RectF(r.X+10, r.Y, r.Height, r.Height)); // height not a bug, think a minute
+        g.DrawImage(sr->smallicon().get(), RectF(r.X+10, r.Y, r.Height, r.Height)); // height not a bug, think a minute
         
     REAL x=r.X+r.Height+5+10;
         
@@ -73,9 +70,6 @@ FileObject::FileObject(const CString &k, Source *s, const CString &text, const C
     values[L"path"]=path;
 }
 FileObject::FileObject(const FileObject &f):Object(f) {
-}
-FileObject *FileObject::clone() {
-    return new FileObject(*this);
 }
 CString FileObject::getString(const TCHAR *val_) {
     CString val(val_);

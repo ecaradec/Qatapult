@@ -22,7 +22,7 @@ struct WindowSource : Source {
                 Object *o=new Object(ItoS((int)*it),type,this,title);
                 o->values[L"title"]=title;
                 o->values[L"hwnd"]=ItoS((int)*it);
-                results.back().object()=o;
+                results.back().object().reset(o);
             }
         }
     }

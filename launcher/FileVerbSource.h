@@ -46,7 +46,7 @@ struct FileVerbSource : Source {
     void conditionalAddObject(std::vector<SourceResult> &results, const CString &name, const CString &q) {
         if(FuzzyMatch(name,q)) {
             results.push_back(SourceResult(name, name, name, this, 0, 0, 0));
-            results.back().object()=new Object(name,L"FILEVERB",this,name);
+            results.back().object().reset(new Object(name,L"FILEVERB",this,name));
             results.back().uses()=getItemUses(name);
             results.back().bonus()=20;
         }        

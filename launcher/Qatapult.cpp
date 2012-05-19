@@ -860,15 +860,7 @@ PluginsDlg pluginsdlg;
 SearchFoldersDlg searchfolderdlg;
 //ShortcutDlg shortcutdlg;
 
-void clearSourceResult(SourceResult &r) {
-    if(r.source())
-        r.source()->clear(r);
-}
-
 void clearRuleArg(RuleArg &r) {
-    for(int i=0;i<r.m_results.size();i++) {
-        clearSourceResult(r.m_results[i]);
-    }
     r.m_results.clear();
     r.m_results.push_back(SourceResult());
 }
@@ -1270,12 +1262,7 @@ void Qatapult::showNextArg() {
 
 // TODO : move to rulearg ??
 void copySourceResult(RuleArg &ra, SourceResult &r) {
-    if(ra.m_results.size()>0)
-        clearSourceResult(ra.m_results.back());
-    if(r.source())
-        r.source()->copy(r,&ra);
-    else
-        ra.m_results.back()=r;
+    ra.m_results.back()=r;
 }
 
 void Qatapult::ensureArgsCount(std::vector<RuleArg> &ral, int l, int flags) {
@@ -1297,11 +1284,7 @@ void Qatapult::cancelResult() {
 
     // cancel one result
     if(m_args[m_pane].m_results.size()>0) {
-        if( m_args[m_pane].m_results.back().source()!=0 ) {
-            m_args[m_pane].m_results.back().source()->clear(m_args[m_pane].m_results.back());
-        }
         m_args[m_pane].m_results.pop_back();
-
         m_queries[m_pane]=L"";
     }
 
@@ -1354,14 +1337,14 @@ Object *Qatapult::getArgObject(int i, int e) {
         return 0;
     if(e>=m_args[i].m_results.size())
         return 0;
-    return m_args[i].object(e);
+    return m_args[i].object(e).get();
 }
 
 Object *Qatapult::getResObject(int i) {
     if(i>=m_results.size())
         return 0;
 
-    return m_results[i].object();
+    return m_results[i].object().get();
 }
 
 
@@ -1501,21 +1484,6 @@ void Qatapult::update() {
 
     // load icons if they aren't 
     // that means that the only element that may have an icon are in m_args
-    
-    // FIXME : still useful ?
-    for(uint i=0;i<m_args.size();i++) {
-        RuleArg *a=&m_args[i];
-        for(uint e=0;e<a->m_results.size();e++) {
-            SourceResult *r=&a->m_results[e];
-
-            if(r->icon()==0 && r->source()) {
-                r->icon()=r->source()->getIcon(r);
-                if(r->icon())
-                    PremultAlpha(*r->icon());
-            }
-        }
-
-    }
 
     // get a buffer
     g_HDC=m_buffer.GetDC();
@@ -1560,9 +1528,6 @@ SourceResult *Qatapult::getSelectedItem() {
     return &m_results[m_focusedresult];
 }
 void Qatapult::clearResults(std::vector<SourceResult> &results) {
-    for(uint j=0;j<results.size();j++) {            
-        results[j].source()->clear(results[j]);
-    }
     results.clear();
 }
 void Qatapult::setCurrentSource(int pane,Source *s,CString &q) {

@@ -22,7 +22,7 @@ struct SourceResult {
     SourceResult(Source *s_, Object *o_, const CString &d_, const CString &e_, int b_, int u_, int id_, void *data_) {
         clear();
         m_source=s_;
-        m_object=o_;
+        m_object.reset(o_);
         m_data=data_;
         m_expand=e_;
         m_bonus=b_;
@@ -39,13 +39,13 @@ struct SourceResult {
         m_uses=_uses;
     }
 
-    Object *&object() {
+    std::shared_ptr<Object> &object() {
         return m_object;
     }
-    Gdiplus::Bitmap *&icon() {
+    std::shared_ptr<Gdiplus::Bitmap> &icon() {
         return m_icon;
     }
-    Gdiplus::Bitmap *&smallicon() {
+    std::shared_ptr<Gdiplus::Bitmap> &smallicon() {
         return m_smallicon;
     }
     Source *&source() {
@@ -76,23 +76,22 @@ struct SourceResult {
         return m_rank;
     }
 
-    Source          *m_source;
-    //std::shared_ptr<Object> m_object;
-    Object          *m_object;
-    CString          m_display;
-    CString          m_expand;
-    int              m_bonus;
-    int              m_uses;
-    int              m_id;
-    void            *m_data; // must be cloned if needed
-    Gdiplus::Bitmap *m_icon;
+    Source                          *m_source;
+    std::shared_ptr<Object>          m_object;
+    CString                          m_display;
+    CString                          m_expand;
+    int                              m_bonus;
+    int                              m_uses;
+    int                              m_id;
+    void                            *m_data; // must be cloned if needed
+    std::shared_ptr<Gdiplus::Bitmap> m_icon;
 
     // temporary for automatic
-    CString          m_iconname;
+    CString                          m_iconname;
 
     // no saving required (and no copy )
-    int              m_rank;
-    Gdiplus::Bitmap *m_smallicon;
+    int                              m_rank;
+    std::shared_ptr<Gdiplus::Bitmap> m_smallicon;
 };
 
 struct RuleArg {
@@ -108,13 +107,13 @@ struct RuleArg {
     }
 
     // easy access to the current object on RuleArg
-    Object *&object(int i=0) {
+    std::shared_ptr<Object> &object(int i=0) {
         return item(i).m_object;
     }
-    Gdiplus::Bitmap *&icon(int i=0) {
+    std::shared_ptr<Gdiplus::Bitmap> &icon(int i=0) {
         return item(i).m_icon;
     }
-    Gdiplus::Bitmap *&smallicon(int i=0) {
+    std::shared_ptr<Gdiplus::Bitmap> &smallicon(int i=0) {
         return item(i).m_smallicon;
     }
     Source *&source(int i=0) {

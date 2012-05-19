@@ -51,7 +51,7 @@ struct FileSource : Source {
             r.bonus()=100;
             results.push_back(r);
 
-            results.back().object()=new FileObject(d+L"\\",this,d,d+L"\\",d+L"\\");
+            results.back().object().reset(new FileObject(d+L"\\",this,d,d+L"\\",d+L"\\"));
         }
 
         HANDLE h;
@@ -73,7 +73,7 @@ struct FileSource : Source {
                     r.bonus()=100;
                     results.push_back(r);
 
-                    results.back().object()=new FileObject(noslash+L"\\",this,foldername,noslash+L"\\",noslash+L"\\");
+                    results.back().object().reset(new FileObject(noslash+L"\\",this,foldername,noslash+L"\\",noslash+L"\\"));
                 }
             } else if(CString(w32fd.cFileName)==L"..") {
             } else {
@@ -91,7 +91,7 @@ struct FileSource : Source {
                     r.rank()=10;
                     results.push_back(r);
 
-                    results.back().object()=new FileObject(expand,this,w32fd.cFileName,expand,expand);
+                    results.back().object().reset(new FileObject(expand,this,w32fd.cFileName,expand,expand));
                 }
             }
             b=!!FindNextFile(h, &w32fd);
@@ -207,11 +207,11 @@ struct FileHistorySource : Source {
                                                0,                            // data                                               
                                                sqlite3_column_int(stmt,4)));                         // uses
 
-                results.back().object()=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+                results.back().object().reset(new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
                                                      this,
                                                      UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
                                                      UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
-                                                     UTF8toUTF16((char*)sqlite3_column_text(stmt,3)));
+                                                     UTF8toUTF16((char*)sqlite3_column_text(stmt,3))));
             }
 
             const char *errmsg=sqlite3_errmsg(db) ;

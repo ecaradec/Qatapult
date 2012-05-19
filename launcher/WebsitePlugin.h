@@ -42,7 +42,7 @@ struct WebsiteSource : DBSource {
             fo->values[L"href"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,2));
             fo->values[L"searchHref"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,3));
             fo->values[L"icon"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,4));
-            results.back().object()=fo;   
+            results.back().object().reset(fo);
         }
 
         const char *errmsg=sqlite3_errmsg(db) ;

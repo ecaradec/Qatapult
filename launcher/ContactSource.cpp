@@ -47,9 +47,6 @@ ContactObject::ContactObject(const CString &k, Source *s, const CString &text, c
     values[L"expand"]=text;
     values[L"email"]=email;
 }
-ContactObject *ContactObject::clone() {
-    return new ContactObject(*this);
-}
 Gdiplus::Bitmap *ContactObject::getIcon(long flags) {
     if(GetFileAttributes("photos\\"+key+".jpg")!=INVALID_FILE_ATTRIBUTES)
         return Gdiplus::Bitmap::FromFile(L"photos\\"+key+".jpg");
@@ -177,10 +174,10 @@ void ContactSource::collect(const TCHAR *query, std::vector<SourceResult> &resul
                                         sqlite3_column_int(stmt,3)));                       // uses
                                         
 
-        results.back().object()=new ContactObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+        results.back().object().reset(new ContactObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
                                                 this,
                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
-                                                UTF8toUTF16((char*)sqlite3_column_text(stmt,2)));
+                                                UTF8toUTF16((char*)sqlite3_column_text(stmt,2))));
     }
 
     const char *errmsg=sqlite3_errmsg(db) ;

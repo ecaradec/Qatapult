@@ -52,11 +52,11 @@ struct StartMenuSource : Source {
                                             0,                                                  // data                                            
                                             sqlite3_column_int(stmt,4)));                       // Use
 
-            results.back().object()=new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+            results.back().object().reset(new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
                                                  this,
                                                  UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
                                                  UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
-                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,3)));
+                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,3))));
         }
 
         const char *errmsg=sqlite3_errmsg(db) ;

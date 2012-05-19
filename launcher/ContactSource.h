@@ -7,7 +7,6 @@
 
 struct ContactObject : Object {
     ContactObject(const CString &k, Source *s, const CString &text, const CString &email);
-    ContactObject *clone();
     Gdiplus::Bitmap *getIcon(long flags);
     //void drawItem(Graphics &g, SourceResult *sr, RectF &r);
 };

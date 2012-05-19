@@ -19,7 +19,7 @@ struct TextSource : Source {
         if(q[0]==_T('\''))
             text=q.Mid(1);
 
-        r.back().object()=new TextObject(text,this);
+        r.back().object().reset(new TextObject(text,this));
     }
     void rate(const CString &q, SourceResult *r) {
         if(r->id()==0)

@@ -39,7 +39,7 @@ struct TextItemSource : Source {
                 results.push_back(it->second);
                 Object *o=new Object(it->second.expand(), type, this, it->second.expand());
                 o->values[L"icon"]=it->second.iconname();
-                results.back().object()=o;
+                results.back().object().reset(o);
                 results.back().bonus()=20; // special bonus for helping keywords
 
                 int rc = sqlite3_bind_text16(getusesstmt, 1, o->key, -1, SQLITE_STATIC);                       
