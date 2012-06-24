@@ -52,6 +52,7 @@ struct Object {
     virtual Gdiplus::Bitmap *getIcon(long flags);
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r);
     virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontsize, bool b, DWORD textcolor, DWORD bgcolor, DWORD focuscolor);
+    virtual void rate(const CString &q);
 
     std::shared_ptr<Gdiplus::Bitmap> m_icon;
     std::shared_ptr<Gdiplus::Bitmap> m_smallicon;

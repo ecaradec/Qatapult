@@ -21,11 +21,52 @@ pugi::xml_document settings;
 pugi::xml_document settingsWT; // settings for the working thread
 
 WNDPROC OldHotKeyEditProc;
-int     hotkeymodifiers=0;
-int     hotkeycode=0;
 HWND    g_foregroundWnd;
 CString g_fontfamily;
 DWORD   g_textcolor;
+
+struct Hotkey {
+    TCHAR  *name;
+    int     mod;
+    int     vk;
+    TCHAR  *desc;
+    bool match(int mod_, int vk_) {
+        return mod==mod_ && vk==vk_;
+    }
+};
+
+Hotkey hotkeys[]={ 
+    {L"toggle", MOD_SHIFT,          VK_SPACE,           L"Show/hide Qatapult"},         
+    {L"execute", 0,                 VK_RETURN,          L"Execute the current action if possible"}, 
+    {L"stack", 0,                   VK_OEM_COMMA,       L"Stack the current selection and select another object (multi selection )"}, 
+    {L"cancel", 0,                  VK_ESCAPE,          L"Cancel a result, cancel a pane, close if empty"}, 
+    {L"nextpane", 0,                VK_TAB,             L"Move to next pane"}, 
+    {L"previouspane", MOD_SHIFT,    VK_TAB,             L"Move to previous pane"}, 
+    {L"exitsource", 0,              VK_LEFT,            L"Exit a source (on a source result only )"}, 
+    {L"expand", 0,                  VK_RIGHT,           L"Expand a result or enter a source"}, 
+    {L"nextresult", 0,              VK_DOWN,            L"Show the result pane or focus the next result"}, 
+    {L"previousresult", 0,          VK_UP,              L"Select the previous result"}, 
+    {L"nextresultpage", 0,          VK_NEXT,            L"Next page of results"}, 
+    {L"previousresultpage", 0,      VK_PRIOR,           L"Previous page of results"}, 
+    {L"editmode", MOD_CONTROL,      'E',                L"Toggle edit mode"}, 
+    {L"makecommand", MOD_CONTROL,   VK_RETURN,          L"Make a command"}
+};
+
+#define HK_SHOW 0
+#define HK_EXECUTE 1
+#define HK_STACK 2
+#define HK_CANCEL 3
+#define HK_NEXTPANE 4
+#define HK_PREVPANE 5
+#define HK_EXITSOURCE 6
+#define HK_EXPANDSOURCE 7
+#define HK_NEXTRESULT 8
+#define HK_PREVRESULT 9 
+#define HK_NEXTRESULTPAGE 10
+#define HK_PREVRESULTPAGE 11
+#define HK_EDITMODE 12
+#define HK_MKCOMMAND 13
+#define HK_LAST 14
 
 #define WM_ICON_NOTIFY WM_APP+10
 
@@ -367,12 +408,8 @@ BOOL CALLBACK GeneralDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     {
         case WM_INITDIALOG:
         {
-            OldHotKeyEditProc=SubclassWindowX(GetDlgItem(hWnd, IDC_HOTKEY1), HotKeyEditProc);
-            CString txt=HotKeyToString(hotkeymodifiers,hotkeycode);
-            SetDlgItemText(hWnd,IDC_HOTKEY1, txt);
-
             int x=12;
-            int y=70;
+            int y=10;
             //getSkinList
             HWND hsskins=CreateWindow(L"STATIC",
                          L"Skin :",
@@ -407,14 +444,6 @@ BOOL CALLBACK GeneralDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
         }
         case WM_SAVESETTINGS:
         {            
-            // save hotkey
-            hotkeycode = lastEditHotkey; hotkeymodifiers = lastEditHotkeyModifier;
-
-            SetSettingsInt(L"hotKeys", L"toggleKey", hotkeycode);
-            SetSettingsInt(L"hotKeys", L"toggleModifier", hotkeymodifiers);
-            UnregisterHotKey(g_pUI->getHWND(), 1);
-            RegisterHotKey(g_pUI->getHWND(), 1, hotkeymodifiers, hotkeycode);                
-            
             // save skin
             TCHAR skinname[1024];
             GetDlgItemText(hWnd,IDC_SKINCB, skinname, sizeof(skinname));
@@ -809,12 +838,24 @@ void Qatapult::init() {
     //m_history.m_inputsource = m_inputsource;
 
 
-    // hotkey
-    hotkeycode=GetSettingsInt(L"hotKeys", L"toggleKey",VK_SPACE);
-    hotkeymodifiers=GetSettingsInt(L"hotKeys", L"toggleModifier",MOD_SHIFT);      
+    //
+    // load hotkeys
+    //
+    
+    // special case for show
+    hotkeys[HK_SHOW].vk=GetSettingsInt(L"hotKeys/"+CString(hotkeys[HK_SHOW].name), L"vk", hotkeys[HK_SHOW].vk);
+    hotkeys[HK_SHOW].mod=GetSettingsInt(L"hotKeys/"+CString(hotkeys[HK_SHOW].name), L"mod", hotkeys[HK_SHOW].mod);    
+    if(hotkeys[HK_SHOW].vk==-1)
+        hotkeys[HK_SHOW].vk=GetSettingsInt(L"hotKeys", L"toggleKey",VK_SPACE);
+    if(hotkeys[HK_SHOW].mod==-1)
+        hotkeys[HK_SHOW].mod=GetSettingsInt(L"hotKeys", L"toggleModifier",MOD_SHIFT);
+    RegisterHotKey(g_pUI->getHWND(), 1, hotkeys[HK_SHOW].mod, hotkeys[HK_SHOW].vk);
 
-    // define hotkey
-    RegisterHotKey(g_pUI->getHWND(), 1, hotkeymodifiers, hotkeycode);
+    // everything else
+    for(int i=1;i<HK_LAST;i++) {
+        hotkeys[i].vk=GetSettingsInt(L"hotKeys/"+CString(hotkeys[i].name), L"vk", hotkeys[i].vk);
+        hotkeys[i].mod=GetSettingsInt(L"hotKeys/"+CString(hotkeys[i].name), L"mod", hotkeys[i].mod);
+    }    
 
     loadRules(settings);
 
@@ -890,65 +931,6 @@ void Qatapult::init() {
     //PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
     //PostQuitMessage(0);
 }
-/*
-int SHIFT = MOD_SHIFT;
-int CTRL  = MOD_CONTROL;
-int ALT   = MOD_ALT;
-*/
-int appendvk    = VK_OEM_COMMA;
-int appendmod   = 0;
-
-int makecommandvk    = VK_RETURN;
-int makecommandmod   = MOD_CONTROL;
-
-int validatevk  = VK_RETURN;
-int validatemod = 0;
-    
-int escapevk    = VK_ESCAPE;
-int escapemod   = 0;
-
-int nextpanevk  = VK_TAB;
-int nextpanemod = 0;
-
-int prevpanevk  = VK_TAB;
-int prevpanemod = MOD_SHIFT;
-
-int exitsourcevk = VK_LEFT;
-int exitsourcemod = 0;
-    
-int expandvk = VK_RIGHT; // expand or complete a result or a source
-int expandmod = 0;
-
-int nextresultvk = VK_DOWN;
-int nextresultmod = 0;
-
-int nextpageresultvk = VK_NEXT;
-int nextpageresultmod = 0;
-
-int prevresultvk = VK_UP;
-int prevresultmod = 0;
-
-int prevpageresultvk = VK_PRIOR;
-int prevpageresultmod = 0;
-
-int toggleeditmodevk = 'E';
-int toggleeditmodemod = MOD_CONTROL;
-/*
-class EditShortcutDlg : public CDialogImpl<EditShortcutDlg>
-{
-public:
-    EditShortcutDlg(int x,int y) {
-        m_x=x;
-        m_y=y;
-    }
-    enum { IDD = IDD_EDITSHORTCUTDLG };
- 
-    BEGIN_MSG_MAP(ShortcutDlg)
-        //MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-        //MESSAGE_HANDLER(WM_NOTIFY, OnNotify)
-    END_MSG_MAP()
-};*/
-
 
 // edit shortcut, type any key combination, use that combination
 class ShortcutDlg : public CDialogImpl<ShortcutDlg>
@@ -957,28 +939,61 @@ public:
     enum { IDD = IDD_EMPTY };
  
     BEGIN_MSG_MAP(ShortcutDlg)
+        MESSAGE_HANDLER(WM_DESTROY, OnDestroy);
         MESSAGE_HANDLER(WM_GETDLGCODE, OnGetDlgCode)
         MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
         MESSAGE_HANDLER(WM_NOTIFY, OnNotify)
-        COMMAND_HANDLER(0, IDCANCEL, OnCancel)
-        COMMAND_HANDLER(0, IDOK, OnOK)
+        COMMAND_HANDLER(IDCANCEL,BN_CLICKED, OnCancel)
+        COMMAND_HANDLER(IDOK,BN_CLICKED, OnOK)
+        COMMAND_HANDLER(IDC_CHANGE,BN_CLICKED, OnClickChange)
         NOTIFY_HANDLER(0, NM_KILLFOCUS, OnKillFocus)
     END_MSG_MAP()
 
     int  icount;
     CListViewCtrl listview;
+    CStatic       msg;
+    CEdit         edit;
+    CButton       change;
+    int           currentitem;
     HWND hListView;
 
+    LRESULT OnDestroy(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    {
+        listview.DestroyWindow();
+        msg.DestroyWindow();
+        edit.DestroyWindow();
+        change.DestroyWindow();
+
+        return S_OK;
+    }
     LRESULT OnOK(WPARAM wParam1, WPARAM wParam2, HWND lParam, BOOL& bHandled)
     {
         return S_OK;
-    }
+    } 
     LRESULT OnCancel(WPARAM wParam1, WPARAM wParam2, HWND lParam, BOOL& bHandled)
     {
         return S_OK;
     }
     LRESULT OnKillFocus(int wParam, LPNMHDR lParam, BOOL &bHandled)
     {
+        return S_OK;
+    }
+    LRESULT OnClickChange(WPARAM wParam1, WPARAM wParam2, HWND lParam, BOOL& bHandled)
+    {        
+        hotkeys[currentitem].vk=lastEditHotkey;
+        hotkeys[currentitem].mod=lastEditHotkeyModifier;
+
+        SetSettingsInt(CString(L"hotKeys/")+hotkeys[currentitem].name, L"vk", hotkeys[currentitem].vk);
+        SetSettingsInt(CString(L"hotKeys/")+hotkeys[currentitem].name, L"mod", hotkeys[currentitem].mod);
+        
+        CString hotkey=HotKeyToString(hotkeys[currentitem].mod, hotkeys[currentitem].vk);
+        ListView_SetItemText(hListView, currentitem, 0, (LPWSTR)hotkey.GetString());
+     
+        if(currentitem==HK_SHOW) {
+            UnregisterHotKey(g_pUI->getHWND(), 1);
+            RegisterHotKey(g_pUI->getHWND(), 1, hotkeys[HK_SHOW].mod, hotkeys[HK_SHOW].vk);  
+        }
+
         return S_OK;
     }
     void addItem(const CString &hotkey, const CString &desc) {
@@ -1004,14 +1019,20 @@ public:
         RECT rcClient;                       // The parent window's client area.
         GetClientRect(&rcClient);
 
-        int y=0;
-        /*text.C
-
-        edit.Create(m_hWnd, CRect(0,y,100,y+20), L"", WS_CHILD|WS_VISIBLE|WS_BORDER|WS_CLIPCHILDREN|WS_CLIPSIBLINGS);
-        OldHotKeyEditProc=SubclassWindowX(edit.m_hWnd, HotKeyEditProc);        
         HGDIOBJ hfDefault=GetStockObject(DEFAULT_GUI_FONT);
+
+        int y=0;
+        CRect rmsg(rcClient); rmsg.bottom=20;
+        msg.Create(m_hWnd, rmsg, L"Here is the list of available shortcuts. You can also change them here if something is not to your taste.", WS_CHILD|WS_VISIBLE);
+        msg.SendMessage(WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
+
+        y+=20;
+        edit.Create(m_hWnd, CRect(0,y,100,y+20), L"", WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN|WS_CLIPSIBLINGS|WS_DISABLED, WS_EX_CLIENTEDGE);
+        OldHotKeyEditProc=SubclassWindowX(edit.m_hWnd, HotKeyEditProc);                
 		edit.SendMessage(WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
-        */
+        
+        change.Create(m_hWnd, CRect(110,y,200,y+20), L"Change", WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN|WS_CLIPSIBLINGS|WS_DISABLED,0,IDC_CHANGE);
+        change.SendMessage(WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
 
         icount=0;
 
@@ -1021,8 +1042,9 @@ public:
         InitCommonControlsEx(&icex);
 
         rcClient.top+=50;
-        listview.Create(m_hWnd, rcClient, L"", WS_CHILD | LVS_REPORT | /*LVS_EDITLABELS |*/ WS_VISIBLE | WS_BORDER | WS_CLIPCHILDREN | WS_CLIPSIBLINGS |LVS_EX_FULLROWSELECT );
+        listview.Create(m_hWnd, rcClient, L"", WS_CHILD | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | /*LVS_EDITLABELS |*/ WS_VISIBLE | WS_BORDER | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
         hListView=listview.m_hWnd;
+        ListView_SetExtendedListViewStyle(listview.m_hWnd,LVS_EX_FULLROWSELECT);
 
         ::GetClientRect(hListView, &r);
 
@@ -1038,29 +1060,36 @@ public:
         ListView_InsertColumn(hListView, 1, &lvc);
         
         // must look like this visually
-        addItem(HotKeyToString(hotkeymodifiers,   hotkeycode),       L"Show/hide Qatapult");
-        addItem(HotKeyToString(validatemod,       validatevk),       L"Execute the current action if possible");
-        addItem(HotKeyToString(appendmod,         appendvk),         L"Stack the current selection and select another object (multi selection )");
-        addItem(HotKeyToString(escapemod,         escapevk),         L"Cancel a result, cancel a pane, close if empty");
-        addItem(HotKeyToString(nextpanemod,       nextpanevk),       L"Move to next pane");
-        addItem(HotKeyToString(prevpanemod,       prevpanevk),       L"Move to previous pane");
-        addItem(HotKeyToString(exitsourcemod,     exitsourcevk),     L"Exit a source (on a source result only )");
-        addItem(HotKeyToString(expandmod,         expandvk),         L"Expand a result or enter a source");
-        addItem(HotKeyToString(nextresultmod,     nextresultvk),     L"Show the result pane or focus the next result");
-        addItem(HotKeyToString(prevresultmod,     prevresultvk),     L"Select the previous result");
-        addItem(HotKeyToString(nextpageresultmod, nextpageresultvk), L"Next page of results");
-        addItem(HotKeyToString(prevpageresultmod, prevpageresultvk), L"Previous page of results");
-        addItem(HotKeyToString(toggleeditmodemod, toggleeditmodevk), L"Toggle edit mode");
+        for(int i=0;i<HK_LAST;i++) {
+            addItem(HotKeyToString(hotkeys[i].mod, hotkeys[i].vk), hotkeys[i].desc);
+        }
 
         return S_OK;
     }
     LRESULT OnNotify(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
     {
-        
-        if(((NMHDR*)lParam)->code==NM_CLICK && ((NMHDR*)lParam)->idFrom == 0) {            
+        if(((NMHDR*)lParam)->idFrom == 0 && ((NMHDR*)lParam)->code == LVN_ITEMCHANGED)
+        {
+            LPNMLISTVIEW pnmv = (LPNMLISTVIEW) lParam;
 
-        }
+            if((pnmv->uChanged & LVIF_STATE) && (pnmv->uNewState & LVIS_SELECTED) != (pnmv->uOldState & LVIS_SELECTED))
+            {
+                if (pnmv->uNewState & LVIS_SELECTED) {
 
+                    lastEditHotkey=hotkeys[pnmv->iItem].vk;
+                    lastEditHotkeyModifier=hotkeys[pnmv->iItem].mod;
+
+                    CString hotkey;
+                    ListView_GetItemText(listview.m_hWnd, pnmv->iItem, 0, hotkey.GetBufferSetLength(256), 256);
+                    edit.SetWindowText(hotkey);
+                    edit.EnableWindow(TRUE);
+                    change.EnableWindow(TRUE);
+
+                    currentitem=pnmv->iItem;
+                    //PRINT("Item number %d has been selected\n", pnmv->iItem);
+                }
+            }
+        }               
         /*static int i=0; i++;
         CString fmt; fmt.Format(L"%d : %d\n",i,((NMHDR*)lParam)->code);
         OutputDebugString(fmt);
@@ -1286,6 +1315,9 @@ void Qatapult::reset() {
 
     if(websiteSearchDlg.IsWindow())
         websiteSearchDlg.DestroyWindow();
+
+    if(shortcutdlg.IsWindow())
+        shortcutdlg.DestroyWindow();
 
     m_buffer.Destroy();
 
@@ -1884,7 +1916,8 @@ void Qatapult::drawResults(INT x, INT y, INT w, INT h){
 
     for(int i=m_resultspos;i<m_resultspos+m_visibleresultscount;i++) {
         int p=i-m_resultspos;
-        getResObject(i)->drawListItem(g,&m_results[i],RectF(float(x),float(y+40*p),float(rw),float(40)),m_fontsize,m_focusedresult==i,g_textcolor,m_resultbgcolor,m_resultfocuscolor);
+        if(getResObject(i))
+            getResObject(i)->drawListItem(g,&m_results[i],RectF(float(x),float(y+40*p),float(rw),float(40)),m_fontsize,m_focusedresult==i,g_textcolor,m_resultbgcolor,m_resultfocuscolor);
     }
     
     if(m_visibleresultscount<m_results.size()) {        
@@ -2146,7 +2179,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         delete p;
         return TRUE;
     }
-    else if(msg == WM_KEYDOWN && (wParam == appendvk && mod == appendmod) )
+    else if(msg == WM_KEYDOWN && hotkeys[HK_STACK].match(mod,wParam) )
     {
         //
         // stack an object on the current rule argument, if there is at least one multi rule matching this type
@@ -2174,7 +2207,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         invalidate();            
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && (wParam == makecommandvk && mod == makecommandmod) )
+    else if(msg == WM_KEYDOWN && hotkeys[HK_MKCOMMAND].match(mod,wParam) )
     {
         /*saveCommand(new CommandObject(m_args, m_inputsource));
 
@@ -2188,7 +2221,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         clearPanes();
         onSelChange(&SourceResult(c));
     }
-    else if(msg == WM_KEYDOWN && wParam == validatevk && mod == validatemod)
+    else if(msg == WM_KEYDOWN && hotkeys[HK_EXECUTE].match(mod,wParam))
     {
         if(m_editmode==1 && bShift) {
             m_input.appendAtCaret(L"\n");
@@ -2199,7 +2232,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         exec();
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && wParam == escapevk && mod == escapemod)
+    else if(msg == WM_KEYDOWN && hotkeys[HK_CANCEL].match(mod,wParam))
     {
         if(m_pane<m_customsources.size() && m_customsources[m_pane]!=0) {
             m_customsources[m_pane]=0;
@@ -2230,7 +2263,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && wParam == nextpanevk && mod == nextpanemod)
+    else if(msg == WM_KEYDOWN && hotkeys[HK_NEXTPANE].match(mod,wParam))
     {
         // clear the idle
         KillTimer(m_hwnd, 1);
@@ -2249,7 +2282,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && wParam == prevpanevk && mod == prevpanemod )
+    else if(msg == WM_KEYDOWN && hotkeys[HK_PREVPANE].match(mod,wParam) )
     {
         // clear the idle
         KillTimer(m_hwnd, 1);
@@ -2288,7 +2321,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         invalidate();
         return FALSE;
     }        
-    else if(msg == WM_KEYDOWN && wParam == VK_DELETE)
+    else if(msg == WM_KEYDOWN && wParam == VK_DELETE && m_editmode==1)
     {
         bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
         m_input.del(bCtrl);
@@ -2296,20 +2329,16 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         invalidate();
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && wParam == VK_HOME)
+    else if(msg == WM_KEYDOWN && wParam == VK_HOME && m_editmode==1)
     {
-        if(m_editmode==1) {
-            m_input.home();
-            invalidate();
-        }
+        m_input.home();
+        invalidate();
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && wParam == VK_END)
+    else if(msg == WM_KEYDOWN && wParam == VK_END && m_editmode==1)
     { 
-        if(m_editmode==1) {
-            m_input.end();
-            invalidate();
-        }
+        m_input.end();
+        invalidate();
         return FALSE;
     }
     else if(msg == WM_KEYDOWN && wParam == VK_INSERT)
@@ -2320,7 +2349,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         invalidate();
         return FALSE;
     }
-    else if(msg==WM_KEYDOWN &&  wParam == toggleeditmodevk && mod == toggleeditmodemod)
+    else if(msg==WM_KEYDOWN &&  hotkeys[HK_EDITMODE].match(mod,wParam) )
     {
         if(m_editmode==0)
             m_editmode=1;
@@ -2332,14 +2361,14 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         return FALSE;
     }
     // source exploration
-    else if(msg == WM_KEYDOWN && wParam == exitsourcevk && mod == exitsourcemod && m_pane<m_customsources.size())
+    else if(msg == WM_KEYDOWN && hotkeys[HK_EXITSOURCE].match(mod,wParam) && m_pane<m_customsources.size())
     {
         m_customsources[m_pane]=0;
         m_input.setText(L"");
         invalidate();
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && wParam == expandvk && mod == expandmod)
+    else if(msg == WM_KEYDOWN && hotkeys[HK_EXPANDSOURCE].match(mod,wParam))
     {
         SourceResult *r=getSelectedItem();
         if(!r)
@@ -2368,11 +2397,11 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         return FALSE;
     }*/
 
-    else if(msg == WM_KEYDOWN && m_editmode!=1 && (wParam == nextresultvk && mod == nextresultmod) || (wParam == nextpageresultvk && mod == nextpageresultmod) )
+    else if(msg == WM_KEYDOWN && m_editmode!=1 && hotkeys[HK_NEXTRESULT].match(mod,wParam) || hotkeys[HK_NEXTRESULTPAGE].match(mod,wParam) )
     {	
-        if(wParam == nextresultvk && mod == nextresultmod) {
+        if(hotkeys[HK_NEXTRESULT].match(mod,wParam)) {
             m_focusedresult++;
-        } else if(wParam == nextpageresultvk && mod == nextpageresultmod) {
+        } else if(hotkeys[HK_NEXTRESULTPAGE].match(mod,wParam)) {
             m_focusedresult+=m_visibleresultscount;
         }
 
@@ -2388,11 +2417,11 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN && m_editmode!=1 && (wParam == prevresultvk && mod == prevresultmod) || (wParam == prevpageresultvk && mod == prevpageresultmod))
+    else if(msg == WM_KEYDOWN && m_editmode!=1 && hotkeys[HK_PREVRESULT].match(mod,wParam) || hotkeys[HK_PREVRESULTPAGE].match(mod,wParam) )
     {	
-        if(wParam == prevresultvk && mod == prevresultmod)
+        if(hotkeys[HK_PREVRESULT].match(mod,wParam))
             m_focusedresult--;
-        else if(wParam == prevpageresultvk && mod == prevpageresultmod)
+        else if(hotkeys[HK_PREVRESULTPAGE].match(mod,wParam))
             m_focusedresult-=m_visibleresultscount;
 
         if(m_focusedresult<0)

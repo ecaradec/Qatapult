@@ -53,8 +53,6 @@ extern pugi::xml_document settings;
 extern pugi::xml_document settingsWT; // settings for the working thread
 
 extern WNDPROC OldHotKeyEditProc;
-extern int hotkeymodifiers;
-extern int hotkeycode;
 extern HWND g_foregroundWnd;
 
 #define WM_UPDATEINDEX (WM_USER)
