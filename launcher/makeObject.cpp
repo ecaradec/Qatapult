@@ -4,21 +4,25 @@
 #include "ContactSource.h"
 #include "TextObject.h"
 
-SourceResult getResultFromIDispatch(const CString &type_, const CString &key, IDispatch *args,Source *src) {
+SourceResult getResultFromIDispatch(const CString &type_, const CString &key_, IDispatch *args,Source *src) {
     SourceResult sr(L"",L"",L"",src,0,0,0);
     
     CComQIPtr<IDispatch> pdispArgs(args);
-    CComVariant vtype;
-    CString type;
-    if( pdispArgs.GetPropertyByName(L"type",&vtype)==S_OK ) {
-        type=vtype;
-    } else {
-        type=type_;
-    }
+    CComVariant vtype, vkey;
+    CString type, key;
+    type = pdispArgs.GetPropertyByName(L"type",&vtype)==S_OK ? vtype : type_;
+    key  = pdispArgs.GetPropertyByName(L"key",&vkey)==S_OK ? vkey : key_;
 
-    if(type==L"FILE")
-        sr.object().reset(new FileObject(key,src,L"",L"",L""));
-    else if(type==L"CONTACT")
+    if(type==L"FILE") {
+        
+        CComVariant expand;
+        pdispArgs.GetPropertyByName(L"expand",&expand);
+
+        CComVariant path;
+        pdispArgs.GetPropertyByName(L"path",&path);
+
+        sr.object().reset(new FileObject(key,src,L"",expand,path));
+    } else if(type==L"CONTACT")
         sr.object().reset(new ContactObject(key,src,L"",L""));
     else if(type==L"TEXT")
         sr.object().reset(new TextObject(key,src));
@@ -55,5 +59,39 @@ SourceResult getResultFromFilePath(const CString &path, Source *s) {
     
     SourceResult sr(path,filename,filename,s);
     sr.object().reset(new FileObject(path, s, filename, filename, path));
+    return sr;
+}
+/*
+<object>
+  <key>b162fd99e69ab1e6347390aebddcc62b</key>
+  <expand>Mozilla Firefox</expand>
+  <icon></icon>
+  <path>C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Mozilla Firefox.lnk</path>
+  <text>Mozilla Firefox</text>
+</object>
+*/
+SourceResult getResultFromXML(pugi::xml_node &xml, Source *src) {
+    SourceResult sr;
+    
+    CString type=UTF8toUTF16( xml.attribute("type").value() );
+    CString key=UTF8toUTF16( xml.attribute("key").value() );
+    sr.object().reset(new Object(key,type,src,L""));
+
+    pugi::xpath_node_set ns=xml.select_nodes("*");
+    for(pugi::xpath_node_set::const_iterator it=ns.begin(); it!=ns.end(); it++) {        
+        sr.object()->values[ UTF8toUTF16(it->node().name()) ] = UTF8toUTF16( it->node().value() );
+    }
+    
+   /* 
+    if(type==L"FILE")
+        sr.object()=new FileObject(key,src,L"",L"",L"");
+    else if(type==L"CONTACT")
+        sr.object()=new ContactObject(key,src,L"",L"");
+    else if(type==L"TEXT")
+        sr.object()=new TextObject(key,src);
+    else
+        sr.object()=new Object(key,type,src,L"");
+
+        */
     return sr;
 }

@@ -38,7 +38,7 @@ struct UI {
     virtual void setCurrentSource(int pane, Source *s,CString &q) = 0;
     virtual void show() = 0;
     virtual int  getCurPane() = 0;
-    virtual CString getArgString(int c, const TCHAR *name) = 0;
+    virtual CString getArgString(int c, int e,const TCHAR *name) = 0;
     virtual int  getArgsCount() = 0;
 };
 
@@ -114,10 +114,6 @@ struct Source {
         //itemlistFont;
         //itemscoreFont;
     }
-    // get icon
-    virtual Gdiplus::Bitmap *getIcon(SourceResult *r, long flags=ICON_SIZE_LARGE) { 
-        return r->object()->getIcon(flags);
-    }
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
         // empty result may not have an object
         if(sr->object())
@@ -142,24 +138,10 @@ struct Source {
     }    
     virtual void validate(SourceResult *r)  {}
     virtual void crawl() {}
-    // copy makes a deep copy
-    /*virtual void copy(SourceResult &r, RuleArg *out) {
-        //assert(r.m_results.size()==1);
-        out->m_results.back()=r;
-    }*/
-    /*virtual void clear(SourceResult &r) {
-        // FIXME : we need a clearItem and a clear
-        //delete r.object(); r.object()=0;
-        //delete r.icon(); r.icon()=0;
-        //delete r.smallicon(); r.smallicon()=0;
-    }*/
 
     // unused yet
     // get named data of various types
     virtual Source *getSource(SourceResult &sr, CString &q) { return 0; }
-    virtual CString getString(SourceResult &sr, const TCHAR *val) { 
-        return sr.object()->getString(val);
-    }
     virtual int getInt(const TCHAR *itemquery) { return false; }
 
     virtual void rate(const CString &q, SourceResult *r) {

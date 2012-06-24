@@ -20,11 +20,6 @@ struct TextItemSource : Source {
         sqlite3_finalize(validatestmt);        
         sqlite3_close(db);
     }
-    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        if(!r->object())
-            return 0;
-        return Gdiplus::Bitmap::FromFile(m_index[r->object()->key].iconname());
-    }
     void addItem(const TCHAR *str,const TCHAR *iconname) {
         m_index[str]=SourceResult(str,str,str, this, 0, 0, m_index[str].bonus());
         m_index[str].iconname()=iconname;

@@ -62,14 +62,6 @@ struct FileVerbSource : Source {
         conditionalAddObject(results,L"Delete",q);
         conditionalAddObject(results,L"Properties",q);
     }
-    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        Gdiplus::Bitmap *bmp=Gdiplus::Bitmap::FromFile(L"icons\\"+r->object()->key+L".png");
-        if(bmp->GetLastStatus()!=Gdiplus::Ok) {
-            delete bmp;
-            bmp=Gdiplus::Bitmap::FromFile(L"icons\\defaultverb.png");
-        }
-        return bmp;
-    }
     void validate(SourceResult *r) {        
         int rc = sqlite3_bind_text16(validatestmt, 1, r->object()->key, -1, SQLITE_STATIC);
         rc = sqlite3_bind_text16(validatestmt, 2, r->object()->key, -1, SQLITE_STATIC);

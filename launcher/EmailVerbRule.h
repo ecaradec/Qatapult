@@ -5,9 +5,9 @@ struct EmailVerbRule : Rule {
     EmailVerbRule() {
     }
     virtual bool execute(std::vector<RuleArg> &args) {
-        CString email=args[2].source()->getString(args[2].item(0),L"email");       
+        CString email=args[2].object(0)->getString(L"email");       
 
-        CString content(args[0].source()->getString(args[0].item(0),L"text"));
+        CString content(args[0].object(0)->getString(L"text"));
         CString subject;
         CString body=" ";
         int subjectEnd=content.Find(L".");

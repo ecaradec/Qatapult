@@ -91,12 +91,6 @@ struct NetworkSource : Source {
         rc = sqlite3_exec(db, "END;", 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
     }
-    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return r->object()->getIcon(flags);
-    }
-    CString getString(SourceResult &sr,const TCHAR *val_) {
-        return sr.object()->getString(val_);
-    }
     Source *getSource(SourceResult &r, CString &query) {
         query=r.display()+L"\\";
         return (Source*)-1;

@@ -13,8 +13,11 @@ struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript)
         *b=::FuzzyMatch(CString(text),CString(query));
         return S_OK;
     }    
-    STDMETHOD(getArgValue)(INT c, BSTR name, VARIANT *v) {
-        CComVariant(m_pUI->getArgString(c,name)).Detach(v);
+    STDMETHOD(getArgValue)(INT c, VARIANT name_or_index, BSTR name, VARIANT *v) {        
+        if(name_or_index.vt==VT_BSTR)
+            CComVariant(m_pUI->getArgString(c,0, name_or_index.bstrVal)).Detach(v);
+        else if(name_or_index.vt==VT_I4)
+            CComVariant(m_pUI->getArgString(c,name_or_index.intVal, name)).Detach(v);
         return S_OK;
     }
     STDMETHOD(getArgItemCount)(INT c, INT *v) {
@@ -105,6 +108,37 @@ struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript)
     STDMETHOD(setInput)(IDispatch *p) {
         m_pUI->setRetArg(0, getResultFromIDispatch(L"",L"",p,m_pUI->m_inputsource));
         return S_OK;
+    }
+    STDMETHOD(run)(VARIANT args) {
+        select(args);
+        m_pUI->exec();
+        return S_OK;
+    }
+    STDMETHOD(show)(VARIANT args) {
+        m_pUI->show();
+        select(args);
+        m_pUI->invalidate();
+        return S_OK;
+    }
+    void select(VARIANT args) {
+        m_pUI->clearPanes();
+
+        CComPtr<IDispatch> e(args.pdispVal);
+        CComVariant arg;
+        int index=0;
+        CString num; num.Format(L"%d", index);
+        while( e.GetPropertyByName(num, &arg) == S_OK) {
+            
+            m_pUI->m_args.push_back(RuleArg());
+            m_pUI->m_args.back().m_results.push_back(getResultFromIDispatch(L"", L"", arg.pdispVal, m_pUI->m_inputsource));
+
+            index++;
+            num.Format(L"%d", index);
+            arg.Clear();
+        }
+
+        m_pUI->m_pane=m_pUI->m_args.size()-1;
+        m_pUI->m_queries.resize(m_pUI->m_args.size());
     }
     STDMETHOD(setSkinSize)(INT w, INT h) {
         m_pUI->m_buffer.Destroy();

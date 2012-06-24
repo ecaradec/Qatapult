@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0555 */
-/* at Sat Apr 28 11:26:47 2012
+/* at Mon Jun 04 09:26:35 2012
  */
 /* Compiler settings for qatapult.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 7.00.0555 
@@ -116,7 +116,8 @@ EXTERN_C const IID IID_IQatapultScript;
         
         virtual HRESULT STDMETHODCALLTYPE getArgValue( 
             /* [in] */ INT c,
-            /* [in] */ BSTR name,
+            /* [in] */ VARIANT name_or_index,
+            /* [defaultvalue][in] */ BSTR name,
             /* [retval][out] */ VARIANT *v) = 0;
         
         virtual /* [propget] */ HRESULT STDMETHODCALLTYPE get_argscount( 
@@ -186,6 +187,12 @@ EXTERN_C const IID IID_IQatapultScript;
             /* [in] */ INT w,
             /* [in] */ INT h) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE run( 
+            /* [in] */ VARIANT args) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE show( 
+            /* [in] */ VARIANT args) = 0;
+        
     };
     
 #else 	/* C style interface */
@@ -249,7 +256,8 @@ EXTERN_C const IID IID_IQatapultScript;
         HRESULT ( STDMETHODCALLTYPE *getArgValue )( 
             IQatapultScript * This,
             /* [in] */ INT c,
-            /* [in] */ BSTR name,
+            /* [in] */ VARIANT name_or_index,
+            /* [defaultvalue][in] */ BSTR name,
             /* [retval][out] */ VARIANT *v);
         
         /* [propget] */ HRESULT ( STDMETHODCALLTYPE *get_argscount )( 
@@ -339,6 +347,14 @@ EXTERN_C const IID IID_IQatapultScript;
             /* [in] */ INT w,
             /* [in] */ INT h);
         
+        HRESULT ( STDMETHODCALLTYPE *run )( 
+            IQatapultScript * This,
+            /* [in] */ VARIANT args);
+        
+        HRESULT ( STDMETHODCALLTYPE *show )( 
+            IQatapultScript * This,
+            /* [in] */ VARIANT args);
+        
         END_INTERFACE
     } IQatapultScriptVtbl;
 
@@ -381,8 +397,8 @@ EXTERN_C const IID IID_IQatapultScript;
 #define IQatapultScript_getArgItemCount(This,c,v)	\
     ( (This)->lpVtbl -> getArgItemCount(This,c,v) ) 
 
-#define IQatapultScript_getArgValue(This,c,name,v)	\
-    ( (This)->lpVtbl -> getArgValue(This,c,name,v) ) 
+#define IQatapultScript_getArgValue(This,c,name_or_index,name,v)	\
+    ( (This)->lpVtbl -> getArgValue(This,c,name_or_index,name,v) ) 
 
 #define IQatapultScript_get_argscount(This,v)	\
     ( (This)->lpVtbl -> get_argscount(This,v) ) 
@@ -443,6 +459,12 @@ EXTERN_C const IID IID_IQatapultScript;
 
 #define IQatapultScript_setSkinSize(This,w,h)	\
     ( (This)->lpVtbl -> setSkinSize(This,w,h) ) 
+
+#define IQatapultScript_run(This,args)	\
+    ( (This)->lpVtbl -> run(This,args) ) 
+
+#define IQatapultScript_show(This,args)	\
+    ( (This)->lpVtbl -> show(This,args) ) 
 
 #endif /* COBJMACROS */
 

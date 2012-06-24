@@ -26,12 +26,14 @@
 #include <windows.h>         // MFC core and standard components
 #include <assert.h>
 
-
 #include <commctrl.h>
 #include <commoncontrols.h>
 #include <atlstr.h>
 #include <shlobj.h>
 #include <atlimage.h>
+
+#include <atlapp.h>
+#include <atlctrls.h>
 
 #include <io.h>
 
@@ -66,11 +68,12 @@ typedef unsigned int uint;
 
 #pragma comment(lib,"Comctl32.lib")
 
-
-#define     SubclassWindowX(hwnd, lpfn)       \
-              ((WNDPROC)::SetWindowLongPtr((hwnd), GWLP_WNDPROC, (LPARAM)(WNDPROC)(lpfn)))
-
 #include <atlapp.h>
 #include <atlwinx.h>
 #include <atldlgs.h>
 #include <assert.h>
+
+#include "pugixml.hpp"
+
+#define     SubclassWindowX(hwnd, lpfn)       \
+              ((WNDPROC)::SetWindowLongPtr((hwnd), GWLP_WNDPROC, (LPARAM)(WNDPROC)(lpfn)))

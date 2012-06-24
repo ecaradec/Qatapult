@@ -1,9 +1,7 @@
 
 struct WindowSource : Source {
     WindowSource() : Source(L"WINDOW",L"Windows (Catalog )") {
-    }
-    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return Gdiplus::Bitmap::FromFile(L"icons\\window.png");
+        m_icon=L"icons\\window.png";
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
@@ -17,12 +15,11 @@ struct WindowSource : Source {
                 continue;
             TCHAR title[MAX_PATH]={0};
             GetWindowText(*it,title,sizeof(title));
-            if(FuzzyMatch(title,q)) {
-                results.push_back(SourceResult(title,title,title,this,0,*it));
+            if(FuzzyMatch(title,q)) {                
                 Object *o=new Object(ItoS((int)*it),type,this,title);
                 o->values[L"title"]=title;
                 o->values[L"hwnd"]=ItoS((int)*it);
-                results.back().object().reset(o);
+                results.push_back(SourceResult(o));
             }
         }
     }

@@ -137,15 +137,6 @@ struct StartMenuSource : Source {
         int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
     }
-
-    // getvalue name, buff, bufflen
-    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return r->object()->getIcon(flags);
-    }
-    // itemkey/name : itemkey/verb/open/icon < get subresults ???
-    virtual CString getString(SourceResult &sr,const TCHAR *val_) {
-        return sr.object()->getString(val_);
-    }
     virtual int getInt(const TCHAR *itemquery) {
         return false; 
     }

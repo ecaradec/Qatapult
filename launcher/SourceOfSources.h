@@ -1,9 +1,7 @@
 
 struct SourceOfSources : Source {
     SourceOfSources() : Source(L"SOURCE",L"Source of sources") {
-    }
-    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return Gdiplus::Bitmap::FromFile(L"icons\\source.png");
+        m_icon=L"icons\\source.png";
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
@@ -18,6 +16,7 @@ struct SourceOfSources : Source {
                 r.data()=*it;
                 results.push_back(r);
                 results.back().object().reset(new Object((*it)->m_name,type,this,(*it)->m_name));
+                
             }        
         }
     }

@@ -104,7 +104,7 @@ struct FileSource : Source {
         const char *unused=0;
         int rc;
 
-        CString path=r->source()->getString(*r,L"path");
+        CString path=r->object()->getString(L"path");
         path.TrimRight(L"\\");
         if((GetFileAttributes(path)&FILE_ATTRIBUTE_DIRECTORY)!=0)
             path+="\\";
@@ -132,12 +132,6 @@ struct FileSource : Source {
     }
     void crawl() {
         // should scan the history and remove non available items
-    }
-    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return r->object()->getIcon(flags);
-    }
-    CString getString(SourceResult &sr, const TCHAR *val) {        
-        return sr.object()->getString(val);
     }
     void rate(const CString &q, SourceResult *r) {
         CString Q(q);
@@ -225,7 +219,7 @@ struct FileHistorySource : Source {
         const char *unused=0;
         int rc;
 
-        CString path=r->source()->getString(*r,L"path");
+        CString path=r->object()->getString(L"path");
         path.TrimRight(L"\\");
         
         CString key=md5(path);            
@@ -240,12 +234,6 @@ struct FileHistorySource : Source {
     
     void crawl() {
         // should scan the history and remove non available items
-    }
-    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return r->object()->getIcon(flags);
-    }
-    CString getString(SourceResult &sr, const TCHAR *val) {        
-        return sr.object()->getString(val);
     }
 
     sqlite3 *db;

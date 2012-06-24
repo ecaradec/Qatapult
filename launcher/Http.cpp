@@ -50,7 +50,7 @@ void HttpSubmit(const CString &href, CHAR *data, CStringA *res) {
                                         location, 
                                         NULL, WINHTTP_NO_REFERER, 
                                         WINHTTP_DEFAULT_ACCEPT_TYPES,
-                                        WINHTTP_FLAG_SECURE);
+                                        port==INTERNET_DEFAULT_HTTPS_PORT?WINHTTP_FLAG_SECURE:0);
 
     // Add a request header.    
     if( hRequest ) {
@@ -198,7 +198,7 @@ int HttpGet(const CString &href, CStringA *res) {
                                         location, 
                                         NULL, WINHTTP_NO_REFERER, 
                                         WINHTTP_DEFAULT_ACCEPT_TYPES,
-                                        WINHTTP_FLAG_SECURE);
+                                        port==INTERNET_DEFAULT_HTTPS_PORT?WINHTTP_FLAG_SECURE:0);
 
     // Add a request header.
     char buff[4096]={0};
@@ -348,7 +348,7 @@ int HttpDownload(const CString &href, CStringA path) {
                                         location, 
                                         NULL, WINHTTP_NO_REFERER, 
                                         WINHTTP_DEFAULT_ACCEPT_TYPES,
-                                        WINHTTP_FLAG_SECURE);
+                                        port==INTERNET_DEFAULT_HTTPS_PORT?WINHTTP_FLAG_SECURE:0);
 
     // Add a request header.
     char buff[4096]={0};
@@ -504,7 +504,7 @@ int HttpGetBuffer(const CString &href, void **data, int *totalsize) {
                                         location, 
                                         NULL, WINHTTP_NO_REFERER, 
                                         WINHTTP_DEFAULT_ACCEPT_TYPES,
-                                        WINHTTP_FLAG_SECURE);
+                                        port==INTERNET_DEFAULT_HTTPS_PORT?WINHTTP_FLAG_SECURE:0);
 
     // Add a request header.
     char buff[4096]={0};

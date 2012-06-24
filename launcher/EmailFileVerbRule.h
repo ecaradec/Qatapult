@@ -5,8 +5,8 @@ struct EmailFileVerbRule : Rule {
     EmailFileVerbRule() {
     }
     virtual bool execute(std::vector<RuleArg> &args) {
-        CString path=args[0].source()->getString(args[0].item(0),L"path");
-        CString email=args[2].source()->getString(args[2].item(0),L"email");        
+        CString path=args[0].object()->getString(L"path");
+        CString email=args[2].object()->getString(L"email");        
         CString filename=path.Right(path.GetLength() - (path.ReverseFind(L'\\')+1));
 
         sendEmail(email, filename, L"Here is your file", path);

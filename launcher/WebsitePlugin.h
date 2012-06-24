@@ -54,16 +54,13 @@ struct SearchWithVerbSource : Source {
     SearchWithVerbSource() : Source(L"SEARCHWITHVERB") {        
         m_index[L"Search With"]=SourceResult(L"Search With", L"Search With", L"Search With", this, 0, 0, m_index[L"Search With"].bonus());
     }
-    Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) {
-        return Gdiplus::Bitmap::FromFile(L"icons\\searchwith.png");
-    }
 };
 
 struct WebSearchRule : Rule {
     WebSearchRule() /*: Rule(Type(L"TEXT"), Type(L"Search With",L"icons\\searchwith.png"), Type(L"WEBSITE"))*/ {}
     virtual bool execute(std::vector<RuleArg> &args) {
-        CString searchURL=args[2].source()->getString(args[2].item(0),L"searchHref");        
-        searchURL.Replace(L"%q", args[0].source()->getString(args[0].item(0),L"text"));            
+        CString searchURL=args[2].object()->getString(L"searchHref");        
+        searchURL.Replace(L"%q", args[0].object()->getString(L"text"));            
         ShellExecute(0, 0, searchURL, 0, 0, SW_SHOWDEFAULT);
         return true;
     }

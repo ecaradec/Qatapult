@@ -14,7 +14,6 @@
 #include "md5.h"
 #include "utf8.h"
 #include "CriticalSection.h"
-#include "pugixml.hpp"
 #include "simpleini.h"
 #include "geticon.h"
 #include "ShellLink.h"
@@ -45,6 +44,8 @@
 #include "LevhensteinDistance.h"
 #include "ActiveScriptHost.h"
 #include "qatapult_h.h"
+#include "CommandObject.h"
+#include "History.h"
 
 extern UI *g_pUI; // very lazy way to give access to the ui to the ui window proc
 extern CString settingsini;
@@ -105,6 +106,10 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     static int resultSourceCmp(SourceResult &r1, SourceResult &r2);
     void onQueryChange(const CString &q, bool select=true);
     void showNextArg() ;
+    void clearPanes();
+    void exec();
+    //void saveCommand(CommandObject *c);
+    //void selectHistory(int historyindex);
     
     void onSelChange(SourceResult *r);
     void setRetArg(uint pane, SourceResult &r);    
@@ -121,7 +126,7 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
 
     // arg querying
     int getCurPane();
-    CString getArgString(int c,const TCHAR *name);
+    CString getArgString(int c,int e,const TCHAR *name);
     int getArgsCount();
     CString getResString(INT c, const TCHAR* name);
     void setVisibleResCount(INT i);
@@ -195,6 +200,10 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     std::vector<Rule*>         m_rules;
     std::vector<RuleArg>       m_args;     // validated results
     std::vector<RuleArg>       m_retArgs;  // validated results
+
+    //History                    m_history;
+    //std::vector<std::shared_ptr<CommandObject> > m_commandhistory;
+    //int                        m_historyindex;
     
     // ui status    
     int                        m_focusedresult;

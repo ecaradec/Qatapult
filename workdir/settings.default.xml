@@ -2,7 +2,7 @@
 <settings>
 	<general>
 		<font>Arial</font>
-		<skin>inline</skin>
+		<skin>default</skin>
 	</general>
 	<gmailContacts>
 		<accessToken></accessToken>

@@ -30,32 +30,35 @@ inline StringAlignment getStdAlignment(bool h) {
 
 // only stores object specifics into the object, then store sources commons in source
 // derive and gives an correctly typed pointer if in need for extra data
-extern int objects;
 struct Object {
+    Object() {
+    }
     Object(const CString &k, const CString &t, Source *s, const CString &text) {
         type=t;
         key=k;
         source=s;        
         values[L"text"]=text;
-        objects++;
     }
     Object(const Object& c) {
         source=c.source;
         key=c.key;
         values=c.values;
         type=c.type;
-        objects++;
     }
     virtual ~Object();
+    virtual CString toJSON();
+    virtual CString toXML();
     virtual CString getString(const TCHAR *val_);
     virtual Gdiplus::Bitmap *getIcon(long flags);
     virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r);
     virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontsize, bool b, DWORD textcolor, DWORD bgcolor, DWORD focuscolor);
 
-    CString                   type;
-    Source                   *source;
-    CString                   key;
-    std::map<CString,CString> values;
+    std::shared_ptr<Gdiplus::Bitmap> m_icon;
+    std::shared_ptr<Gdiplus::Bitmap> m_smallicon;
+    CString                          type;
+    Source                          *source;
+    CString                          key;
+    std::map<CString,CString>        values;
 };
 
 struct FileObject : Object {

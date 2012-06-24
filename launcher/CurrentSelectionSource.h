@@ -37,10 +37,10 @@ struct CurrentSelectionSource : Source {
             if(FuzzyMatch(it->second.display(),q)) {
                 results.push_back(it->second);
                 results.back().object().reset(new FileObject(it->second.display(),
-                                                     this,
-                                                     it->second.display(),
-                                                     it->second.display(),
-                                                     getExplorerSelection(g_foregroundWnd)));
+                                                             this,
+                                                             it->second.display(),
+                                                             it->second.display(),
+                                                             getExplorerSelection(g_foregroundWnd)));
             }
         }
     }

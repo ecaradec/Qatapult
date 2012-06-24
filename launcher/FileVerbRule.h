@@ -4,7 +4,7 @@ struct FileVerbRule : Rule {
     }
     bool execute(std::vector<RuleArg> &args) {
         for(int r=0;r<args[0].m_results.size();r++) {
-            CString path=args[0].source()->getString(args[0].item(r),L"path");
+            CString path=args[0].object(r)->getString(L"path");
 
             // fullpath, director, filename should came from the source
             // but this also means that there will be more requirements for a source
@@ -35,17 +35,17 @@ struct FileVerbRule : Rule {
                     d=fp;
                 }
             
-                CString command = args[1].source()->getString(args[1].item(0),L"command");
+                CString command = args[1].object()->getString(L"command");
                 command.Replace(L"%p", fp); // full path
                 command.Replace(L"%d", d);  // directory
                 command.Replace(L"%f", f);  // filename
 
-                CString workdir= args[1].source()->getString(args[1].item(0),L"workdir");
+                CString workdir= args[1].object()->getString(L"workdir");
                 workdir.Replace(L"%p", fp); // full path
                 workdir.Replace(L"%d", d);  // directory
                 workdir.Replace(L"%f", f);  // filename
 
-                CString cargs= args[1].source()->getString(args[1].item(0),L"args");
+                CString cargs= args[1].object()->getString(L"args");
                 cargs.Replace(L"%p", fp); // full path
                 cargs.Replace(L"%d", d);  // directory
                 cargs.Replace(L"%f", f);  // filename

@@ -28,21 +28,22 @@ CString GetProcessName( DWORD processID ) {
 }
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
-{    
-    /*TCHAR path[MAX_PATH];
-    GetModuleFileName(0, path, sizeof(path));
+{        
+    CString cmdline(lpCmdLine);
+    int index=cmdline.Find(L"/run=");
+    if(index!=-1) {
+        HWND hwnd=FindWindow(L"STATIC", L"Qatapult");
+        //PostMessage(hwnd, WM_USER+100, 0, 0);
 
-    DWORD aProcesses[1024], cbNeeded=0, cProcesses;
-    unsigned int i;
-    EnumProcesses( aProcesses, sizeof(aProcesses), &cbNeeded );
-    cProcesses = cbNeeded / sizeof(DWORD);
-    for ( i = 0; i < cProcesses; i++ )
-        if( aProcesses[i] != 0 ) {
-            if(GetProcessName( aProcesses[i] )==path) {
-                MessageBox(MB_OK, L"Qatapult is already running",L"Qatapult",MB_OK);
-                return 0;
-            }
-        }*/
+        CString strDataToSend=cmdline.Mid(index+5);
+        COPYDATASTRUCT cpd;
+		cpd.dwData = 0;
+		cpd.cbData = strDataToSend.GetLength()*sizeof(WCHAR);
+		cpd.lpData = (void*)strDataToSend.GetBuffer(cpd.cbData);
+		LPARAM copyDataResult = SendMessage(hwnd, WM_COPYDATA, 0, (LPARAM)&cpd);
+		strDataToSend.ReleaseBuffer();
+        return 0;
+    }
 
     OleInitialize(0);
     //CoInitialize(0);
@@ -56,8 +57,22 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     MSG msg;
     while(GetMessage(&msg, NULL, 0, 0) > 0)
     {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        int j=0;
+        if(msg.message == WM_KEYDOWN ) {
+            j=0;
+            //CString tmp; tmp.Format(L"%x \n", msg.hwnd);
+            //OutputDebugString(tmp);
+        }
+
+        
+        LRESULT lres=DispatchMessage(&msg);        
+        if(msg.message == WM_KEYDOWN && lres!=FALSE ) {
+            BOOL b=TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+
+        //BOOL b=TranslateMessage(&msg);
+        //DispatchMessage(&msg);
     }
     
     UnregisterClass(L"GUI",0);

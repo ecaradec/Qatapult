@@ -127,6 +127,7 @@
     <ClInclude Include="activscp.h" />
     <ClInclude Include="activscp_plus.h" />
     <ClInclude Include="ClockSource.h" />
+    <ClInclude Include="CommandObject.h" />
     <ClInclude Include="DYNACALL.H" />
     <ClInclude Include="makeObject.h" />
     <ClInclude Include="Qatapult.h" />

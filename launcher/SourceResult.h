@@ -1,4 +1,5 @@
 #pragma once
+#include "Object.h"
 
 struct Source;
 struct Object;
@@ -12,12 +13,16 @@ struct SourceResult {
         m_uses=0;
         m_id=0;
         m_data=0;
-        m_icon=0;
         m_rank=0;
-        m_smallicon=0;
     }
     SourceResult() {
         clear();
+    }
+    SourceResult(Object *o) {
+        clear();
+        m_expand=m_display=o->getString(L"text");
+        m_source=o->source;
+        m_object.reset(o);
     }
     SourceResult(Source *s_, Object *o_, const CString &d_, const CString &e_, int b_, int u_, int id_, void *data_) {
         clear();
@@ -41,12 +46,6 @@ struct SourceResult {
 
     std::shared_ptr<Object> &object() {
         return m_object;
-    }
-    std::shared_ptr<Gdiplus::Bitmap> &icon() {
-        return m_icon;
-    }
-    std::shared_ptr<Gdiplus::Bitmap> &smallicon() {
-        return m_smallicon;
     }
     Source *&source() {
         return m_source;
@@ -83,15 +82,13 @@ struct SourceResult {
     int                              m_bonus;
     int                              m_uses;
     int                              m_id;
-    void                            *m_data; // must be cloned if needed
-    std::shared_ptr<Gdiplus::Bitmap> m_icon;
+    void                            *m_data; // must be cloned if needed    
 
     // temporary for automatic
     CString                          m_iconname;
 
     // no saving required (and no copy )
     int                              m_rank;
-    std::shared_ptr<Gdiplus::Bitmap> m_smallicon;
 };
 
 struct RuleArg {
@@ -109,12 +106,6 @@ struct RuleArg {
     // easy access to the current object on RuleArg
     std::shared_ptr<Object> &object(int i=0) {
         return item(i).m_object;
-    }
-    std::shared_ptr<Gdiplus::Bitmap> &icon(int i=0) {
-        return item(i).m_icon;
-    }
-    std::shared_ptr<Gdiplus::Bitmap> &smallicon(int i=0) {
-        return item(i).m_smallicon;
     }
     Source *&source(int i=0) {
         return item(i).m_source;

@@ -12,11 +12,6 @@ struct DBSource : Source {
     ~DBSource() {        
         sqlite3_close(db);
     }
-    // get icon
-    virtual Gdiplus::Bitmap *getIcon(SourceResult *r, long flags) { 
-        return r->object()->getIcon(flags);
-        //return Gdiplus::Bitmap::FromFile(L"icons\\"+r->source->getString(*r,L"icon")+".png");
-    }
     void validate(SourceResult *r) {
         WCHAR buff[4096];
         char *zErrMsg = 0;
@@ -53,8 +48,5 @@ struct DBSource : Source {
 
         const char *errmsg=sqlite3_errmsg(db) ;
         sqlite3_finalize(stmt);         
-    }
-    CString getString(SourceResult &sr,const TCHAR *val) {
-        return sr.object()->getString(val);
     }
 };
