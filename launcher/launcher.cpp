@@ -28,14 +28,12 @@ CString GetProcessName( DWORD processID ) {
 }
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
-{        
+{
+    // send any command line to already running instance, or just fail
     CString cmdline(lpCmdLine);
-    int index=cmdline.Find(L"/run=");
-    if(index!=-1) {
+    if(cmdline.GetLength()!=0) {
         HWND hwnd=FindWindow(L"STATIC", L"Qatapult");
-        //PostMessage(hwnd, WM_USER+100, 0, 0);
-
-        CString strDataToSend=cmdline.Mid(index+5);
+        CString strDataToSend=cmdline;
         COPYDATASTRUCT cpd;
 		cpd.dwData = 0;
 		cpd.cbData = strDataToSend.GetLength()*sizeof(WCHAR);
@@ -44,7 +42,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		strDataToSend.ReleaseBuffer();
         return 0;
     }
-
+        
     OleInitialize(0);
     //CoInitialize(0);
 

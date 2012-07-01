@@ -171,7 +171,33 @@ Qatapult::Qatapult():m_input(this), m_invalidatepending(false) {
         
     CreateDirectory(L"databases", 0);
 
-    CreateDirectory(L"skins", 0);        
+    CreateDirectory(L"skins", 0);
+    
+    
+    CString filename;
+    GetModuleFileName(0,filename.GetBufferSetLength(MAX_PATH), MAX_PATH); filename.ReleaseBuffer();
+    CString cmdline="\""+filename+"\" /install=%1";
+    CString icon="\""+filename+"\",128";
+    CString appname=L"Qatapult";
+    CString mimetype=L"application/x-qatapult";
+    CString open=L"open";
+
+    HKEY hkey;
+    RegCreateKey(HKEY_CURRENT_USER, L"Software\\Classes\\.qplugin", &hkey);
+    RegSetKeyValue(hkey,L"",L"Content Type", REG_SZ, mimetype, mimetype.GetLength()*sizeof(WCHAR));
+    RegSetKeyValue(hkey,L"",L"", REG_SZ, appname, appname.GetLength()*sizeof(WCHAR));
+    RegSetKeyValue(hkey,L"DefaultIcon",L"", REG_SZ, icon, icon.GetLength()*sizeof(WCHAR));
+    RegSetKeyValue(hkey,L"shell",L"", REG_SZ, open, open.GetLength()*sizeof(WCHAR));
+    RegSetKeyValue(hkey,L"shell\\open\\command",L"", REG_SZ, cmdline, cmdline.GetLength()*sizeof(WCHAR));
+    RegCloseKey(hkey);
+
+    RegCreateKey(HKEY_CURRENT_USER, L"Software\\Classes\\.qskin", &hkey);
+    RegSetKeyValue(hkey,L"",L"Content Type", REG_SZ, mimetype, mimetype.GetLength()*sizeof(WCHAR));
+    RegSetKeyValue(hkey,L"",L"", REG_SZ, appname, appname.GetLength()*sizeof(WCHAR));
+    RegSetKeyValue(hkey,L"DefaultIcon",L"", REG_SZ, icon, icon.GetLength()*sizeof(WCHAR));
+    RegSetKeyValue(hkey,L"shell",L"", REG_SZ, open, open.GetLength()*sizeof(WCHAR));
+    RegSetKeyValue(hkey,L"shell\\open\\command",L"", REG_SZ, cmdline, cmdline.GetLength()*sizeof(WCHAR));
+    RegCloseKey(hkey);
 
     init();    
 
@@ -1537,6 +1563,8 @@ BOOL Qatapult::isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
     return TRUE;
 }
 
+#include "unzip.h"
+
 LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {   
     if(msg == WM_COPYDATA)
     {
@@ -1544,8 +1572,40 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         CString str;
         str.SetString((WCHAR*)cpd->lpData, cpd->cbData/sizeof(WCHAR));
 
-        CComVariant ret;
-        m_commandsHost.Eval(str, &ret);
+        if(str.Left(4)==L"/run=") {
+            CComVariant ret;
+            m_commandsHost.Eval(str, &ret);
+        } else if(str.Left(9)==L"/install=") {            
+            CString filename=str.Mid(9);
+
+            CString outputdir;
+            if(filename.Right(8)==L".qplugin")
+                outputdir=L"plugins";
+            else if(filename.Right(6)==L".qskin")
+                outputdir=L"skins";
+            else
+                return S_FALSE;
+
+            HZIP hz = OpenZip(filename,0);
+            if(hz) {
+                SetUnzipBaseDir(hz, outputdir);
+                
+                ZIPENTRY ze; GetZipItem(hz,-1,&ze); int numitems=ze.index;                
+                // -1 gives overall information about the zipfile
+                for (int zi=0; zi<numitems; zi++)
+                {
+                    ZIPENTRY ze; GetZipItem(hz,zi,&ze); // fetch individual details
+                    UnzipItem(hz, zi, ze.name);         // e.g. the item's name.
+                }
+
+                PostMessage(getHWND(),WM_RELOAD,1,0); // reload without showing qatapult
+
+                MessageBox(MB_OK,L"Your Qatapult plugin has been installed successfully.",L"Qatapult",MB_OK);                
+            } else {
+                MessageBox(MB_OK,L"This Qatapult plugin seems corrupted. Installation has aborted.",L"Qatapult",MB_OK);
+            }
+            CloseZip(hz);
+        }
         return S_OK;
     }
     else if(msg == WM_CURRENTVERSION)
@@ -1642,7 +1702,8 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     {
         reset();
         init();
-        ShowWindow(m_hwnd, SW_SHOW);
+        if(wParam==0)
+            ShowWindow(m_hwnd, SW_SHOW);
     }
     else if(msg==WM_COMMAND)
     {

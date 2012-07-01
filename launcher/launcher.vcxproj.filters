@@ -240,6 +240,9 @@
     <ClInclude Include="PluginList.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="unzip.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="launcher.cpp">
@@ -306,6 +309,9 @@
       <Filter>Header Files</Filter>
     </ClCompile>
     <ClCompile Include="Record.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="unzip.cpp">
       <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>

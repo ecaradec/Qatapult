@@ -140,6 +140,12 @@ struct DB {
         }
     }
 
+    void sqlExec(char *sql, sqlite3_callback xCallback, void *pArg) {
+        char *zErrMsg=0;
+        sqlite3_exec(db, "SELECT mark FROM startmenu LIMIT 1;", xCallback, &pArg, &zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+
     const char   *m_struct;
     const char   *m_name;
     const char   *unused;
