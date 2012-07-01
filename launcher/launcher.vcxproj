@@ -129,7 +129,12 @@
     <ClInclude Include="ClockSource.h" />
     <ClInclude Include="CommandObject.h" />
     <ClInclude Include="DYNACALL.H" />
+    <ClInclude Include="EmailDlg.h" />
+    <ClInclude Include="GeneralDlg.h" />
+    <ClInclude Include="HotKeyEditProc.h" />
     <ClInclude Include="makeObject.h" />
+    <ClInclude Include="PluginDlg.h" />
+    <ClInclude Include="PluginList.h" />
     <ClInclude Include="Qatapult.h" />
     <ClInclude Include="Collecter.h" />
     <ClInclude Include="ContactSource.h" />
@@ -160,13 +165,16 @@
     <ClInclude Include="pugixml.hpp" />
     <ClInclude Include="QatapultScript.h" />
     <ClInclude Include="QatapultPlugin.h" />
+    <ClInclude Include="Record.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Rule.h" />
     <ClInclude Include="ScriptRule.h" />
     <ClInclude Include="SearchWithVerbSource.h" />
     <ClInclude Include="SendEmail.h" />
+    <ClInclude Include="SettingsDlg.h" />
     <ClInclude Include="ShellExecuteRule.h" />
     <ClInclude Include="ShellLink.h" />
+    <ClInclude Include="ShortcutDlg.h" />
     <ClInclude Include="simpleini.h" />
     <ClInclude Include="Source.h" />
     <ClInclude Include="SourceResult.h" />
@@ -183,6 +191,7 @@
     <ClInclude Include="utf8.h" />
     <ClInclude Include="Utility.h" />
     <ClInclude Include="WebsitePlugin.h" />
+    <ClInclude Include="WebsiteSearchDlg.h" />
     <ClInclude Include="WindowlessInput.h" />
     <ClInclude Include="WindowSource.h" />
   </ItemGroup>
@@ -221,6 +230,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Record.cpp" />
     <ClCompile Include="SendEmail.cpp" />
     <ClCompile Include="Source.cpp" />
     <ClCompile Include="StartMenuSource.cpp" />

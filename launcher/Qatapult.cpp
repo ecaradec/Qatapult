@@ -11,10 +11,17 @@
 #include "SourceOfSources.h"
 #include "SourceRule.h"
 #include "CommandRule.h"
+#include "Record.h"
+
+DB websites("websites","key INTEGER PRIMARY KEY AUTOINCREMENT, display TEXT, href TEXT, searchHref TEXT, icon TEXT, bonus INTEGER");
 
 UI *g_pUI; // very lazy way to give access to the ui to the ui window proc
 Qatapult *g_pQatapult;
+
 #include "QatapultPlugin.h"
+#include "PluginList.h"
+#include "HotKeyEditProc.h"
+#include "GeneralDlg.h"
 
 CString settingsini;
 pugi::xml_document settings;
@@ -49,7 +56,8 @@ Hotkey hotkeys[]={
     {L"nextresultpage", 0,          VK_NEXT,            L"Next page of results"}, 
     {L"previousresultpage", 0,      VK_PRIOR,           L"Previous page of results"}, 
     {L"editmode", MOD_CONTROL,      'E',                L"Toggle edit mode"}, 
-    {L"makecommand", MOD_CONTROL,   VK_RETURN,          L"Make a command"}
+    {L"makecommand", MOD_CONTROL,   VK_RETURN,          L"Make a command"},
+    {L"paste", MOD_CONTROL,         'V',                L"Paste (Text )"},
 };
 
 #define HK_SHOW 0
@@ -66,7 +74,8 @@ Hotkey hotkeys[]={
 #define HK_PREVRESULTPAGE 11
 #define HK_EDITMODE 12
 #define HK_MKCOMMAND 13
-#define HK_LAST 14
+#define HK_PASTE 14
+#define HK_LAST 15
 
 #define WM_ICON_NOTIFY WM_APP+10
 
@@ -75,382 +84,12 @@ struct QatapultAtlModule : CAtlModule {
         return S_OK;
     }
 } _atlmodule;
-   
-CString getNameFromVK(int vk) {
-    CString v;
-    switch(vk) {
-    case VK_LBUTTON                 : v=L"LBUTTON"; break;
-    case VK_RBUTTON                 : v=L"RBUTTON"; break;
-    case VK_CANCEL                  : v=L"CANCEL"; break;
-    case VK_MBUTTON                 : v=L"MBUTTON"; break;
-    case VK_XBUTTON1                : v=L"XBUTTON1"; break;
-    case VK_XBUTTON2                : v=L"XBUTTON2"; break;
-    case VK_BACK                    : v=L"BACK"; break;
-    case VK_TAB                     : v=L"TAB"; break;
-    case VK_CLEAR                   : v=L"CLEAR"; break;
-    case VK_RETURN                  : v=L"RETURN"; break;
-    //case VK_SHIFT                   : v=L"SHIFT"; break;
-    //case VK_CONTROL                 : v=L"CONTROL"; break;
-    //case VK_MENU                    : v=L"MENU"; break;
-    case VK_PAUSE                   : v=L"PAUSE"; break;
-    case VK_CAPITAL                 : v=L"CAPITAL"; break;
-    case VK_KANA                    : v=L"KANA"; break;
-    case VK_JUNJA                   : v=L"JUNJA"; break;
-    case VK_FINAL                   : v=L"FINAL"; break;
-    case VK_HANJA                   : v=L"HANJA"; break;
-    case VK_ESCAPE                  : v=L"ESCAPE"; break;
-    case VK_CONVERT                 : v=L"CONVERT"; break;
-    case VK_NONCONVERT              : v=L"NONCONVERT"; break;
-    case VK_ACCEPT                  : v=L"ACCEPT"; break;
-    case VK_MODECHANGE              : v=L"MODECHANGE"; break;
-    case VK_SPACE                   : v=L"SPACE"; break;
-    case VK_PRIOR                   : v=L"PRIOR"; break;
-    case VK_NEXT                    : v=L"NEXT"; break;
-    case VK_END                     : v=L"END"; break;
-    case VK_HOME                    : v=L"HOME"; break;
-    case VK_LEFT                    : v=L"LEFT"; break;
-    case VK_UP                      : v=L"UP"; break;
-    case VK_RIGHT                   : v=L"RIGHT"; break;
-    case VK_DOWN                    : v=L"DOWN"; break;
-    case VK_SELECT                  : v=L"SELECT"; break;
-    case VK_PRINT                   : v=L"PRINT"; break;
-    case VK_EXECUTE                 : v=L"EXECUTE"; break;
-    case VK_SNAPSHOT                : v=L"SNAPSHOT"; break;
-    case VK_INSERT                  : v=L"INSERT"; break;
-    case VK_DELETE                  : v=L"DELETE"; break;
-    case VK_HELP                    : v=L"HELP"; break;
-    case VK_LWIN                    : v=L"LWIN"; break;
-    case VK_RWIN                    : v=L"RWIN"; break;
-    case VK_APPS                    : v=L"APPS"; break;
-    case VK_SLEEP                   : v=L"SLEEP"; break;
-    case VK_NUMPAD0                 : v=L"NUMPAD0"; break;
-    case VK_NUMPAD1                 : v=L"NUMPAD1"; break;
-    case VK_NUMPAD2                 : v=L"NUMPAD2"; break;
-    case VK_NUMPAD3                 : v=L"NUMPAD3"; break;
-    case VK_NUMPAD4                 : v=L"NUMPAD4"; break;
-    case VK_NUMPAD5                 : v=L"NUMPAD5"; break;
-    case VK_NUMPAD6                 : v=L"NUMPAD6"; break;
-    case VK_NUMPAD7                 : v=L"NUMPAD7"; break;
-    case VK_NUMPAD8                 : v=L"NUMPAD8"; break;
-    case VK_NUMPAD9                 : v=L"NUMPAD9"; break;
-    case VK_MULTIPLY                : v=L"MULTIPLY"; break;
-    case VK_ADD                     : v=L"ADD"; break;
-    case VK_SEPARATOR               : v=L"SEPARATOR"; break;
-    case VK_SUBTRACT                : v=L"SUBTRACT"; break;
-    case VK_DECIMAL                 : v=L"DECIMAL"; break;
-    case VK_DIVIDE                  : v=L"DIVIDE"; break;
-    case VK_F1                      : v=L"F1"; break;
-    case VK_F2                      : v=L"F2"; break;
-    case VK_F3                      : v=L"F3"; break;
-    case VK_F4                      : v=L"F4"; break;
-    case VK_F5                      : v=L"F5"; break;
-    case VK_F6                      : v=L"F6"; break;
-    case VK_F7                      : v=L"F7"; break;
-    case VK_F8                      : v=L"F8"; break;
-    case VK_F9                      : v=L"F9"; break;
-    case VK_F10                     : v=L"F10"; break;
-    case VK_F11                     : v=L"F11"; break;
-    case VK_F12                     : v=L"F12"; break;
-    case VK_F13                     : v=L"F13"; break;
-    case VK_F14                     : v=L"F14"; break;
-    case VK_F15                     : v=L"F15"; break;
-    case VK_F16                     : v=L"F16"; break;
-    case VK_F17                     : v=L"F17"; break;
-    case VK_F18                     : v=L"F18"; break;
-    case VK_F19                     : v=L"F19"; break;
-    case VK_F20                     : v=L"F20"; break;
-    case VK_F21                     : v=L"F21"; break;
-    case VK_F22                     : v=L"F22"; break;
-    case VK_F23                     : v=L"F23"; break;
-    case VK_F24                     : v=L"F24"; break;
-    case VK_NUMLOCK                 : v=L"NUMLOCK"; break;
-    case VK_SCROLL                  : v=L"SCROLL"; break;
-    case VK_OEM_NEC_EQUAL           : v=L"OEM_NEC_EQUAL"; break;
-    case VK_OEM_FJ_MASSHOU          : v=L"OEM_FJ_MASSHOU"; break;
-    case VK_OEM_FJ_TOUROKU          : v=L"OEM_FJ_TOUROKU"; break;
-    case VK_OEM_FJ_LOYA             : v=L"OEM_FJ_LOYA"; break;
-    case VK_OEM_FJ_ROYA             : v=L"OEM_FJ_ROYA"; break;
-    case VK_LSHIFT                  : v=L"LSHIFT"; break;
-    case VK_RSHIFT                  : v=L"RSHIFT"; break;
-    case VK_LCONTROL                : v=L"LCONTROL"; break;
-    case VK_RCONTROL                : v=L"RCONTROL"; break;
-    case VK_LMENU                   : v=L"LMENU"; break;
-    case VK_RMENU                   : v=L"RMENU"; break;
-    case VK_BROWSER_BACK            : v=L"BROWSER_BACK"; break;
-    case VK_BROWSER_FORWARD         : v=L"BROWSER_FORWARD"; break;
-    case VK_BROWSER_REFRESH         : v=L"BROWSER_REFRESH"; break;
-    case VK_BROWSER_STOP            : v=L"BROWSER_STOP"; break;
-    case VK_BROWSER_SEARCH          : v=L"BROWSER_SEARCH"; break;
-    case VK_BROWSER_FAVORITES       : v=L"BROWSER_FAVORITES"; break;
-    case VK_BROWSER_HOME            : v=L"BROWSER_HOME"; break;
-    case VK_VOLUME_MUTE             : v=L"VOLUME_MUTE"; break;
-    case VK_VOLUME_DOWN             : v=L"VOLUME_DOWN"; break;
-    case VK_VOLUME_UP               : v=L"VOLUME_UP"; break;
-    case VK_MEDIA_NEXT_TRACK        : v=L"MEDIA_NEXT_TRACK"; break;
-    case VK_MEDIA_PREV_TRACK        : v=L"MEDIA_PREV_TRACK"; break;
-    case VK_MEDIA_STOP              : v=L"MEDIA_STOP"; break;
-    case VK_MEDIA_PLAY_PAUSE        : v=L"MEDIA_PLAY_PAUSE"; break;
-    case VK_LAUNCH_MAIL             : v=L"LAUNCH_MAIL"; break;
-    case VK_LAUNCH_MEDIA_SELECT     : v=L"LAUNCH_MEDIA_SELECT"; break;
-    case VK_LAUNCH_APP1             : v=L"LAUNCH_APP1"; break;
-    case VK_LAUNCH_APP2             : v=L"LAUNCH_APP2"; break;
-    case VK_OEM_1                   : v=L";";break;
-    case VK_OEM_PLUS                : v=L"+";break;
-    case VK_OEM_COMMA               : v=L",";break;
-    case VK_OEM_MINUS               : v=L"-";break;
-    case VK_OEM_PERIOD              : v=L".";break;
-    case VK_OEM_2                   : v=L"/";break;
-    case VK_OEM_3                   : v=L"`";break;
-    case VK_OEM_4                   : v=L"[";break;
-    case VK_OEM_5                   : v=L"\\";break;
-    case VK_OEM_6                   : v=L"]";break;
-    case VK_OEM_7                   : v=L"'";break;
-    case VK_OEM_8                   : v=L"OEM_8";break;
-    case VK_OEM_AX                  : v=L"OEM_AX";break;
-    case VK_OEM_102                 : v=L"<";break;
-    case VK_ICO_HELP                : v=L"ICO_HELP";break;
-    case VK_ICO_00                  : v=L"00";break;
-
-    case VK_PROCESSKEY              : v=L"PROCESSKEY"; break;
-    case VK_ICO_CLEAR               : v=L"ICO_CLEAR"; break;
-    case VK_PACKET                  : v=L"PACKET"; break;
-    case VK_OEM_RESET               : v=L"OEM_RESET"; break;
-    case VK_OEM_JUMP                : v=L"OEM_JUMP"; break;
-    case VK_OEM_PA1                 : v=L"OEM_PA1"; break;
-    case VK_OEM_PA2                 : v=L"OEM_PA2"; break;
-    case VK_OEM_PA3                 : v=L"OEM_PA3"; break;
-    case VK_OEM_WSCTRL              : v=L"OEM_WSCTRL"; break;
-    case VK_OEM_CUSEL               : v=L"OEM_CUSEL"; break;
-    case VK_OEM_ATTN                : v=L"OEM_ATTN"; break;
-    case VK_OEM_FINISH              : v=L"OEM_FINISH"; break;
-    case VK_OEM_COPY                : v=L"OEM_COPY"; break;
-    case VK_OEM_AUTO                : v=L"OEM_AUTO"; break;
-    case VK_OEM_ENLW                : v=L"OEM_ENLW"; break;
-    case VK_OEM_BACKTAB             : v=L"OEM_BACKTAB"; break;
-    case VK_ATTN                    : v=L"ATTN"; break;
-    case VK_CRSEL                   : v=L"CRSEL"; break;
-    case VK_EXSEL                   : v=L"EXSEL"; break;
-    case VK_EREOF                   : v=L"EREOF"; break;
-    case VK_PLAY                    : v=L"PLAY"; break;
-    case VK_ZOOM                    : v=L"ZOOM"; break;
-    case VK_NONAME                  : v=L"NONAME"; break;
-    case VK_PA1                     : v=L"PA1"; break;
-    case VK_OEM_CLEAR               : v=L"OEM_CLEAR"; break;
-    default:
-        v=(TCHAR)MapVirtualKey(vk, MAPVK_VK_TO_CHAR);
-    }
-    return v;
-}
-
-CString HotKeyToString(int modifier, int vk) {    
-    CString mod;
-    if(modifier&MOD_WIN)
-        mod+=L"WIN+";
-    if(modifier&MOD_CONTROL)
-        mod+=L"CTRL+";
-    if(modifier&MOD_ALT)
-        mod+=L"ALT+";
-    if(modifier&MOD_SHIFT)
-        mod+=L"SHIFT+";
-
-    CString c=getNameFromVK(vk);
-           
-    return mod+c;
-}
-
-struct PluginDesc {
-    PluginDesc(){}
-    PluginDesc(const TCHAR *n): name(n), key(n) {
-    }
-    CString key;
-    CString name;
-    CString desc;
-};
-
-void GetSubFolderList(const TCHAR *path, std::vector<CString> &subfolders) {
-    TCHAR szFullPattern[MAX_PATH];
-    WIN32_FIND_DATA FindFileData;
-    HANDLE hFindFile;
-    // first we are going to process any subdirectories
-    PathCombine(szFullPattern, path, _T("*"));
-    hFindFile = FindFirstFile(szFullPattern, &FindFileData);
-    if(hFindFile != INVALID_HANDLE_VALUE)
-    {
-        do
-        {
-            if(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY && CString(FindFileData.cFileName)!=L"." && CString(FindFileData.cFileName)!=L"..")
-                subfolders.push_back(FindFileData.cFileName);
-        } while(FindNextFile(hFindFile, &FindFileData));
-        FindClose(hFindFile);
-    }
-}
-
-
-void getSkinList(std::vector<CString> &skins) {
-    GetSubFolderList(L"skins",skins);
-}
-
-void getPluginList(std::vector<PluginDesc> &plugins) {
-    //plugins.push_back(L"Filesystem");         plugins.back().desc=L"Give access to local filesystem";
-    //plugins.push_back(L"IndexedFiles");       plugins.back().desc=L"This returns startmenu items and other indexed items from the options dialog";
-    //plugins.push_back(L"Websites");           plugins.back().desc=L"";
-    //plugins.push_back(L"FileHistory");
-    plugins.push_back(L"Network");            plugins.back().desc=L"Add shared drives objects";
-    plugins.push_back(L"Contacts");           plugins.back().desc=L"Add your Gmail contacts (requires some configuration in Gmail pane )";
-    plugins.push_back(L"ExplorerSelection");  plugins.back().desc=L"Add a currentselection object that's the currently selected item in Windows Explorer";
-    plugins.push_back(L"Windows");            plugins.back().desc=L"Add objects for the currently opened window";
-
-    plugins.push_back(L"EmailFile");          plugins.back().desc=L"Allow to send file to some contact";
-    plugins.push_back(L"EmailText");          plugins.back().desc=L"Allow to send a text to some contact";
-    plugins.push_back(L"WebsiteSearch");      plugins.back().desc=L"Trigger browser searches";
-
-    std::vector<CString> pluginsfolders;
-    GetSubFolderList(L"plugins",pluginsfolders);
-    for(std::vector<CString>::iterator it=pluginsfolders.begin();it!=pluginsfolders.end();it++) {
-        CString key(*it);
-        CString pluginxml=L"plugins\\"+*it+"\\plugin.xml";
-
-        pugi::xml_document d;
-        if(!d.load_file(pluginxml))
-            continue;
-
-        CStringA name=d.select_single_node("settings").node().child_value("name");
-        CStringA desc=d.select_single_node("settings").node().child_value("description");        
-
-        PluginDesc pd;
-        pd.key=key;
-        if(name==L"") {            
-            pd.name=key;
-            pd.desc=UTF8toUTF16(desc);
-        } else {
-            pd.name=UTF8toUTF16(name);
-            pd.desc=UTF8toUTF16(desc);            
-        }
-        plugins.push_back(pd);
-    }
-}
-
 
 CString getGUID() {
     CLSID  clsid;
     CoCreateGuid(&clsid);
     OLECHAR szGuid[40]={0}; int nCount = ::StringFromGUID2(clsid, szGuid, 40);
     return szGuid;
-}
-
-int lastEditHotkey=0;
-int lastEditHotkeyModifier=0;
-
-LRESULT CALLBACK HotKeyEditProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    if(msg == WM_GETDLGCODE) {
-        return DLGC_WANTALLKEYS;
-    } else if(msg==WM_KEYDOWN) { 
-
-        //CString tmp; tmp.Format(L"X : %x \n", hWnd);
-        //OutputDebugString(tmp);
-
-        // ignore dead keys
-        if(wParam==VK_CAPITAL)
-            return TRUE;
-        if(wParam==VK_SHIFT)
-            return TRUE;
-        if(wParam==VK_CONTROL)
-            return TRUE;
-        if(wParam==VK_MENU)
-            return TRUE;
-
-        //if(wParam>VK_MENU) {
-        lastEditHotkeyModifier=0;
-        CString mod;
-        BOOL bShift = GetKeyState(VK_SHIFT) & 0x8000;
-        if(bShift) {
-            lastEditHotkeyModifier|=MOD_SHIFT;
-        }
-        BOOL bCtl = GetKeyState(VK_CONTROL) & 0x8000;
-        if(bCtl) {
-            lastEditHotkeyModifier|=MOD_CONTROL;
-        }
-        BOOL bAlt = GetKeyState(VK_MENU) & 0x8000;
-        if(bAlt) {
-            lastEditHotkeyModifier|=MOD_ALT;
-        }
-        BOOL blWin= GetKeyState(VK_LWIN) & 0x8000;
-        BOOL brWin= GetKeyState(VK_RWIN) & 0x8000;
-        if(blWin ||brWin) {
-            lastEditHotkeyModifier|=MOD_WIN;
-        }
-
-        lastEditHotkey=wParam;
-
-        CString txt=HotKeyToString(lastEditHotkeyModifier, lastEditHotkey);
-        SetWindowText(hWnd,txt);
-        //ListView_SetItemText(hListView, ((NMLVDISPINFO*)lParam)->item.iItem, 0, (LPWSTR)txt.GetString()); 
-        // cancel just after giving the control the time to close with enter to differenciate
-        //SetFocus(::GetParent(hWnd));
-        return TRUE;
-    } else if(msg==WM_SYSKEYDOWN) {
-        
-        if(wParam==VK_RETURN) {
-            return TRUE;
-        }
-
-        return TRUE;
-    } else if(msg==WM_CHAR) {
-        return TRUE;
-    }
-
-    return CallWindowProc(OldHotKeyEditProc,hWnd, msg, wParam, lParam);
-}
-
-BOOL CALLBACK GeneralDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    switch(msg)
-    {
-        case WM_INITDIALOG:
-        {
-            int x=12;
-            int y=10;
-            //getSkinList
-            HWND hsskins=CreateWindow(L"STATIC",
-                         L"Skin :",
-                         WS_VISIBLE|WS_CHILD,
-                         x, y, 150, 20,
-                         hWnd,
-                         0,
-                         0,
-                         0);
-            HGDIOBJ hfDefault=GetStockObject(DEFAULT_GUI_FONT);
-		    SendMessage(hsskins, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
-            y+=20;
-
-            HWND hcbskin=CreateWindow(L"COMBOBOX",
-                         L"", 
-                         CBS_DROPDOWN | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE, 
-                         x, y, 153, 20,
-                         hWnd,
-                         (HMENU)IDC_SKINCB,
-                         0,
-                         0);
-            SendMessage(hcbskin, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
-            
-            std::vector<CString> skins;
-            getSkinList(skins);
-            for(int i=0;i<skins.size();i++) {
-                SendMessage(hcbskin,(UINT) CB_ADDSTRING,(WPARAM) 0,(LPARAM)skins[i].GetString()); 
-                if(g_pQatapult->m_skin==skins[i])
-                    SendMessage(hcbskin,(UINT)CB_SETCURSEL,(WPARAM) i,(LPARAM)i); 
-            }
-            return TRUE;
-        }
-        case WM_SAVESETTINGS:
-        {            
-            // save skin
-            TCHAR skinname[1024];
-            GetDlgItemText(hWnd,IDC_SKINCB, skinname, sizeof(skinname));
-            SetSettingsString(L"general",L"skin",skinname);
-        }        
-    }
-    return FALSE;
 }
 
 int DelayLoadExceptionFilter(unsigned int code, struct _EXCEPTION_POINTERS *ep) {
@@ -465,149 +104,45 @@ BOOL CALLBACK ToggleSettingsEWProc(HWND hwnd, LPARAM lParam) {
     return TRUE;
 }
 
-BOOL CALLBACK SettingsDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    HWND htreeview;
-    switch(msg)
-    {
-        case WM_INITDIALOG:
-            // doesn't seem to work
-            htreeview=GetDlgItem(hWnd, IDC_TREE); 
-            TreeView_SetExtendedStyle(htreeview, TVS_FULLROWSELECT, TVS_FULLROWSELECT);            
-        return TRUE;
-        case WM_COMMAND:
-            if(wParam==IDOK) {
-                // Get the first child window. Use it.
-                HWND hwndChild = ::GetWindow(hWnd, GW_CHILD | GW_HWNDFIRST );
-                while( hwndChild )
-                {
-                    ::SendMessage(hwndChild, WM_SAVESETTINGS, 0, 0);
-                    // Get the next window. Use it.
-                    hwndChild = ::GetWindow( hwndChild, GW_HWNDNEXT );
-                }
-                g_pQatapult->reload();
-                //g_pUI->InvalidateIndex();
-                ::EndDialog(hWnd, 0);
-            } else if(wParam==IDCANCEL) {
-                ::EndDialog(hWnd, 0);
-                g_pQatapult->show();
-            }
-        return TRUE;
-        case WM_NOTIFY:
-            if(((NMHDR*)lParam)->code==TVN_SELCHANGED) {
-                NMTREEVIEW *nmtv=(NMTREEVIEW*)lParam;
-                EnumChildWindows(hWnd, ToggleSettingsEWProc, nmtv->itemNew.lParam);
-            }
-        return TRUE;
-    }
-    return FALSE;
+#include "SettingsDlg.h"
+#include "EmailDlg.h"
+
+CString capitalize(const CString &s) {
+    CString tmp=s.Left(1).MakeUpper() + s.Mid(1);
+    return tmp;
 }
 
-BOOL CALLBACK EmailDlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-    switch(msg)
-    {
-        case WM_INITDIALOG:
-        return TRUE;
-        case WM_NOTIFY:
-        return TRUE;
-    }
-    return FALSE;
+
+template<typename T>
+std::vector<T> Array(T &t0) {
+    std::vector<T> v;
+    v.push_back(t0);
+    return v;
 }
 
-class PluginsDlg : public CDialogImpl<PluginsDlg>
-{
-public:
-    enum { IDD = IDD_EMPTY };
- 
-    BEGIN_MSG_MAP(PluginsDlg)
-        MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-        MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
-        MESSAGE_HANDLER(WM_SAVESETTINGS, OnSaveSettings)        
-    END_MSG_MAP()
+template<typename T>
+std::vector<T> Array(T &t0,T &t1) {
+    std::vector<T> v;
+    v.push_back(t0);
+    v.push_back(t1);
+    return v;
+}
 
-    std::vector<PluginDesc> m_plugins;
-    HWND                    m_hListView;
+template<typename T>
+std::vector<T> Array(T &t0,T &t1, T &t2) {
+    std::vector<T> v;
+    v.push_back(t0);
+    v.push_back(t1);
+    v.push_back(t2);
+    return v;
+}
 
-    LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-    {         
-        INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
-        icex.dwICC = ICC_LISTVIEW_CLASSES;
-        InitCommonControlsEx(&icex);
+#include <atlrx.h>
 
-        RECT rcClient;                       // The parent window's client area.
+#include "PluginDlg.h"
+#include "ShortcutDlg.h"
+#include "WebsiteSearchDlg.h"
 
-        GetClientRect(&rcClient); 
-
-        // Create the list-view window in report view with label editing enabled.
-        m_hListView = CreateWindow(WC_LISTVIEW, 
-                                      L"",
-                                      WS_CHILD | LVS_REPORT | WS_VISIBLE | WS_BORDER,
-                                      0, 0,
-                                      rcClient.right - rcClient.left,
-                                      rcClient.bottom - rcClient.top,
-                                      m_hWnd,
-                                      0,
-                                      0,
-                                      NULL); 
-
-        ListView_SetExtendedListViewStyle(m_hListView, LVS_EX_CHECKBOXES | LVS_EX_FULLROWSELECT);
-
-        LVCOLUMN lvc;
-        lvc.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
-        lvc.pszText=L"Active";
-        lvc.fmt = LVCFMT_CENTER;
-        lvc.cx=20;
-        ListView_InsertColumn(m_hListView, 0, &lvc);
-
-        lvc.pszText=L"Name";
-        lvc.cx=120;
-        lvc.fmt = LVCFMT_LEFT;
-        ListView_InsertColumn(m_hListView, 1, &lvc);
-
-        lvc.pszText=L"Description";
-        lvc.cx=rcClient.right - rcClient.left - 160;
-        lvc.fmt = LVCFMT_LEFT;
-        ListView_InsertColumn(m_hListView, 2, &lvc);
-
-        int z=0;
-        Qatapult *pQ=(Qatapult*)lParam;
-        int i=0;
-        getPluginList(m_plugins);
-        for(int i=0;i<m_plugins.size();i++) {
-            LVITEM lvi;
-            memset(&lvi, 0, sizeof(lvi));
-            lvi.pszText=(LPWSTR)L"";
-            lvi.mask=LVFIF_TEXT;
-            lvi.iItem=i;
-            int iitem=ListView_InsertItem(m_hListView, &lvi);
-            ListView_SetItemText(m_hListView, iitem, 1, (LPWSTR)m_plugins[i].name.GetString());
-
-            ListView_SetItemText(m_hListView, iitem, 2, (LPWSTR)m_plugins[i].desc.GetString());
-
-            bool bChecked=pQ->isSourceEnabled(UTF16toUTF8(m_plugins[i].key));
-            ListView_SetCheckState(m_hListView, iitem, bChecked);
-        }
-
-        //hcbox=CreateWindow(L"BUTTON", (*it)->m_name, WS_CHILD|WS_VISIBLE|BS_AUTOCHECKBOX, 0, i, 300, 25, hWnd, 0, 0, 0);
-        //HGDIOBJ hfDefault=GetStockObject(DEFAULT_GUI_FONT);
-		//SendMessage(hcbox, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));*/
-        return TRUE;    // let the system set the focus
-    }
-    LRESULT OnDestroy(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-    {
-        m_plugins.clear();
-        m_hListView=0;
-        return TRUE;
-    }
-    LRESULT OnSaveSettings(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-    {
-        for(int i=0;i<m_plugins.size();i++) {
-            SetSettingsInt(L"sources/"+m_plugins[i].key, L"enabled", !!ListView_GetCheckState(m_hListView,i));
-        }
-        return TRUE;
-    }
-};
 
 int objects=0;
 Qatapult::Qatapult():m_input(this), m_invalidatepending(false) {
@@ -672,32 +207,6 @@ bool Qatapult::isSourceByDefault(const char *name) {
     if(n.empty()) return true;
     return CStringA(n.child_value())=="1";
 }
-
-template<typename T>
-std::vector<T> Array(T &t0) {
-    std::vector<T> v;
-    v.push_back(t0);
-    return v;
-}
-
-template<typename T>
-std::vector<T> Array(T &t0,T &t1) {
-    std::vector<T> v;
-    v.push_back(t0);
-    v.push_back(t1);
-    return v;
-}
-
-template<typename T>
-std::vector<T> Array(T &t0,T &t1, T &t2) {
-    std::vector<T> v;
-    v.push_back(t0);
-    v.push_back(t1);
-    v.push_back(t1);
-    return v;
-}
-
-#include <atlrx.h>
 
 void Qatapult::init() {
     //CString tmp1=getShortcutPath(L"C:\\Users\\emmanuel\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Qatapult.exe - Raccourci.lnk");
@@ -907,10 +416,7 @@ void Qatapult::init() {
 
     m_queries.push_back(L"");
     
-    onQueryChange(L"");
-    
-    // create dialogs
-    createSettingsDlg();
+    onQueryChange(L"");    
 
     HINSTANCE hinst=GetModuleHandle(NULL);
     HICON hicon=LoadIcon(hinst,MAKEINTRESOURCE(IDR_MAINFRAME));
@@ -931,365 +437,6 @@ void Qatapult::init() {
     //PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
     //PostQuitMessage(0);
 }
-
-// edit shortcut, type any key combination, use that combination
-class ShortcutDlg : public CDialogImpl<ShortcutDlg>
-{
-public:
-    enum { IDD = IDD_EMPTY };
- 
-    BEGIN_MSG_MAP(ShortcutDlg)
-        MESSAGE_HANDLER(WM_DESTROY, OnDestroy);
-        MESSAGE_HANDLER(WM_GETDLGCODE, OnGetDlgCode)
-        MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-        MESSAGE_HANDLER(WM_NOTIFY, OnNotify)
-        COMMAND_HANDLER(IDCANCEL,BN_CLICKED, OnCancel)
-        COMMAND_HANDLER(IDOK,BN_CLICKED, OnOK)
-        COMMAND_HANDLER(IDC_CHANGE,BN_CLICKED, OnClickChange)
-        NOTIFY_HANDLER(0, NM_KILLFOCUS, OnKillFocus)
-    END_MSG_MAP()
-
-    int  icount;
-    CListViewCtrl listview;
-    CStatic       msg;
-    CEdit         edit;
-    CButton       change;
-    int           currentitem;
-    HWND hListView;
-
-    LRESULT OnDestroy(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-    {
-        listview.DestroyWindow();
-        msg.DestroyWindow();
-        edit.DestroyWindow();
-        change.DestroyWindow();
-
-        return S_OK;
-    }
-    LRESULT OnOK(WPARAM wParam1, WPARAM wParam2, HWND lParam, BOOL& bHandled)
-    {
-        return S_OK;
-    } 
-    LRESULT OnCancel(WPARAM wParam1, WPARAM wParam2, HWND lParam, BOOL& bHandled)
-    {
-        return S_OK;
-    }
-    LRESULT OnKillFocus(int wParam, LPNMHDR lParam, BOOL &bHandled)
-    {
-        return S_OK;
-    }
-    LRESULT OnClickChange(WPARAM wParam1, WPARAM wParam2, HWND lParam, BOOL& bHandled)
-    {        
-        hotkeys[currentitem].vk=lastEditHotkey;
-        hotkeys[currentitem].mod=lastEditHotkeyModifier;
-
-        SetSettingsInt(CString(L"hotKeys/")+hotkeys[currentitem].name, L"vk", hotkeys[currentitem].vk);
-        SetSettingsInt(CString(L"hotKeys/")+hotkeys[currentitem].name, L"mod", hotkeys[currentitem].mod);
-        
-        CString hotkey=HotKeyToString(hotkeys[currentitem].mod, hotkeys[currentitem].vk);
-        ListView_SetItemText(hListView, currentitem, 0, (LPWSTR)hotkey.GetString());
-     
-        if(currentitem==HK_SHOW) {
-            UnregisterHotKey(g_pUI->getHWND(), 1);
-            RegisterHotKey(g_pUI->getHWND(), 1, hotkeys[HK_SHOW].mod, hotkeys[HK_SHOW].vk);  
-        }
-
-        return S_OK;
-    }
-    void addItem(const CString &hotkey, const CString &desc) {
-        LVITEM lvi;
-        memset(&lvi, 0, sizeof(lvi));
-        lvi.pszText=(LPWSTR)hotkey.GetString();
-        lvi.mask=LVFIF_TEXT;
-        lvi.iItem=10000;
-        int item=ListView_InsertItem(hListView, &lvi);
-        ListView_SetItemText(hListView, item, 1, (LPWSTR)desc.GetString());
-    }
-    LRESULT OnGetDlgCode(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-    {
-        if (uMsg == WM_GETDLGCODE) {
-		    bHandled=TRUE;
-            return DLGC_WANTALLKEYS;
-        }
-        return S_OK;
-    }
-
-    LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-    { 
-        RECT rcClient;                       // The parent window's client area.
-        GetClientRect(&rcClient);
-
-        HGDIOBJ hfDefault=GetStockObject(DEFAULT_GUI_FONT);
-
-        int y=0;
-        CRect rmsg(rcClient); rmsg.bottom=20;
-        msg.Create(m_hWnd, rmsg, L"Here is the list of available shortcuts. You can also change them here if something is not to your taste.", WS_CHILD|WS_VISIBLE);
-        msg.SendMessage(WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
-
-        y+=20;
-        edit.Create(m_hWnd, CRect(0,y,100,y+20), L"", WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN|WS_CLIPSIBLINGS|WS_DISABLED, WS_EX_CLIENTEDGE);
-        OldHotKeyEditProc=SubclassWindowX(edit.m_hWnd, HotKeyEditProc);                
-		edit.SendMessage(WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
-        
-        change.Create(m_hWnd, CRect(110,y,200,y+20), L"Change", WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN|WS_CLIPSIBLINGS|WS_DISABLED,0,IDC_CHANGE);
-        change.SendMessage(WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
-
-        icount=0;
-
-        CRect r;
-        INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
-        icex.dwICC = ICC_LISTVIEW_CLASSES;
-        InitCommonControlsEx(&icex);
-
-        rcClient.top+=50;
-        listview.Create(m_hWnd, rcClient, L"", WS_CHILD | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | /*LVS_EDITLABELS |*/ WS_VISIBLE | WS_BORDER | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
-        hListView=listview.m_hWnd;
-        ListView_SetExtendedListViewStyle(listview.m_hWnd,LVS_EX_FULLROWSELECT);
-
-        ::GetClientRect(hListView, &r);
-
-        LVCOLUMN lvc;
-        lvc.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
-        lvc.pszText=L"Hotkey";
-        lvc.cx=100;
-        ListView_InsertColumn(hListView, 0, &lvc);
-
-        lvc.pszText=L"Description";
-        lvc.cx=r.Width()-100;
-        lvc.fmt = LVCFMT_LEFT;
-        ListView_InsertColumn(hListView, 1, &lvc);
-        
-        // must look like this visually
-        for(int i=0;i<HK_LAST;i++) {
-            addItem(HotKeyToString(hotkeys[i].mod, hotkeys[i].vk), hotkeys[i].desc);
-        }
-
-        return S_OK;
-    }
-    LRESULT OnNotify(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-    {
-        if(((NMHDR*)lParam)->idFrom == 0 && ((NMHDR*)lParam)->code == LVN_ITEMCHANGED)
-        {
-            LPNMLISTVIEW pnmv = (LPNMLISTVIEW) lParam;
-
-            if((pnmv->uChanged & LVIF_STATE) && (pnmv->uNewState & LVIS_SELECTED) != (pnmv->uOldState & LVIS_SELECTED))
-            {
-                if (pnmv->uNewState & LVIS_SELECTED) {
-
-                    lastEditHotkey=hotkeys[pnmv->iItem].vk;
-                    lastEditHotkeyModifier=hotkeys[pnmv->iItem].mod;
-
-                    CString hotkey;
-                    ListView_GetItemText(listview.m_hWnd, pnmv->iItem, 0, hotkey.GetBufferSetLength(256), 256);
-                    edit.SetWindowText(hotkey);
-                    edit.EnableWindow(TRUE);
-                    change.EnableWindow(TRUE);
-
-                    currentitem=pnmv->iItem;
-                    //PRINT("Item number %d has been selected\n", pnmv->iItem);
-                }
-            }
-        }               
-        /*static int i=0; i++;
-        CString fmt; fmt.Format(L"%d : %d\n",i,((NMHDR*)lParam)->code);
-        OutputDebugString(fmt);
-
-        if(((NMHDR*)lParam)->code==NM_CLICK && ((NMHDR*)lParam)->idFrom == 0) {
-            NMITEMACTIVATE *lpia=(NMITEMACTIVATE*)lParam;          
-
-        } else if(((NMHDR*)lParam)->code==NM_KILLFOCUS && ((NMHDR*)lParam)->idFrom == 0) {                    
-            //OutputDebugString(L"KILLFOCUS\n");
-            return S_OK;
-        } else if(((NMHDR*)lParam)->code==NM_SETFOCUS && ((NMHDR*)lParam)->idFrom == 0) {                    
-            //OutputDebugString(L"SETFOCUS\n");
-            return S_OK;
-        } else if(((NMHDR*)lParam)->code==LVN_BEGINLABELEDIT) {            
-            lastEditHotkeyModifier=-1;
-            lastEditHotkey=-1;
-            HWND hEdit=ListView_GetEditControl(hListView);
-            //::SetWindowLong(m_hWnd, GWL_STYLE, ::GetWindowLong(m_hWnd, GWL_STYLE) | ES_MULTILINE | ES_WANTRETURN);
-            WNDPROC OldHotKeyEditProc=SubclassWindowX(hEdit, HotKeyEditProc);
-        } else if(((NMHDR*)lParam)->code==LVN_ENDLABELEDIT) {            
-            switch( ((NMLVDISPINFO*)lParam)->item.iItem ) {
-                case 0:  hotkeycode       = lastEditHotkey; hotkeymodifiers   = lastEditHotkeyModifier; break;
-                case 1:  validatevk       = lastEditHotkey; validatemod       = lastEditHotkeyModifier; break;
-                case 2:  appendvk         = lastEditHotkey; appendmod         = lastEditHotkeyModifier; break;
-                case 3:  escapevk         = lastEditHotkey; escapemod         = lastEditHotkeyModifier; break;
-                case 4:  prevpanevk       = lastEditHotkey; prevpanevk        = lastEditHotkeyModifier; break;
-                case 5:  exitsourcevk     = lastEditHotkey; exitsourcemod     = lastEditHotkeyModifier; break;
-                case 6:  expandvk         = lastEditHotkey; expandmod         = lastEditHotkeyModifier; break;
-                case 7:  nextresultvk     = lastEditHotkey; nextresultmod     = lastEditHotkeyModifier; break;
-                case 8:  prevresultvk     = lastEditHotkey; prevresultmod     = lastEditHotkeyModifier; break;
-                case 9:  nextpageresultvk = lastEditHotkey; nextpageresultmod = lastEditHotkeyModifier; break;
-                case 10: prevpageresultvk = lastEditHotkey; prevpageresultmod = lastEditHotkeyModifier; break;
-                case 11: toggleeditmodevk = lastEditHotkey; toggleeditmodemod = lastEditHotkeyModifier; break;
-            }
-            //CString fmt;
-            //fmt.Format(L"LVN_ENDLABELEDIT %s\n", ((NMLVDISPINFO*)lParam)->item.pszText);
-            //OutputDebugString(fmt);
-        } else if(((NMHDR*)lParam)->code==NM_RETURN) {
-            return S_FALSE;
-        }*/
-        return S_OK;
-    }
-};
-
-struct Record {
-    void save() {
-    }
-    //std::vector<CString>       columns;
-    std::map<CString, CString> values;
-};
-
-struct Table {
-    Table(const CString &name) {
-        m_name=name;
-        int rc = sqlite3_open("databases\\"+CStringA(name)+".db", &db);
-        
-        /*char *zErrMsg = 0;
-        sqlite3_exec(db, "CREATE TABLE "+CStringA(name)+"(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, verb TEXT, bonus INTEGER, mark INTEGER)", 0, 0, &zErrMsg);
-        sqlite3_free(zErrMsg);
-
-        rc = sqlite3_prepare_v2(db, "SELECT * FROM "+CStringA(name)+";", -1, &queryall, &unused);*/
-    }
-    int query(std::vector<Record> &records) {
-        int rc = sqlite3_prepare_v2(db,"SELECT * FROM "+CStringA(m_name)+";",-1, &queryall, &unused);
-        int i=0;
-        while((rc=sqlite3_step(queryall))==SQLITE_ROW) {
-
-            int columns=sqlite3_column_count(queryall);
-
-            records.push_back(Record());
-            for(int j=0;j<columns;j++) {
-                int                  type  = sqlite3_column_type(queryall,j);
-                if(type==SQLITE_TEXT) {
-                    const char          *name  = sqlite3_column_name(queryall,j);
-                    const unsigned char *value = sqlite3_column_text(queryall,j);
-                    records.back().values[UTF8toUTF16(name)] = UTF8toUTF16(value);
-                }
-            }
-
-            i++;
-        }
-
-        const char *errmsg=sqlite3_errmsg(db) ;
-        sqlite3_finalize(queryall);
-        return i;
-    }
-
-    CString       m_name;
-    sqlite3_stmt *queryall;
-    const char   *unused;
-    int           rc;
-    sqlite3      *db;
-};
-
-CString capitalize(const CString &s) {
-    CString tmp=s.Left(1).MakeUpper() + s.Mid(1);
-    return tmp;
-}
-
-class WebsiteSearchDlg : public CDialogImpl<ShortcutDlg>
-{
-public:
-    enum { IDD = IDD_EMPTY };
- 
-    BEGIN_MSG_MAP(WebsiteSearchDlg)
-        MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-        MESSAGE_HANDLER(WM_NOTIFY, OnNotify)
-    END_MSG_MAP()
-
-    HWND hListView;
-
-    WebsiteSearchDlg() {
-    }
-
-    void addItem(Record &r) {
-        LVITEM lvi;
-        memset(&lvi, 0, sizeof(lvi));
-        lvi.pszText=L"";//(LPWSTR)r.values[L"key"].GetString();
-        lvi.mask=LVFIF_TEXT;
-        lvi.iItem=10000;
-        int item=ListView_InsertItem(hListView, &lvi);
-
-        int i=0;
-        for(std::map<CString, CString>::iterator it=r.values.begin(); it!=r.values.end(); it++, i++) {            
-            ListView_SetItemText(hListView, item, i, (LPWSTR)it->second.GetString());
-        }
-            //ListView_SetItemText(hListView, item, 1, (LPWSTR)href.GetString());
-        //ListView_SetItemText(hListView, item, 2, (LPWSTR)query.GetString());
-    }
-
-    LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-    { 
-        RECT rcClient;                       // The parent window's client area.
-        GetClientRect(&rcClient);
-
-        CRect r;
-        INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
-        icex.dwICC = ICC_LISTVIEW_CLASSES;
-        InitCommonControlsEx(&icex);
-
-        // Create the list-view window in report view with label editing enabled.
-        hListView = ::CreateWindow(WC_LISTVIEW, 
-                                        L"",
-                                        WS_CHILD | LVS_REPORT | LVS_EDITLABELS | WS_VISIBLE | WS_BORDER,
-                                        rcClient.left, rcClient.top,
-                                        rcClient.right - rcClient.left,
-                                        rcClient.bottom - rcClient.top,
-                                        m_hWnd,
-                                        0,
-                                        0,
-                                        NULL); 
-
-
-
-        ::GetClientRect(hListView, &r);
-        /*
-        LVCOLUMN lvc;
-        lvc.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
-        lvc.pszText=L"Icon name";
-        lvc.cx=100;
-        ListView_InsertColumn(hListView, 0, &lvc);
-
-        lvc.pszText=L"Url";
-        lvc.cx=100;
-        lvc.fmt = LVCFMT_LEFT;
-        ListView_InsertColumn(hListView, 1, &lvc);
-
-        lvc.pszText=L"Query";
-        lvc.cx=r.Width()-200;
-        lvc.fmt = LVCFMT_LEFT;
-        ListView_InsertColumn(hListView, 2, &lvc);
-        */
-        Table table("websites");
-        std::vector<Record> records;
-        table.query(records);
-
-        int i=0;
-        Record &rec=records.front();
-        for(std::map<CString,CString>::iterator col=records.front().values.begin(); col!=records.front().values.end(); col++, i++) {
-            LVCOLUMN lvc;
-            lvc.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
-            lvc.fmt = LVCFMT_LEFT;
-            CString str = capitalize(col->first);
-            lvc.pszText=(LPWSTR)str.GetString();
-            lvc.cx=100;
-            ListView_InsertColumn(hListView, i, &lvc);
-        }
-
-        for(std::vector<Record>::iterator it=records.begin(); it!=records.end(); it++) {
-            addItem(*it);
-        }
-
-        return S_OK;
-    }
-    LRESULT OnNotify(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-    {
-        return S_OK;
-    }
-};
-
 
 PluginsDlg       pluginsdlg;
 SearchFoldersDlg searchfolderdlg;
@@ -1513,6 +660,11 @@ void Qatapult::invalidate() {
     }
 }
 
+void Qatapult::destroySettingsDlg() {
+    DestroyWindow(m_hwndsettings);
+    //DestroyWindow();
+}
+
 extern BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 void Qatapult::createSettingsDlg() {
     m_hwndsettings=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_SETTINGS), 0, (DLGPROC)SettingsDlgProc);
@@ -1535,8 +687,8 @@ void Qatapult::createSettingsDlg() {
     shortcutdlg.SetWindowPos(0, 160, 11, 0, 0, SWP_NOSIZE);
     shortcutdlg.ShowWindow(SW_SHOW);
 
-    //websiteSearchDlg.Create(m_hwndsettings);
-    //websiteSearchDlg.SetWindowPos(0, 160, 11, 0, 0, SWP_NOSIZE);
+    websiteSearchDlg.Create(m_hwndsettings);
+    websiteSearchDlg.SetWindowPos(0, 160, 11, 0, 0, SWP_NOSIZE);
 
     HWND hwndG=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GENERAL), m_hwndsettings, (DLGPROC)GeneralDlgProc);
     SetWindowPos(hwndG, 0, 160, 0, 0, 0, SWP_NOSIZE);
@@ -1580,9 +732,9 @@ void Qatapult::createSettingsDlg() {
     tviis.item.lParam=(LPARAM)hwndGmail;
     HTREEITEM htreeGmail=TreeView_InsertItem(hTreeView, &tviis);
 
-    //tviis.item.pszText = L"Website search";
-    //tviis.item.lParam=(LPARAM)websiteSearchDlg.m_hWnd;
-    //HTREEITEM htreeSearch=TreeView_InsertItem(hTreeView, &tviis);
+    tviis.item.pszText = L"Website search";
+    tviis.item.lParam=(LPARAM)websiteSearchDlg.m_hWnd;
+    HTREEITEM htreeSearch=TreeView_InsertItem(hTreeView, &tviis);
 
     BOOL b=TreeView_SelectItem(hTreeView, htreeG);
 }
@@ -1646,7 +798,7 @@ void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleA
             else {
                 //LONGLONG t0;
 	            //QueryPerformanceCounter((LARGE_INTEGER *) &t0);
-
+                CString sourcename=(*it)->type;
                 (*it)->collect(q, results, def, activesources);
 
                 //LONGLONG t1;
@@ -1768,12 +920,6 @@ void Qatapult::setResult(uint pane, SourceResult &r) {
     copySourceResult(m_args[pane],r);
 }
 
-void Qatapult::setRetArg(uint pane, SourceResult &r) {
-    ensureArgsCount(m_retArgs,pane+1,EA_NO_REMOVE_EXTRA);
-    if(m_retArgs[pane].m_results.size()==0) m_retArgs[pane].m_results.push_back(SourceResult());
-    copySourceResult(m_retArgs[pane],r);
-}
-
 CString Qatapult::getResString(int i, const TCHAR *name) {
     if(i>=m_results.size())
         return L"";
@@ -1801,8 +947,6 @@ Object *Qatapult::getResObject(int i) {
 
     return m_results[i].object().get();
 }
-
-
 
 void Qatapult::onSelChange(SourceResult *r) {
     setResult(m_pane,*r);
@@ -2037,10 +1181,7 @@ void Qatapult::exec() {
             // found one rule
             hide();
 
-            m_retArgs.clear();
             if(m_rules[i]->execute(m_args)) {
-
-                //saveCommand(new CommandObject(m_args, m_inputsource));
 
                 for(uint a=0;a<m_args.size(); a++) {
                     for(uint r=0;r<m_args[a].m_results.size(); r++) {
@@ -2050,14 +1191,6 @@ void Qatapult::exec() {
                 }
                     
                 clearPanes();
-
-                // if there is ret args copy them and show interface
-                if(m_retArgs.size() != 0) {
-                    m_args=m_retArgs;
-                    m_pane=m_args.size();                        
-                    invalidate();
-                    show();
-                }
                 return;
             }
         }
@@ -2093,7 +1226,11 @@ void Qatapult::saveCommand(CommandObject *c) {
 
     m_history.saveCommand(cmd.get());
 }*/
-LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {   
+
+BOOL Qatapult::isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    if(hwnd!=m_hwnd)
+        return TRUE;
+
     bool bShift=(GetKeyState(VK_SHIFT)&0xa000)!=0;
     bool bCtrl=(GetKeyState(VK_CONTROL)&0xa000)!=0;
     bool bAlt=(GetKeyState(VK_MENU)&0xa000)!=0;
@@ -2114,72 +1251,8 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         if(ret.vt==VT_BOOL)
             return ret.boolVal;
     }
-    
-    if(msg == WM_COPYDATA)
-    {
-        COPYDATASTRUCT *cpd=(COPYDATASTRUCT*)lParam;
-        CString str;
-        str.SetString((WCHAR*)cpd->lpData, cpd->cbData/sizeof(WCHAR));
 
-        CComVariant ret;
-        m_commandsHost.Eval(str, &ret);
-        return S_OK;
-    }
-    else if(msg == WM_CURRENTVERSION)
-    {
-        CStringA *currentversionstr=(CStringA*)wParam;
-        __int64 remoteversion=_ttoi64(CString(*currentversionstr));
-        __int64 currentversion=_ttoi64(getFileContent(L"currentversion"));
-        if(CString(*currentversionstr)!=L"" && currentversion<remoteversion ) {
-            if( MessageBox(0, L"A new version of Qatapult is available. Do you want to get it ?", L"Qatapult", MB_YESNO) == IDYES)
-                ShellExecute(0, 0, L"http://emmanuelcaradec.com/qatapult",0,0,SW_SHOW);
-        }
-        delete currentversionstr;
-    }
-    else if(msg == WM_PUSHRESULT)
-    {
-        Results *p=(Results*)wParam;
-        if(m_request==p->request) {
-            // remove all results and add new ones
-            clearResults(m_results);
-            for(int i=0;i<p->results.size();i++) {
-                m_results.push_back(p->results[i]);
-            }
-            std::sort(m_results.begin(), m_results.end(), resultSourceCmp);
-
-            // select the first result if any
-            if(lParam==0)
-                onSelChange(m_results.size()>0?&m_results.front():&SourceResult());
-
-            invalidate();
-        }
-        delete p;
-        return TRUE;
-    }
-    else if(msg == WM_PUSHRESULT2)
-    {
-        Results *p=(Results*)wParam;
-        if(m_request==p->request) {
-            // remove all args beyond next pane
-            ensureArgsCount(m_args,m_pane+1);
-
-            // remove all results and add new ones
-            clearResults(m_nextresults);
-            for(int i=0;i<p->results.size();i++) {
-                m_nextresults.push_back(p->results[i]);
-            }
-            std::sort(m_nextresults.begin(), m_nextresults.end(), resultSourceCmp);
-
-            // initialize the second result, let empty if nothing match to prevent tabbing to it
-            if(m_nextresults.size()>0)
-                setResult(m_pane+1,m_nextresults.front());
-
-            invalidate();
-        }
-        delete p;
-        return TRUE;
-    }
-    else if(msg == WM_KEYDOWN && hotkeys[HK_STACK].match(mod,wParam) )
+    if(msg == WM_KEYDOWN && hotkeys[HK_STACK].match(mod,wParam) )
     {
         //
         // stack an object on the current rule argument, if there is at least one multi rule matching this type
@@ -2220,6 +1293,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         CommandObject *c=new CommandObject(m_args, m_inputsource);
         clearPanes();
         onSelChange(&SourceResult(c));
+        return FALSE;
     }
     else if(msg == WM_KEYDOWN && hotkeys[HK_EXECUTE].match(mod,wParam))
     {
@@ -2278,7 +1352,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
             m_input.setText(m_queries[m_pane]);
         }
-        onQueryChange(m_queries[m_pane],false);
+        onQueryChange(m_queries[m_pane],true);
 
         return FALSE;
     }
@@ -2299,54 +1373,6 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         
         onQueryChange(m_queries[m_pane],false);
 
-        return FALSE;
-    }
-    // input & edit mode
-    else if(msg == WM_KEYDOWN && m_editmode==1 && wParam == VK_LEFT)
-    {
-        m_input.moveCaretLeft(bCtrl);
-        invalidate();
-        return FALSE;
-    }
-    else if(msg == WM_KEYDOWN && m_editmode==1 && wParam == VK_RIGHT)
-    {
-        m_input.moveCaretRight(bCtrl);
-        invalidate();
-        return FALSE;
-    }
-    else if(msg == WM_KEYDOWN && wParam == VK_BACK)
-    {
-        m_input.back(bCtrl);
-        onQueryChange(m_input.m_text);
-        invalidate();
-        return FALSE;
-    }        
-    else if(msg == WM_KEYDOWN && wParam == VK_DELETE && m_editmode==1)
-    {
-        bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
-        m_input.del(bCtrl);
-        onQueryChange(m_input.m_text);
-        invalidate();
-        return FALSE;
-    }
-    else if(msg == WM_KEYDOWN && wParam == VK_HOME && m_editmode==1)
-    {
-        m_input.home();
-        invalidate();
-        return FALSE;
-    }
-    else if(msg == WM_KEYDOWN && wParam == VK_END && m_editmode==1)
-    { 
-        m_input.end();
-        invalidate();
-        return FALSE;
-    }
-    else if(msg == WM_KEYDOWN && wParam == VK_INSERT)
-    {
-        m_editmode=m_editmode?0:1;
-        if(m_editmode==0)
-            m_input.m_caretpos=m_input.m_text.GetLength();
-        invalidate();
         return FALSE;
     }
     else if(msg==WM_KEYDOWN &&  hotkeys[HK_EDITMODE].match(mod,wParam) )
@@ -2435,36 +1461,147 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         invalidate();
         return FALSE;
     }
-    else if(msg == WM_KEYDOWN)
-    {
-        if(wParam>VK_F12 && wParam<=VK_LAUNCH_APP2) {
-            ;
-        } else if(wParam==22) { // ctrl+v
-            OpenClipboard(0);
-            HANDLE htext=GetClipboardData(CF_UNICODETEXT);
-            if(htext) {
-                LPVOID lpvoid=GlobalLock(htext);
-                CString clip((WCHAR*)lpvoid);
-                GlobalUnlock(lpvoid);                    
-                CloseClipboard();
+    else if(msg == WM_KEYDOWN && hotkeys[HK_PASTE].match(mod,wParam) ) { // ctrl+v
+        OpenClipboard(0);
+        HANDLE htext=GetClipboardData(CF_UNICODETEXT);
+        if(htext) {
+            LPVOID lpvoid=GlobalLock(htext);
+            CString clip((WCHAR*)lpvoid);
+            GlobalUnlock(lpvoid);                    
+            CloseClipboard();
 
-                m_input.appendAtCaret(clip);
-            } else {
-                HANDLE htext=GetClipboardData(CF_TEXT);
-                LPVOID lpvoid=GlobalLock(htext);
-                CString clip((CHAR*)lpvoid);
-                GlobalUnlock(lpvoid);
-                CloseClipboard();
+            m_input.appendAtCaret(clip);
+        } else {
+            HANDLE htext=GetClipboardData(CF_TEXT);
+            LPVOID lpvoid=GlobalLock(htext);
+            CString clip((CHAR*)lpvoid);
+            GlobalUnlock(lpvoid);
+            CloseClipboard();
 
-                m_input.appendAtCaret(clip);
-            }
-        } else if(wParam<VK_SPACE) {
-            ;
+            m_input.appendAtCaret(clip);
         }
+        onQueryChange(m_input.m_text);
+        invalidate();
+        return FALSE;
+    }
+    // input & edit mode
+    else if(msg == WM_KEYDOWN && m_editmode==1 && wParam == VK_LEFT)
+    {
+        m_input.moveCaretLeft(bCtrl);
+        invalidate();
+        return FALSE;
+    }
+    else if(msg == WM_KEYDOWN && m_editmode==1 && wParam == VK_RIGHT)
+    {
+        m_input.moveCaretRight(bCtrl);
+        invalidate();
+        return FALSE;
+    }
+    else if(msg == WM_KEYDOWN && wParam == VK_BACK)
+    {
+        m_input.back(bCtrl);
+        onQueryChange(m_input.m_text);
+        invalidate();
+        return FALSE;
+    }        
+    else if(msg == WM_KEYDOWN && wParam == VK_DELETE && m_editmode==1)
+    {
+        bool bCtrl=!!(GetKeyState(VK_CONTROL)&0x8000);
+        m_input.del(bCtrl);
+        onQueryChange(m_input.m_text);
+        invalidate();
+        return FALSE;
+    }
+    else if(msg == WM_KEYDOWN && wParam == VK_HOME && m_editmode==1)
+    {
+        m_input.home();
+        invalidate();
+        return FALSE;
+    }
+    else if(msg == WM_KEYDOWN && wParam == VK_END && m_editmode==1)
+    { 
+        m_input.end();
+        invalidate();
+        return FALSE;
+    }
+    else if(msg == WM_KEYDOWN && wParam == VK_INSERT)
+    {
+        m_editmode=m_editmode?0:1;
+        if(m_editmode==0)
+            m_input.m_caretpos=m_input.m_text.GetLength();
+        invalidate();
+        return FALSE;
+    }
+    
 
-        // all keys not assigned to a shortcut must be send to translatemessage
+    return TRUE;
+}
+
+LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {   
+    if(msg == WM_COPYDATA)
+    {
+        COPYDATASTRUCT *cpd=(COPYDATASTRUCT*)lParam;
+        CString str;
+        str.SetString((WCHAR*)cpd->lpData, cpd->cbData/sizeof(WCHAR));
+
+        CComVariant ret;
+        m_commandsHost.Eval(str, &ret);
+        return S_OK;
+    }
+    else if(msg == WM_CURRENTVERSION)
+    {
+        CStringA *currentversionstr=(CStringA*)wParam;
+        __int64 remoteversion=_ttoi64(CString(*currentversionstr));
+        __int64 currentversion=_ttoi64(getFileContent(L"currentversion"));
+        if(CString(*currentversionstr)!=L"" && currentversion<remoteversion ) {
+            if( MessageBox(0, L"A new version of Qatapult is available. Do you want to get it ?", L"Qatapult", MB_YESNO) == IDYES)
+                ShellExecute(0, 0, L"http://emmanuelcaradec.com/qatapult",0,0,SW_SHOW);
+        }
+        delete currentversionstr;
+    }
+    else if(msg == WM_PUSHRESULT)
+    {
+        Results *p=(Results*)wParam;
+        if(m_request==p->request) {
+            // remove all results and add new ones
+            clearResults(m_results);
+            for(int i=0;i<p->results.size();i++) {
+                m_results.push_back(p->results[i]);
+            }
+            std::sort(m_results.begin(), m_results.end(), resultSourceCmp);
+
+            // select the first result if any
+            if(lParam==0)
+                onSelChange(m_results.size()>0?&m_results.front():&SourceResult());
+
+            invalidate();
+        }
+        delete p;
         return TRUE;
     }
+    else if(msg == WM_PUSHRESULT2)
+    {
+        Results *p=(Results*)wParam;
+        if(m_request==p->request) {
+            // remove all args beyond next pane
+            ensureArgsCount(m_args,m_pane+1);
+
+            // remove all results and add new ones
+            clearResults(m_nextresults);
+            for(int i=0;i<p->results.size();i++) {
+                m_nextresults.push_back(p->results[i]);
+            }
+            std::sort(m_nextresults.begin(), m_nextresults.end(), resultSourceCmp);
+
+            // initialize the second result, let empty if nothing match to prevent tabbing to it
+            if(m_nextresults.size()>0)
+                setResult(m_pane+1,m_nextresults.front());
+
+            invalidate();
+        }
+        delete p;
+        return TRUE;
+    }    
     else if(msg == WM_CHAR)
     {
         if((wParam == L'/' || wParam == L'\\') && getSelectedItem() && getSelectedItem()->object() && getSelectedItem()->object()->type==L"FILE")
@@ -2513,7 +1650,11 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             show();
         } else if(wParam==ID_SYSTRAY_QUIT) {
             PostQuitMessage(0);
-        } else if(wParam==ID_SYSTRAY_OPTIONS) {    
+        } else if(wParam==ID_SYSTRAY_OPTIONS) {                            
+            destroySettingsDlg();
+            // create dialogs
+            createSettingsDlg();
+
             CenterWindow(m_hwndsettings);
             ShowWindow(m_hwndsettings,SW_SHOW);
             ShowWindow(m_hwnd, SW_HIDE);
@@ -2585,6 +1726,23 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     {
         // TODO : call the painter to signal focus lost
         invalidate();
+    }
+    else if(msg == WM_RUNRULE || msg == WM_SHOWRULE)
+    {
+        std::vector<RuleArg> *ruleargs=(std::vector<RuleArg>*)wParam;
+        clearPanes();
+        m_args=*ruleargs;
+        delete ruleargs;
+        
+        m_pane=m_args.size()-1;
+        m_queries.resize(m_args.size());        
+
+        if(msg == WM_RUNRULE)
+            exec();
+        else {
+            show();
+            onSelChange(&m_args[m_pane].m_results.front());
+        }
     }
 
     return ::DefWindowProc(hwnd, msg, wParam, lParam);

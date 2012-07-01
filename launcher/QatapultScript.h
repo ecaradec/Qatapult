@@ -105,23 +105,16 @@ struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript)
         (*pstr)[0]=0;
         return S_OK;
     }
-    STDMETHOD(setInput)(IDispatch *p) {
-        m_pUI->setRetArg(0, getResultFromIDispatch(L"",L"",p,m_pUI->m_inputsource));
-        return S_OK;
-    }
     STDMETHOD(run)(VARIANT args) {
-        select(args);
-        m_pUI->exec();
+        PostMessage(m_pUI->m_hwnd, WM_RUNRULE, (WPARAM)getRuleFromVariant(args), 0);
         return S_OK;
     }
     STDMETHOD(show)(VARIANT args) {
-        m_pUI->show();
-        select(args);
-        m_pUI->invalidate();
+        PostMessage(m_pUI->m_hwnd, WM_SHOWRULE, (WPARAM)getRuleFromVariant(args), 0);
         return S_OK;
     }
-    void select(VARIANT args) {
-        m_pUI->clearPanes();
+    std::vector<RuleArg> *getRuleFromVariant(VARIANT args) {
+        std::vector<RuleArg> *ruleargs=new std::vector<RuleArg>;
 
         CComPtr<IDispatch> e(args.pdispVal);
         CComVariant arg;
@@ -129,16 +122,14 @@ struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript)
         CString num; num.Format(L"%d", index);
         while( e.GetPropertyByName(num, &arg) == S_OK) {
             
-            m_pUI->m_args.push_back(RuleArg());
-            m_pUI->m_args.back().m_results.push_back(getResultFromIDispatch(L"", L"", arg.pdispVal, m_pUI->m_inputsource));
+            ruleargs->push_back(RuleArg());
+            ruleargs->back().m_results.push_back(getResultFromIDispatch(L"", L"", arg.pdispVal, m_pUI->m_inputsource));
 
             index++;
             num.Format(L"%d", index);
             arg.Clear();
-        }
-
-        m_pUI->m_pane=m_pUI->m_args.size()-1;
-        m_pUI->m_queries.resize(m_pUI->m_args.size());
+        }        
+        return ruleargs;
     }
     STDMETHOD(setSkinSize)(INT w, INT h) {
         m_pUI->m_buffer.Destroy();

@@ -143,6 +143,7 @@ struct FileSource : Source {
             r->rank()+=100;
 
         CString P(r->object()->getString(L"path"));
+
         P.TrimRight(L"\\");
         P=P.Mid(P.ReverseFind(L'\\')+1);        
         r->rank()=min(100,r->uses()*5) + r->bonus() + r->rank()+100*evalMatch(P,Q);

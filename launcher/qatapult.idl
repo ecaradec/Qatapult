@@ -32,7 +32,6 @@ interface IQatapultScript : IDispatch
     HRESULT getDynWrapper([out,retval] IDispatch **pp);
     HRESULT trace([in] BSTR str);
     HRESULT getBuffer([in] INT l, [out,retval] BSTR *pstr);
-    HRESULT setInput([in] IDispatch *p);
     HRESULT setSkinSize([in] INT w, [in] INT h);
     HRESULT run([in] VARIANT args);
     HRESULT show([in] VARIANT args);

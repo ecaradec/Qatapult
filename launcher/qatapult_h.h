@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0555 */
-/* at Mon Jun 04 09:26:35 2012
+/* at Sat Jun 30 20:35:29 2012
  */
 /* Compiler settings for qatapult.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 7.00.0555 
@@ -180,9 +180,6 @@ EXTERN_C const IID IID_IQatapultScript;
             /* [in] */ INT l,
             /* [retval][out] */ BSTR *pstr) = 0;
         
-        virtual HRESULT STDMETHODCALLTYPE setInput( 
-            /* [in] */ IDispatch *p) = 0;
-        
         virtual HRESULT STDMETHODCALLTYPE setSkinSize( 
             /* [in] */ INT w,
             /* [in] */ INT h) = 0;
@@ -338,10 +335,6 @@ EXTERN_C const IID IID_IQatapultScript;
             /* [in] */ INT l,
             /* [retval][out] */ BSTR *pstr);
         
-        HRESULT ( STDMETHODCALLTYPE *setInput )( 
-            IQatapultScript * This,
-            /* [in] */ IDispatch *p);
-        
         HRESULT ( STDMETHODCALLTYPE *setSkinSize )( 
             IQatapultScript * This,
             /* [in] */ INT w,
@@ -453,9 +446,6 @@ EXTERN_C const IID IID_IQatapultScript;
 
 #define IQatapultScript_getBuffer(This,l,pstr)	\
     ( (This)->lpVtbl -> getBuffer(This,l,pstr) ) 
-
-#define IQatapultScript_setInput(This,p)	\
-    ( (This)->lpVtbl -> setInput(This,p) ) 
 
 #define IQatapultScript_setSkinSize(This,w,h)	\
     ( (This)->lpVtbl -> setSkinSize(This,w,h) ) 

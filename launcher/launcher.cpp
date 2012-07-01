@@ -48,15 +48,25 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     OleInitialize(0);
     //CoInitialize(0);
 
+    INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
+    icex.dwICC = ICC_LISTVIEW_CLASSES;
+    InitCommonControlsEx(&icex);
+
     ULONG_PTR gdiplusToken;
     Gdiplus::GdiplusStartupInput gdiplusStartupInput;
     Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
     Qatapult gui; 
 
+    //CMessageLoop ml;
+    //ml.Run();
+
     MSG msg;
     while(GetMessage(&msg, NULL, 0, 0) > 0)
     {
+        //if(IsDialogMessage(msg.hwnd,&msg))
+        //    continue;
+
         int j=0;
         if(msg.message == WM_KEYDOWN ) {
             j=0;
@@ -64,15 +74,16 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             //OutputDebugString(tmp);
         }
 
-        
-        LRESULT lres=DispatchMessage(&msg);        
-        if(msg.message == WM_KEYDOWN && lres!=FALSE ) {
+        if(gui.isAccelerator(msg.hwnd, msg.message,msg.wParam,msg.lParam)) {
             BOOL b=TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
 
-        //BOOL b=TranslateMessage(&msg);
-        //DispatchMessage(&msg);
+        /*LRESULT lres=DispatchMessage(&msg);        
+        if(msg.message == WM_KEYDOWN && lres!=FALSE ) {
+            BOOL b=TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }*/
     }
     
     UnregisterClass(L"GUI",0);

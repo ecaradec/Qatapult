@@ -66,6 +66,8 @@ extern HWND g_foregroundWnd;
 #define WM_PUSHRESULT2 (WM_USER+8)
 #define WM_CURRENTVERSION (WM_USER+9)
 #define WM_SAVESETTINGS (WM_USER+10)
+#define WM_SHOWRULE (WM_USER+11)
+#define WM_RUNRULE (WM_USER+12)    
 
 struct QatapultScript;
 struct PainterScript;
@@ -97,6 +99,7 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     HWND getHWND();
     void invalidateIndex() ;
     void invalidate();
+    void destroySettingsDlg();
     void createSettingsDlg();
     int  getActiveRules(int pane, std::vector<RuleArg> &args, std::vector<Rule*> &activerules);
     bool allowType(const CString &type);
@@ -110,7 +113,6 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     //void selectHistory(int historyindex);
     
     void onSelChange(SourceResult *r);
-    void setRetArg(uint pane, SourceResult &r);    
 
     // stack modification function
     void setResult(uint pane, SourceResult &r);
@@ -158,6 +160,8 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
         return ((Qatapult*)GetWindowLongPtr(hwnd, GWLP_USERDATA))->WndProc(hwnd,msg,wParam,lParam);
     }
 
+    BOOL isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
     // drag&drop
 	STDMETHOD_(ULONG, AddRef)() {
 		return 0;
@@ -197,7 +201,6 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     std::vector<Source*>       m_sources;
     std::vector<Rule*>         m_rules;
     std::vector<RuleArg>       m_args;     // validated results
-    std::vector<RuleArg>       m_retArgs;  // validated results
 
     //History                    m_history;
     //std::vector<std::shared_ptr<CommandObject> > m_commandhistory;
