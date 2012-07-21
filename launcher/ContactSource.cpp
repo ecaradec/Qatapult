@@ -165,19 +165,12 @@ void ContactSource::collect(const TCHAR *query, std::vector<SourceResult> &resul
     rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q), -1, SQLITE_STATIC);
     int i=0;
     while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
-        results.push_back(SourceResult(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),     // key
-                                        UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),    // display
-                                        UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),    // expand
-                                        this,                                               // source
-                                        0,                                                  // id
-                                        0,                                                  // data                                        
-                                        sqlite3_column_int(stmt,3)));                       // uses
-                                        
 
-        results.back().object().reset(new ContactObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
-                                                this,
-                                                UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
-                                                UTF8toUTF16((char*)sqlite3_column_text(stmt,2))));
+        results.push_back(SourceResult( new ContactObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+                                                          this,
+                                                          UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
+                                                          UTF8toUTF16((char*)sqlite3_column_text(stmt,2))) ) );
+        results.back().m_uses=sqlite3_column_int(stmt,3);
     }
 
     const char *errmsg=sqlite3_errmsg(db) ;

@@ -20,9 +20,14 @@ struct SourceResult {
     }
     SourceResult(Object *o) {
         clear();
-        m_expand=m_display=o->getString(L"text");
-        m_source=o->source;
+        m_display=o->getString(L"text");
+        if(m_display==L"")
+            m_display=o->getString(L"display");
+        m_expand=o->getString(L"expand");        
+        m_uses=o->ivalues[L"uses"];
         m_object.reset(o);
+
+        m_source=o->source;
     }
     SourceResult(Source *s_, Object *o_, const CString &d_, const CString &e_, int b_, int u_, int id_, void *data_) {
         clear();

@@ -150,7 +150,7 @@ struct Source {
             r->rank()+=100;
 
         CString T(r->object()->getString(L"text"));
-        r->rank()=min(100,r->uses()*5) + r->bonus() + r->rank()+100*evalMatch(T,q);
+        r->rank()=min(100.0f,r->uses()*5.0f) + r->bonus() + r->rank()+100.0f*evalMatch(T,q);
     }
     
     int                             def;

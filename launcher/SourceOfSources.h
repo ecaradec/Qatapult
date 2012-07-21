@@ -15,8 +15,7 @@ struct SourceOfSources : Source {
                 r.source()=this;
                 r.data()=*it;
                 results.push_back(r);
-                results.back().object().reset(new Object((*it)->m_name,type,this,(*it)->m_name));
-                
+                results.back().object().reset(new Object((*it)->m_name,type,this,(*it)->m_name));                
             }        
         }
     }

@@ -13,8 +13,6 @@
 #include "CommandRule.h"
 #include "Record.h"
 
-DB websites("websites","key INTEGER PRIMARY KEY AUTOINCREMENT, display TEXT, href TEXT, searchHref TEXT, icon TEXT, bonus INTEGER");
-
 UI *g_pUI; // very lazy way to give access to the ui to the ui window proc
 Qatapult *g_pQatapult;
 
@@ -107,36 +105,6 @@ BOOL CALLBACK ToggleSettingsEWProc(HWND hwnd, LPARAM lParam) {
 #include "SettingsDlg.h"
 #include "EmailDlg.h"
 
-CString capitalize(const CString &s) {
-    CString tmp=s.Left(1).MakeUpper() + s.Mid(1);
-    return tmp;
-}
-
-
-template<typename T>
-std::vector<T> Array(T &t0) {
-    std::vector<T> v;
-    v.push_back(t0);
-    return v;
-}
-
-template<typename T>
-std::vector<T> Array(T &t0,T &t1) {
-    std::vector<T> v;
-    v.push_back(t0);
-    v.push_back(t1);
-    return v;
-}
-
-template<typename T>
-std::vector<T> Array(T &t0,T &t1, T &t2) {
-    std::vector<T> v;
-    v.push_back(t0);
-    v.push_back(t1);
-    v.push_back(t2);
-    return v;
-}
-
 #include <atlrx.h>
 
 #include "PluginDlg.h"
@@ -198,6 +166,9 @@ Qatapult::Qatapult():m_input(this), m_invalidatepending(false) {
     RegSetKeyValue(hkey,L"shell",L"", REG_SZ, open, open.GetLength()*sizeof(WCHAR));
     RegSetKeyValue(hkey,L"shell\\open\\command",L"", REG_SZ, cmdline, cmdline.GetLength()*sizeof(WCHAR));
     RegCloseKey(hkey);
+
+    websites.upgrade();
+    networkshares.upgrade();
 
     init();    
 
@@ -700,8 +671,8 @@ void Qatapult::createSettingsDlg() {
     pluginsdlg.Create(m_hwndsettings);
     pluginsdlg.SetWindowPos(0, 160, 11, 0, 0, SWP_NOSIZE);
 
-    HWND hwndGmail=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GMAILCONTACTS), m_hwndsettings, (DLGPROC)DlgProc);
-    SetWindowPos(hwndGmail, 0, 160, 0, 0, 0, SWP_NOSIZE);
+    //HWND hwndGmail=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GMAILCONTACTS), m_hwndsettings, (DLGPROC)DlgProc);
+    //SetWindowPos(hwndGmail, 0, 160, 0, 0, 0, SWP_NOSIZE);
 
     //HWND hwndEmail=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_EMAIL), m_hwndsettings, (DLGPROC)DlgProc);
     //SetWindowPos(hwndEmail, 0, 160, 0, 0, 0, SWP_NOSIZE);
@@ -754,9 +725,9 @@ void Qatapult::createSettingsDlg() {
     tviis.item.lParam=(LPARAM)searchfolderdlg.m_hWnd;
     HTREEITEM htreeSF=TreeView_InsertItem(hTreeView, &tviis);
 
-    tviis.item.pszText = L"Gmail contacts";
-    tviis.item.lParam=(LPARAM)hwndGmail;
-    HTREEITEM htreeGmail=TreeView_InsertItem(hTreeView, &tviis);
+    //tviis.item.pszText = L"Gmail contacts";
+    //tviis.item.lParam=(LPARAM)hwndGmail;
+    //HTREEITEM htreeGmail=TreeView_InsertItem(hTreeView, &tviis);
 
     tviis.item.pszText = L"Website search";
     tviis.item.lParam=(LPARAM)websiteSearchDlg.m_hWnd;
@@ -840,11 +811,6 @@ void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleA
 
     time_t currentTime;
     time(&currentTime);
-
-    int matchingBonus;
-    int usageBonus;
-    int lastUseBonus;
-    int tdiff;
 
     uselev=0;
     CString Q(q); Q.MakeUpper();

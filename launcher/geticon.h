@@ -32,7 +32,7 @@ inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh, long flags) {
         // XP support
         if(pil==0)
             SHGetImageList(SHIL_LARGE, clsid, (void**)&pil); 
-    }
+    }    
     
     HICON hicon;
     HRESULT hr=pil->GetIcon(sh.iIcon, ILD_ASYNC|ILD_TRANSPARENT|ILD_PRESERVEALPHA, &hicon);
@@ -85,6 +85,8 @@ inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh, long flags) {
     g3.ReleaseHDC(hdc3);
 
     pil->Release();
+
+    DestroyIcon(hicon);
 
     return icon;
 }

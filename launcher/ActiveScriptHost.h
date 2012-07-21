@@ -292,8 +292,6 @@ struct ActiveScriptHost : IActiveScriptSite, IActiveScriptSiteDebug
         DWORD     ctx;
         ULONG     charPos;
         ULONG     lineNum;
-        ULONG     numChar;
-        ULONG     column;
         EXCEPINFO expi;
 
         // not a parse error, onscripterror is called despite pfCallOnScriptErrorWhenContinuing=FALSE in OnScriptErrorDebug

@@ -1,23 +1,31 @@
 #pragma once
 #include "Source.h"
 #include "Utility.h"
+#include "Record.h"
 
 BOOL WINAPI EnumerateFunc(LPNETRESOURCE lpnr, std::vector<CString> &lnks);
+
+struct NetworkShares : DB {
+    NetworkShares() : DB("networkshares",
+                 Array(std::make_pair("text",   TEXT),
+                       std::make_pair("expand", TEXT),
+                       std::make_pair("path",   TEXT),
+                       std::make_pair("verb",   TEXT),
+                       std::make_pair("bonus",  INTEGER),
+                       std::make_pair("mark",   INTEGER),
+                       std::make_pair("uses",   INTEGER)),
+                       1) {
+    }
+};
+extern NetworkShares networkshares;
 
 struct NetworkSource : Source {
     NetworkSource() : Source(L"FILE",L"Network (Catalog )") {
         m_icon=L"icons\\networklocal.png";
         m_ignoreemptyquery=true;
-        int rc = sqlite3_open("databases\\network.db", &db);
-        
-        char *zErrMsg = 0;
-        sqlite3_exec(db, "CREATE TABLE files(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, verb TEXT, bonus INTEGER, mark INTEGER)", 0, 0, &zErrMsg);
-        sqlite3_free(zErrMsg);
-
-        UpgradeTable(db,"files");
     }
     ~NetworkSource() {
-        sqlite3_close(db);
+        //sqlite3_close(db);
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
@@ -26,74 +34,42 @@ struct NetworkSource : Source {
         // could probably be done in subclass as well as the callback since sourceresult will not change 
         CString q(query);
 
-        sqlite3_stmt *stmt=0;
-        const char *unused=0;
-        int rc;
-
-        rc = sqlite3_prepare_v2(db,"SELECT key, display, expand, path, uses FROM files WHERE display LIKE ?;",-1, &stmt, &unused);
-        rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q), -1, SQLITE_STATIC);
-        int i=0;
-        while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
-            results.push_back(SourceResult(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),     // key
-                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),    // display
-                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),    // expand
-                                            this,                                               // source
-                                            0,                                                  // id
-                                            0,                                                  // data                                            
-                                            sqlite3_column_int(stmt,4)));                       // uses
-            
-            results.back().object().reset(new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
-                                                    this,
-                                                    UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
-                                                    UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
-                                                    UTF8toUTF16((char*)sqlite3_column_text(stmt,3))));
+        std::vector<Record> records;
+        networkshares.findBy(records, "text", UTF16toUTF8(fuzzyfyArg(q)));
+        
+        for(int i=0;i<records.size();i++) {
+            results.push_back(SourceResult(new FileObject(records[i],this)));
+            results.back().object()->values[L"icon"]=L"icons\\networklocal.png";
         }
-
-        const char *errmsg=sqlite3_errmsg(db) ;
-        sqlite3_finalize(stmt);
     }
     void crawl() {
         std::vector<CString> lnks;
         EnumerateFunc(0, lnks);
 
-        sqlite3_stmt *stmt=0;
-        const char *unused=0;
-        int rc;
-        char *zErrMsg=0;
+        int mark=networkshares.sqlGetInt("mark");
 
-        // there can only exists one single mark
-        int mark;
-        sqlite3_exec(db, "SELECT mark FROM files LIMIT 1;", getIntCB, &mark, &zErrMsg);
-        sqlite3_free(zErrMsg);
-
-        rc = sqlite3_exec(db, "BEGIN;", 0, 0, &zErrMsg);
-        sqlite3_free(zErrMsg);
-
+        std::vector<Record> records;
         for(uint i=0;i<lnks.size();i++) {
-            CString str(lnks[i]);
-
-            CString startmenu_key=md5(lnks[i]);
+            Record r;
+            networkshares.findBy(records,"path",CStringA(lnks[i]));
+            if(records.size()>0) {
+                r=records[0];                                
+            }
             
-            rc = sqlite3_prepare_v2(db,
-                                    "INSERT OR REPLACE INTO files(key,display,expand,path,uses,mark) VALUES(?, ?, ?, ?, coalesce((SELECT uses FROM files WHERE key=?), 0), ?);\n",
-                                    -1, &stmt, &unused);
-            rc = sqlite3_bind_text16(stmt, 1, startmenu_key.GetString(), -1, SQLITE_STATIC);
-            rc = sqlite3_bind_text16(stmt, 2, str.GetString(), -1, SQLITE_STATIC);
-            rc = sqlite3_bind_text16(stmt, 3, str+L"\\", -1, SQLITE_STATIC);
-            rc = sqlite3_bind_text16(stmt, 4, str.GetString(), -1, SQLITE_STATIC);
-            rc = sqlite3_bind_text16(stmt, 5, startmenu_key.GetString(), -1, SQLITE_STATIC);
-            rc = sqlite3_bind_int(stmt, 6, mark+1);
-            rc = sqlite3_step(stmt);
-            const char *errmsg=sqlite3_errmsg(db);
-            sqlite3_finalize(stmt);
+            r.ivalues[L"mark"]=mark+1;
+            r.values[L"text"]=lnks[i];
+            r.values[L"expand"]=lnks[i]+L"\\";
+            r.values[L"path"]=lnks[i];
+            networkshares.save(r);
         }
 
-        rc = sqlite3_exec(db, "END;", 0, 0, &zErrMsg);
-        sqlite3_free(zErrMsg);
+        networkshares.sqlExec((char*)(CStringA("DELETE FROM networkshares WHERE mark=")+CStringA(ItoS(mark))).GetString());
     }
     Source *getSource(SourceResult &r, CString &query) {
-        query=r.display()+L"\\";
-        return (Source*)-1;
+        return 0;
+    }
+    void validate(SourceResult *r)  {
+        networkshares.sqlExec((char*)(CStringA("UPDATE networkshares SET uses=uses+1 WHERE key=")+CStringA(r->object()->key)).GetString());
     }
     sqlite3 *db;
 };

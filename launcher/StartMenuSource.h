@@ -44,19 +44,12 @@ struct StartMenuSource : Source {
         rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q), -1, SQLITE_STATIC);
         int i=0;
         while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
-            results.push_back(SourceResult(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),     // key
-                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),    // display
-                                            UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),    // expand
-                                            this,                                               // source
-                                            0,                                                  // id
-                                            0,                                                  // data                                            
-                                            sqlite3_column_int(stmt,4)));                       // Use
-
-            results.back().object().reset(new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+            results.push_back(SourceResult(new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
                                                  this,
                                                  UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
                                                  UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
-                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,3))));
+                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,3)))));                       // Use
+            results.back().m_uses=sqlite3_column_int(stmt,4);
         }
 
         const char *errmsg=sqlite3_errmsg(db) ;
@@ -150,8 +143,6 @@ struct StartMenuSource : Source {
     HWND m_hwnd;
 };
 
-
-
 // dumb code to scan the control panel, leaks included
 // ugly but works
 // I have an issue considering how to store various kinds of data for reusing later
@@ -191,154 +182,95 @@ while(pEIDL->Next(1, &pidl2, &fetched)==S_OK) {
     m_results.back().icon=::getIcon(pidlCF);
 }*/
 
-class SearchFoldersDlg : public CDialogImpl<SearchFoldersDlg>
+#include "SimpleOptDialog.h"
+
+class SearchFoldersDlg : public SimpleOptDialog
 {
 public:
     enum { IDD = IDD_EMPTY };
  
     BEGIN_MSG_MAP(SearchFoldersDlg)
         MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-        MESSAGE_HANDLER(WM_COMMAND, OnCommand)
         MESSAGE_HANDLER(WM_NOTIFY, OnNotify)
-        //MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
-        //MESSAGE_HANDLER(WM_SAVESETTINGS, OnSaveSettings)        
+        CHAIN_MSG_MAP(SimpleOptDialog)      
     END_MSG_MAP()
 
-    HWND hListView;
+    void saveBut(Record *r) {
+        WCHAR curDir[MAX_PATH];
+        GetCurrentDirectory(MAX_PATH, curDir);
+
+        pugi::xml_node settingsnode=settings.select_single_node("settings").node();
+        settingsnode.remove_child("searchFolders");
+        pugi::xml_node searchfolders=settingsnode.append_child("searchFolders");
+        for(int i=0;i<records.size();i++) {
+            if(&records[i] == r)
+                searchfolders.append_child("folder").append_child(pugi::node_pcdata).set_value(UTF16toUTF8(records[i].values[L"path"]));
+        }
+        settings.save_file("settings.xml");
+    }
+
+    void save(Record &r) {
+        saveBut(0);
+    }
+    bool del(Record &r) {
+        saveBut(&r);
+        return true;
+    }
+    SearchFoldersDlg() {
+    }
 
     LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
     { 
+        SimpleOptDialog::OnInitDialog(uMsg,wParam,lParam,bHandled);
 
         RECT rcClient;                       // The parent window's client area.
         GetClientRect(&rcClient); 
 
-        HWND hdesc=::CreateWindow(L"STATIC", L"This is the place where you can add extra folders to index. Click twice to edit a already defined path.", WS_CHILD|WS_VISIBLE, rcClient.left+110, rcClient.top, rcClient.right - rcClient.left - 110, 40, m_hWnd, 0, 0, NULL);
-        HGDIOBJ hfDefault=GetStockObject(DEFAULT_GUI_FONT);
-		SendMessage(hdesc, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
+        int x=0;
+        int y=0;
 
-        hdesc=::CreateWindow(L"BUTTON", L"Add", WS_CHILD|WS_VISIBLE, rcClient.left, rcClient.top, 50, 30, m_hWnd, (HMENU)10001, 0, NULL);
-        SendMessage(hdesc, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
+        addLabel(L"Path",  0, y, 50, 20); addEdit(L"path",  55, y, rcClient.right-55, 20); y+=25;
+        addLabel(L"Depth", 0, y, 50, 20); addEdit(L"depth", 55, y, 50, 20);   y+=25;
+        addLabel(L"Bonus", 0, y, 50, 20); addEdit(L"bonus", 55, y, 50, 20);   y+=25;
 
-        hdesc=::CreateWindow(L"BUTTON", L"Delete", WS_CHILD|WS_VISIBLE, rcClient.left+55, rcClient.top, 50, 30, m_hWnd, (HMENU)10000, 0, NULL);
-        SendMessage(hdesc, WM_SETFONT, (WPARAM)hfDefault, MAKELPARAM(FALSE,0));
+        x=rcClient.right-320;        
+        addButton(L"New",   0, x, y, 100, 25); x+=110;
+        addButton(L"Delete",1, x, y, 100, 25); x+=110;
+        addButton(L"Save",  2, x, y, 100, 25); x+=110;
 
-        CRect r;
-        INITCOMMONCONTROLSEX icex;           // Structure for control initialization.
-        icex.dwICC = ICC_LISTVIEW_CLASSES;
-        InitCommonControlsEx(&icex);
+        y+=30;
+        hListView=addListView(rcClient.left, y, rcClient.right - rcClient.left, rcClient.bottom - y);
+        addColumn(L"Path",0,rcClient.right-100);
+        addColumn(L"Depth",1,50);
+        addColumn(L"Bonus",2,50);
 
-        rcClient.top+=40;
-
-        // Create the list-view window in report view with label editing enabled.
-        hListView = ::CreateWindow(WC_LISTVIEW, 
-                                        L"",
-                                        WS_CHILD | LVS_REPORT | LVS_EDITLABELS | WS_VISIBLE | WS_BORDER,
-                                        rcClient.left, rcClient.top,
-                                        rcClient.right - rcClient.left,
-                                        rcClient.bottom - rcClient.top,
-                                        m_hWnd,
-                                        0,
-                                        0,
-                                        NULL); 
-
-        ListView_SetExtendedListViewStyle(hListView, LVS_EX_FULLROWSELECT);
-
-        // allows for full row selection
-        //ListView_SetExtendedListViewStyle(hListView, ListView_GetExtendedListViewStyle(hListView)| LVS_EX_FULLROWSELECT);
-
-        ::GetClientRect(hListView, &r);
-
-        LVCOLUMN lvc;
-        lvc.mask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
-        lvc.pszText=L"Path";
-        lvc.cx=r.Width()-60;
-        ListView_InsertColumn(hListView, 0, &lvc);
-
-        lvc.pszText=L"Depth";
-        lvc.cx=60;
-        lvc.fmt = LVCFMT_CENTER;
-        ListView_InsertColumn(hListView, 1, &lvc);
-
-        //lvc.pszText=L"Bonus";
-        //lvc.cx=40;
-        //ListView_InsertColumn(GetDlgItem(hWnd, IDC_LIST3), 0, &lvc);
-            
-        WCHAR curDir[MAX_PATH];
-        GetCurrentDirectory(MAX_PATH, curDir);
-
-        int i=0;
-
+        columns=Array(CString(L"path"),CString(L"depth"),CString(L"bonus"));
+        
         pugi::xpath_node_set ns=settings.select_nodes("settings/searchFolders/folder");
-        for(pugi::xpath_node_set::const_iterator it=ns.begin(); it!=ns.end(); it++,i++) {
+        for(pugi::xpath_node_set::const_iterator it=ns.begin(); it!=ns.end(); it++) {
             CStringW path=UTF8toUTF16(it->node().child_value());
             if(path==L"")
                 break;
-            LVITEM lvi;
-            memset(&lvi, 0, sizeof(lvi));
-            lvi.pszText=(LPWSTR)path.GetString();
-            lvi.mask=LVFIF_TEXT;
-            lvi.iItem=i;
-            int iitem=ListView_InsertItem(hListView, &lvi);
-            ListView_SetItemText(hListView, iitem, 1, L"3");
+
+            Record r;
+            r.values[L"path"]=path;
+            r.values[L"depth"]=L"3";
+            r.values[L"bonus"]=L"0";
+            records.push_back(r);
+            //addItem(r,columns);
         }
 
-        LVITEM lvi;
-        memset(&lvi, 0, sizeof(lvi));
-        lvi.pszText=L"";
-        lvi.mask=LVFIF_TEXT;
-        lvi.iItem=i;
-        int res=ListView_InsertItem(hListView, &lvi);
+        int i=0;
+        for(std::vector<Record>::iterator it=records.begin(); it!=records.end(); it++) {
+            addItem(*it, columns );
+        }
 
-        //int ii=ListView_GetItemCount(hListView);
+        if(records.size()==0) {
+            enableEdition(false);
+        } else {
+            selectLVItem(0);
+        }
+
         return TRUE;
-    }
-    LRESULT OnCommand(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-    {
-        if(wParam==10000) {
-            int iitem=ListView_GetSelectionMark(hListView);
-            ListView_DeleteItem(hListView, iitem);
-
-            SaveSearchFolders(hListView);
-            return TRUE;
-        }
-        else if(wParam==10001) {
-            int itemcount=SaveSearchFolders(hListView);
-            ::SetFocus(hListView);
-            ListView_EditLabel(hListView, itemcount-1);
-        }
-        return FALSE;
-    }
-    LRESULT OnNotify(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-    {
-        if(((NMHDR*)lParam)->code==LVN_ENDLABELEDIT) {
-            HWND hListView=((NMHDR*)lParam)->hwndFrom;
-
-            int ii=ListView_GetItemCount(hListView);
-
-            NMLVDISPINFO *nmdi=(NMLVDISPINFO*)lParam;
-            INT i=ListView_SetItem(hListView, &nmdi->item);
-
-            ListView_SetItemText(hListView, nmdi->item.iItem, 1, L"3");
-
-            int itemcount=SaveSearchFolders(hListView);
-
-            // if the edited item was the last, add an empty one
-            if(nmdi->item.iItem==(itemcount-1)) {
-                LVITEM lvi;
-                memset(&lvi, 0, sizeof(lvi));
-                lvi.pszText=L"";
-                lvi.mask=LVFIF_TEXT;
-                lvi.iItem=itemcount;
-                int res=ListView_InsertItem(hListView, &lvi);
-            }
-            return TRUE;
-        } else if(((NMHDR*)lParam)->code==NM_RCLICK) {
-            HMENU hmenu=CreatePopupMenu();
-            AppendMenu(hmenu, MF_STRING, 10000, L"Delete");
-            DWORD pos=GetMessagePos();
-            TrackPopupMenu(hmenu, TPM_LEFTALIGN, GET_X_LPARAM(pos), GET_Y_LPARAM(pos), 0, m_hWnd, 0);
-            return TRUE;
-        }
-        return FALSE;
     }
 };

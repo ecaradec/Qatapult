@@ -178,6 +178,7 @@
     <ClInclude Include="ShellLink.h" />
     <ClInclude Include="ShortcutDlg.h" />
     <ClInclude Include="simpleini.h" />
+    <ClInclude Include="SimpleOptDialog.h" />
     <ClInclude Include="Source.h" />
     <ClInclude Include="SourceResult.h" />
     <ClInclude Include="SourceOfSources.h" />
@@ -246,6 +247,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="WebsitePlugin.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="launcher.rc">

@@ -2,6 +2,7 @@
 #include "Object.h"
 #include "Source.h"
 #include "ShellLink.h"
+#include "Record.h"
 
 Object::~Object() {
 }
@@ -61,6 +62,8 @@ CString Object::getString(const TCHAR *val_) {
         return type;
     else if(v==L"status")
         return values[L"text"];
+    else if(v==L"expand" && values.find(L"expand")==values.end())
+        return values[L"text"];
     return values[val_];
 }
 Gdiplus::Bitmap *Object::getIcon(long flags) {
@@ -117,7 +120,12 @@ void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSiz
     path.TrimRight(L'\\');
     g.DrawString(path.Left(path.ReverseFind(L'\\')), -1, &pathfont, RectF(r.X+r.Height+40, r.Y+25, r.Width-(r.X+r.Height+40), 14), &sfpath, &SolidBrush(Color(textcolor)));
 }
-
+FileObject::FileObject(Record &r,Source *s) {
+    type=L"FILE";
+    source=s;
+    values=r.values;
+    ivalues=r.ivalues;
+}
 FileObject::FileObject(const CString &k, Source *s, const CString &text, const CString &expand, const CString &path) :Object(k,L"FILE",s,text) {
     values[L"expand"]=expand;
     values[L"path"]=path;

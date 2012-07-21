@@ -2,6 +2,7 @@
 
 struct Source;
 struct SourceResult;
+struct Record;
 
 // draw
 inline RectF getStdIconPos(RectF &r, bool h, float textheight=0) {
@@ -59,11 +60,13 @@ struct Object {
     Source                          *source;
     CString                          key;
     std::map<CString,CString>        values;
+    std::map<CString,__int64>        ivalues;
 };
 
 struct FileObject : Object {
     FileObject(const CString &k, Source *s, const CString &text, const CString &expand, const CString &path);
     FileObject(const FileObject& f);
+    FileObject(Record &r,Source *s);
     FileObject *clone();
     CString getString(const TCHAR *val_);
     Gdiplus::Bitmap *getIcon(long flags);

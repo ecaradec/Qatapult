@@ -1,7 +1,31 @@
 #pragma once
+#include "DBSource.h"
+#include "Rule.h"
 #include "Record.h"
 
-extern DB websites;
+struct WebsitesDB : DB {
+    WebsitesDB() : DB("websites",
+                      Array(std::make_pair("text",       TEXT),
+                            std::make_pair("href",       TEXT),
+                            std::make_pair("searchHref", TEXT),
+                            std::make_pair("uses",       INTEGER)),1) {
+    }
+    void migrate(int currentversion) {
+        switch(currentversion) {
+        case 0:
+            sqlite3_exec(db, "BEGIN;", 0, 0, 0);
+            sqlite3_exec(db, "ALTER TABLE websites RENAME TO old_websites;", 0, 0, 0);
+            sqlite3_exec(db, "CREATE TABLE websites (key INTEGER PRIMARY KEY,text TEXT,href TEXT,searchHref TEXT,uses INTEGER);", 0, 0, 0);
+            sqlite3_exec(db, "INSERT INTO websites (text,href,searchHref,uses) SELECT text,href,searchHref,uses FROM old_websites;",0,0,0);
+            sqlite3_exec(db, "DROP TABLE old_websites;", 0, 0, 0);
+            sqlite3_exec(db, "END;", 0, 0, 0);                
+            setVersion(1);
+            break;
+        }
+    }
+};
+
+extern WebsitesDB websites;
 
 // those kind of sources could have a simplified load and save ?
 struct WebsiteSource : DBSource {
@@ -15,29 +39,19 @@ struct WebsiteSource : DBSource {
         CString q(query);
         sqlite3_stmt *stmt=0;
         const char *unused=0;
-        int rc;
 
         std::vector<Record> records;
-        websites.findBy(records, "display", UTF16toUTF8(fuzzyfyArg(q)) );
+        websites.findBy(records, "text", UTF16toUTF8(fuzzyfyArg(q)) );
         for(int i=0;i<records.size();i++) {
             Record &r=records[i];
-            results.push_back(SourceResult(ItoS(r.ivalues[L"key"]),         // key
-                                           r.values[L"display"],            // display
-                                           r.values[L"display"],            // expand
-                                           this,                            // source
-                                           0,                               // id
-                                           0,                               // data                                            
-                                           r.ivalues[L"uses"]));            // uses
+            results.push_back(SourceResult(new Object(ItoS(r.ivalues[L"key"]),
+                                                      type,
+                                                      this,
+                                                      r.values[L"text"])));
+            results.back().m_uses=r.ivalues[L"uses"];
 
-            Object *fo=new Object(ItoS(r.ivalues[L"key"]),
-                                  type,
-                                  this,
-                                  r.values[L"display"]);
-            
-            fo->values=records[i].values;
-            fo->values[L"text"]=fo->values[L"display"];
-            fo->values[L"icon"]=L"icons\\"+fo->values[L"display"]+L".png";
-            results.back().object().reset(fo);
+            results.back().object()->values=records[i].values;
+            results.back().object()->values[L"icon"]=L"icons\\"+results.back().object()->values[L"text"]+L".png";
         }
     }
 };

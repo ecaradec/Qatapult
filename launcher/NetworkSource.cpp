@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "NetworkSource.h"
 
+NetworkShares networkshares;             
+
 BOOL WINAPI EnumerateFunc(LPNETRESOURCE lpnr, std::vector<CString> &lnks)
 {
 	//if(lpnr && (lpnr->dwUsage&0x80000000)!=0)
