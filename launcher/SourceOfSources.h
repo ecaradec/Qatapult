@@ -1,4 +1,4 @@
-
+/*
 struct SourceOfSources : Source {
     SourceOfSources() : Source(L"SOURCE",L"Source of sources") {
         m_icon=L"icons\\source.png";
@@ -24,4 +24,4 @@ struct SourceOfSources : Source {
         return (Source*)sr.data();
     }
     std::vector<Source*> m_sources;
-};
+};*/

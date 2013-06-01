@@ -71,4 +71,3 @@ struct FileObject : Object {
     CString getString(const TCHAR *val_);
     Gdiplus::Bitmap *getIcon(long flags);
 };
-

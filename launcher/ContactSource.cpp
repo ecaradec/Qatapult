@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "ContactSource.h"
 #include "resource.h"
+#include "json/json.h"
 
 //get the key from the developer console https://code.google.com/apis/console/b/0/?pli=1#project:152444811162:access
 CStringA clientId="152444811162-mhjnj3csgt4km2icp0uni71d3n3assln.apps.googleusercontent.com";
@@ -26,15 +27,19 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 HttpSubmit(L"https://accounts.google.com/o/oauth2/token", data, &res);
 
 
-                char accessToken[1024];
-                int expireIn;
-                char refreshToken[1024];
-                sscanf_s(res, 
-                         "{\n\"access_token\" : \"%[^\"]\",\n  \"token_type\" : \"Bearer\",\n  \"expires_in\" : %d,\n  \"refresh_token\" : \"%[^\"]\"\n}", 
-                         accessToken, sizeof(accessToken), &expireIn, sizeof(expireIn), refreshToken, sizeof(refreshToken));
-
-                SetSettingsStringA("gmailContacts", "accessToken", accessToken);
-                SetSettingsStringA("gmailContacts", "refreshToken", refreshToken);
+                char *errorPos = 0;
+	            char *errorDesc = 0;
+	            int errorLine = 0;
+	            block_allocator allocator(1 << 10);
+	
+                json_value *root = json_parse((char*)res.GetString(), &errorPos, &errorDesc, &errorLine, &allocator);
+                for (json_value *it = root->first_child; it; it = it->next_sibling) {
+                    if(it->type==JSON_STRING && strcmp(it->name,"access_token")==0) {
+                        SetSettingsStringA("gmailContacts", "accessToken", it->string_value);
+                    } else if(it->type==JSON_STRING && strcmp(it->name,"refresh_token")==0) {
+                        SetSettingsStringA("gmailContacts", "refreshToken", it->string_value);
+                    }
+                }
                 
                 g_pUI->invalidateIndex();
             }
@@ -138,12 +143,19 @@ void ContactSource::crawl() {
             CStringA res;
             HttpSubmit(L"https://accounts.google.com/o/oauth2/token", data, &res);
 
-            int expireIn;
-            sscanf_s(res, 
-                    "{\n\"access_token\" : \"%[^\"]\",\n  \"token_type\" : \"Bearer\",\n  \"expires_in\" : %d\n}", 
-                    accessToken, sizeof(accessToken), &expireIn, sizeof(expireIn));
+            char *errorPos = 0;
+	        char *errorDesc = 0;
+	        int errorLine = 0;
+	        block_allocator allocator(1 << 10);
+	
+            json_value *root = json_parse((char*)res.GetString(), &errorPos, &errorDesc, &errorLine, &allocator);
 
-            SetSettingsStringA("gmailContacts", "accessToken", accessToken);
+            for (json_value *it = root->first_child; it; it = it->next_sibling) {
+                if(it->type==JSON_STRING && strcmp(it->name,"access_token")==0) {
+                    SetSettingsStringA("gmailContacts", "accessToken", it->string_value);
+                }
+            }
+
             retry++;
             if(retry>1)
                 break;
@@ -179,3 +191,89 @@ void ContactSource::collect(const TCHAR *query, std::vector<SourceResult> &resul
 Gdiplus::Bitmap *ContactSource::getIcon(SourceResult *r, long flags) {
     return r->object()->getIcon(flags);
 }
+
+
+//key TEXT PRIMARY KEY ASC, display TEXT, email TEXT, bonus INTEGER
+/*struct ContactsDB : DB {
+    ContactsDB() : DB("contacts",
+                      Array(std::make_pair("key",       TEXT),
+                            std::make_pair("href",       TEXT),
+                            std::make_pair("searchHref", TEXT),
+                            std::make_pair("uses",       INTEGER)),1) {
+    }
+};
+
+//DB contacts;
+
+// how to handle tab ?
+class ContactDlg : public SimpleOptDialog
+{
+public:
+    enum { IDD = IDD_EMPTY };
+ 
+    BEGIN_MSG_MAP(WebsiteSearchDlg)
+        MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)        
+        CHAIN_MSG_MAP(SimpleOptDialog)
+    END_MSG_MAP()    
+
+    WebsiteSearchDlg() {
+    }
+    void save(Record &r) {
+        contacts.save(r);
+    }
+    bool del(Record &r) { 
+        return contacts.del(r);
+    }
+    LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+    { 
+        SimpleOptDialog::OnInitDialog(uMsg,wParam,lParam,bHandled);
+
+        columns=Array(CString(L"text"),CString(L"href"),CString(L"searchHref"));
+        
+        CRect r;
+        RECT rcClient;                       // The parent window's client area.
+        GetClientRect(&rcClient);
+
+        int y=0;
+        int x=0;
+
+        r=rcClient;
+        r.bottom=20;
+        
+        addLabel(L"Title", 0, y, 50, 20); addEdit(L"text", 55, y, 200, 20);                 y+=25;
+        addLabel(L"Url",   0, y, 50, 20); addEdit(L"href",   55, y, rcClient.right-55, 20);   y+=25;
+        addLabel(L"Query", 0, y, 50, 20); addEdit(L"searchHref", 55, y, rcClient.right-55, 20);   y+=25;
+
+        x=rcClient.right-320;        
+        addButton(L"New",   0, x, y, 100, 25); x+=110;
+        addButton(L"Delete",1, x, y, 100, 25); x+=110;
+        addButton(L"Save",  2, x, y, 100, 25); x+=110;        
+
+        y+=30;
+        hListView=addListView(rcClient.left, y, rcClient.right - rcClient.left, rcClient.bottom - y);
+
+        ::GetClientRect(hListView, &r);
+
+        // display, href, icon, key, searchhref
+        addColumn(L"Title",0, 100);
+        addColumn(L"Href", 1, 125);
+        addColumn(L"Query",2, rcClient.right-225);
+
+        records.clear();
+        websites.query(records);
+
+        int i=0;
+        for(std::vector<Record>::iterator it=records.begin(); it!=records.end(); it++) {
+            addItem(*it, columns );
+        }
+
+        if(records.size()==0) {
+            enableEdition(false);
+        } else {
+            selectLVItem(0);
+        }
+
+        return S_OK;
+    }
+};
+*/

@@ -11,8 +11,6 @@ struct SourceResult {
         m_object=0;
         m_bonus=0;
         m_uses=0;
-        m_id=0;
-        m_data=0;
         m_rank=0;
     }
     SourceResult() {
@@ -33,19 +31,15 @@ struct SourceResult {
         clear();
         m_source=s_;
         m_object.reset(o_);
-        m_data=data_;
         m_expand=e_;
         m_bonus=b_;
         m_uses=u_;
-        m_id=id_;
     }
     SourceResult(const CString &_key, const CString &_display, const CString &_expand, Source *_s, int _id=0, void *_data=0, int _uses=0) { 
         clear();
         m_source=_s;
         m_display=_display;
         m_expand=_expand;
-        m_id=_id;
-        m_data=_data;
         m_uses=_uses;
     }
 
@@ -70,24 +64,16 @@ struct SourceResult {
     int &uses() {
         return m_uses;
     }
-    int &id() {
-        return m_uses;
-    }
-    void *&data() {
-        return m_data;
-    }
     int &rank() {
         return m_rank;
     }
 
-    Source                          *m_source;
     std::shared_ptr<Object>          m_object;
+    Source                          *m_source;    
     CString                          m_display;
     CString                          m_expand;
     int                              m_bonus;
     int                              m_uses;
-    int                              m_id;
-    void                            *m_data; // must be cloned if needed    
 
     // temporary for automatic
     CString                          m_iconname;
@@ -130,12 +116,9 @@ struct RuleArg {
     int &uses(int i=0) {
         return item(i).m_uses;
     }
-    int &id(int i=0) {
+    /*int &id(int i=0) {
         return item(i).m_uses;
-    }
-    void *&data(int i=0) {
-        return item(i).m_data;
-    }
+    }*/
     int &rank(int i=0) {
         return item(i).m_rank;
     }

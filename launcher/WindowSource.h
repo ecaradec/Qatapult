@@ -1,4 +1,4 @@
-
+/*
 struct WindowSource : Source {
     WindowSource() : Source(L"WINDOW",L"Windows (Catalog )") {
         m_icon=L"icons\\window.png";
@@ -9,7 +9,7 @@ struct WindowSource : Source {
 
         CString q(query); q.MakeUpper();
         std::vector<HWND> windowList;
-        EnumWindows(CollectWindows,(LPARAM)&windowList);
+        EnumWindows(collectWindows,(LPARAM)&windowList);
         for(std::vector<HWND>::iterator it=windowList.begin(); it!=windowList.end(); it++) {
             if(!::IsWindowVisible(*it))
                 continue;
@@ -23,9 +23,10 @@ struct WindowSource : Source {
             }
         }
     }
-    static BOOL __stdcall CollectWindows(HWND hwnd, LPARAM lparam) {
+    static BOOL __stdcall collectWindows(HWND hwnd, LPARAM lparam) {
         std::vector<HWND> *hwndlist=(std::vector<HWND>*)lparam;
         hwndlist->push_back(hwnd);
         return TRUE;
     }
 };
+*/

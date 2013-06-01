@@ -111,6 +111,89 @@ BOOL CALLBACK ToggleSettingsEWProc(HWND hwnd, LPARAM lParam) {
 #include "ShortcutDlg.h"
 #include "WebsiteSearchDlg.h"
 
+struct DllSource : Source {
+
+    struct DllObject : Object {
+        DllObject(DllSource *dllsource,DWORD hobject) {
+            m_hobject=hobject;
+            m_dllsource=dllsource;
+        }
+
+        DllSource  *m_dllsource;
+        DWORD       m_hobject;
+    };
+
+    FARPROC _drawItem;
+    FARPROC _collect;
+    FARPROC _beginCollect;
+    FARPROC _validate;
+    FARPROC _crawl;
+    FARPROC _getString;
+    FARPROC _getInt;
+    FARPROC _rate;
+
+    DllSource(TCHAR *path) : Source(L"Unknown") {
+        hmod=LoadLibrary(path);
+
+        _drawItem=GetProcAddress(hmod, "drawItem");
+        _beginCollect=GetProcAddress(hmod, "beginCollect");
+        _collect=GetProcAddress(hmod, "collect");
+        _validate=GetProcAddress(hmod, "validate");
+        _crawl=GetProcAddress(hmod, "crawl");
+        _getString=GetProcAddress(hmod, "getString");
+        _getInt=GetProcAddress(hmod, "getInt");
+        _rate=GetProcAddress(hmod, "rate");
+        //_rate=GetProcAddress(hmod, "getOptionDlg");
+
+        // _setMatchFn(FuzzyMatch)
+        //TCHAR buff[4096];
+        //_getString(L"type",buff,4086);
+        //type=buff;
+    }
+    virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
+        // empty result may not have an object
+        if(sr->object())
+            sr->object()->drawItem(g,sr,r);
+    }
+    // get results
+    // fuse index and bonus from the db
+    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+            return;
+        
+        _beginCollect();
+
+        DWORD hobject;
+        while( _collect(/*&hobject*/) ) {
+            results.push_back(SourceResult(new DllObject(this,hobject)));
+        }
+    }    
+    virtual void validate(SourceResult *r)  {
+        //_validate(r);
+    }
+    virtual void crawl() {
+    }
+    // unused yet
+    // get named data of various types
+    virtual Source *getSource(SourceResult &sr, CString &q) {
+        return 0;
+    }
+    virtual int getInt(const TCHAR *itemquery) { 
+        return false;
+    }
+
+    virtual void rate(const CString &q, SourceResult *r) {
+        /*r->rank()=0;
+        if(m_prefix!=0 && r->display()[0]==m_prefix)
+            r->rank()+=100;
+
+        CString T(r->object()->getString(L"text"));
+        r->rank()=min(100.0f,r->uses()*5.0f) + r->bonus() + r->rank()+100.0f*evalMatch(T,q);*/
+    }
+
+    HMODULE hmod;
+};
+
 
 int objects=0;
 Qatapult::Qatapult():m_input(this), m_invalidatepending(false) {
@@ -268,13 +351,13 @@ void Qatapult::init() {
     // sources
     //settings.select_single_node("settings/sources/")
 
-    sourceofsources=new SourceOfSources;
+    /*sourceofsources=new SourceOfSources;
     addSource(sourceofsources);
-    sourceofsources->def=true;
+    sourceofsources->def=true;*/
 
-    addSource(L"Filesystem",new FileSource);
+    //addSource(L"Filesystem",new FileSource);
     addSource(L"IndexedFiles",new StartMenuSource(m_hwnd));
-    addSource(L"Network",new NetworkSource);
+    /*addSource(L"Network",new NetworkSource);
     addSource(L"Contacts",new ContactSource);
     addSource(L"Websites",new WebsiteSource);
     addSource(L"FileHistory",new FileHistorySource);
@@ -318,12 +401,14 @@ void Qatapult::init() {
         t->addItem(L"Search With",L"icons\\searchwith.png");        
         addRule(Type(L"TEXT"),Type(t->type),Type(L"WEBSITE"),new WebSearchRule);
     }
-
+    
     // sources
     t=new TextItemSource(L"SOURCEVERB");
     addSource(t);
     t->addItem(L"Open",L"icons\\open.png");
     addRule(Type(L"SOURCE"),Type(t->type),new SourceRule(this));
+
+    */
 
     // commands 
     /*t=new TextItemSource(L"COMMANDVERB");
@@ -334,7 +419,7 @@ void Qatapult::init() {
     addRule(Type(L"COMMAND"),Type(t->type),new CommandRule);*/
 
     // empty
-    m_emptysource=t=new TextItemSource(L"EMPTY");
+    /*m_emptysource=t=new TextItemSource(L"EMPTY");
     t->addItem(L"",L"");
     addSource(m_emptysource);
 
@@ -342,7 +427,7 @@ void Qatapult::init() {
     m_inputsource=new Source(L"INPUTSOURCE");
     addSource(m_inputsource);
     //m_history.m_inputsource = m_inputsource;
-
+    */
 
     //
     // load hotkeys
@@ -572,7 +657,7 @@ Source *Qatapult::addSource(Source *s) {
 Source *Qatapult::addSource(const TCHAR *name,Source *s) {
     CStringA n(UTF16toUTF8(name));
     if(isSourceEnabled(n)) {
-        sourceofsources->m_sources.push_back(s);
+        //sourceofsources->m_sources.push_back(s);
         addSource(s);
         s->def=isSourceByDefault(n);        
     } else {
@@ -671,8 +756,8 @@ void Qatapult::createSettingsDlg() {
     pluginsdlg.Create(m_hwndsettings);
     pluginsdlg.SetWindowPos(0, 160, 11, 0, 0, SWP_NOSIZE);
 
-    //HWND hwndGmail=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GMAILCONTACTS), m_hwndsettings, (DLGPROC)DlgProc);
-    //SetWindowPos(hwndGmail, 0, 160, 0, 0, 0, SWP_NOSIZE);
+    HWND hwndGmail=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GMAILCONTACTS), m_hwndsettings, (DLGPROC)DlgProc);
+    SetWindowPos(hwndGmail, 0, 160, 0, 0, 0, SWP_NOSIZE);
 
     //HWND hwndEmail=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_EMAIL), m_hwndsettings, (DLGPROC)DlgProc);
     //SetWindowPos(hwndEmail, 0, 160, 0, 0, 0, SWP_NOSIZE);
@@ -725,9 +810,9 @@ void Qatapult::createSettingsDlg() {
     tviis.item.lParam=(LPARAM)searchfolderdlg.m_hWnd;
     HTREEITEM htreeSF=TreeView_InsertItem(hTreeView, &tviis);
 
-    //tviis.item.pszText = L"Gmail contacts";
-    //tviis.item.lParam=(LPARAM)hwndGmail;
-    //HTREEITEM htreeGmail=TreeView_InsertItem(hTreeView, &tviis);
+    tviis.item.pszText = L"Gmail contacts";
+    tviis.item.lParam=(LPARAM)hwndGmail;
+    HTREEITEM htreeGmail=TreeView_InsertItem(hTreeView, &tviis);
 
     tviis.item.pszText = L"Website search";
     tviis.item.lParam=(LPARAM)websiteSearchDlg.m_hWnd;

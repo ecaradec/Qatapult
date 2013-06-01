@@ -1,17 +1,33 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="json">
+      <UniqueIdentifier>{48afb102-ba7f-4548-93a6-b83a66d5e7d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="helpers">
+      <UniqueIdentifier>{72300629-d85f-43d2-adda-1e2fc71f330c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="commands">
+      <UniqueIdentifier>{68af3982-f3e7-49ad-b967-780127eff463}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core">
+      <UniqueIdentifier>{9967e90c-f8de-4269-a892-a990627b01c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rules">
+      <UniqueIdentifier>{8f5c0902-6a6a-47c2-9e85-f13580a9a982}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="script">
+      <UniqueIdentifier>{81574638-9bbc-4313-a1f7-f48d4733f5f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="settings">
+      <UniqueIdentifier>{7e013be6-1c6f-4c1d-bb3d-504540383022}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sources">
+      <UniqueIdentifier>{99967399-04a2-4d25-8a3b-902b76c58310}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -22,303 +38,299 @@
     <None Include="res\launcher.ico">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="..\workdir\settings.xml">
-      <Filter>Header Files</Filter>
-    </None>
+    <None Include="..\workdir\settings.xml" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stdafx.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="json\block_allocator.h">
+      <Filter>json</Filter>
     </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FindFileRecursively.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="LevhensteinDistance.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="geticon.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IWindowlessGUI.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="WindowlessInput.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FileSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FileVerbSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="HistorySource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StartMenuSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EmailVerbSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SourceResult.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Rule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="getItemVerbs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="pugiconfig.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="pugixml.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ContactSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DBSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="http.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TextSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SendEmail.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EmailVerbRule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EmailFileVerbRule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SearchWithVerbSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="WebsitePlugin.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FileVerbRule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="premultAlpha.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="simpleini.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="json\json.h">
+      <Filter>json</Filter>
     </ClInclude>
     <ClInclude Include="CurrentSelectionSource.h">
-      <Filter>Header Files</Filter>
+      <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="NetworkSource.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="EmailFileVerbRule.h">
+      <Filter>rules</Filter>
     </ClInclude>
-    <ClInclude Include="utf8.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="EmailVerbRule.h">
+      <Filter>rules</Filter>
     </ClInclude>
-    <ClInclude Include="CriticalSection.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="EmailVerbSource.h">
+      <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="ShellLink.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="DBSource.h">
+      <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="FileObject.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="FileSource.h">
+      <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="Object.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="FileVerbSource.h">
+      <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="TextObject.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ActiveScriptHost.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="activscp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="activscp_plus.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="JScriptSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Collecter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Utility.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PainterScript.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="QatapultScript.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Upgrade.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="JScriptCommand.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Qatapult.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DYNACALL.H">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ShellExecuteRule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="WindowSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ScriptRule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SourceOfSources.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SourceRule.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TextItemSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ClockSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="makeObject.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="QatapultPlugin.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SystemTraySDK.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="FileVerbRule.h">
+      <Filter>rules</Filter>
     </ClInclude>
     <ClInclude Include="CommandObject.h">
-      <Filter>Header Files</Filter>
+      <Filter>commands</Filter>
     </ClInclude>
-    <ClInclude Include="Record.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="FindFileRecursively.h">
+      <Filter>helpers</Filter>
     </ClInclude>
-    <ClInclude Include="WebsiteSearchDlg.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="ActiveScriptHost.h">
+      <Filter>script</Filter>
     </ClInclude>
-    <ClInclude Include="ShortcutDlg.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="activscp.h">
+      <Filter>script</Filter>
     </ClInclude>
-    <ClInclude Include="PluginDlg.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="activscp_plus.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="Collecter.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="DYNACALL.H">
+      <Filter>script</Filter>
     </ClInclude>
     <ClInclude Include="EmailDlg.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SettingsDlg.h">
-      <Filter>Header Files</Filter>
+      <Filter>settings</Filter>
     </ClInclude>
     <ClInclude Include="GeneralDlg.h">
-      <Filter>Header Files</Filter>
+      <Filter>settings</Filter>
+    </ClInclude>
+    <ClInclude Include="CriticalSection.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="geticon.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="getItemVerbs.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="HistorySource.h">
+      <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="HotKeyEditProc.h">
-      <Filter>Header Files</Filter>
+      <Filter>settings</Filter>
+    </ClInclude>
+    <ClInclude Include="http.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="LevhensteinDistance.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="JScriptSource.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkSource.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="PainterScript.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="premultAlpha.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="pugiconfig.hpp">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="pugixml.hpp">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="makeObject.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="Object.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="Qatapult.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="QatapultPlugin.h">
+      <Filter>rules</Filter>
     </ClInclude>
     <ClInclude Include="PluginList.h">
-      <Filter>Header Files</Filter>
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="PluginDlg.h">
+      <Filter>settings</Filter>
+    </ClInclude>
+    <ClInclude Include="QatapultScript.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="Record.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="Rule.h">
+      <Filter>rules</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptRule.h">
+      <Filter>rules</Filter>
+    </ClInclude>
+    <ClInclude Include="ShellExecuteRule.h">
+      <Filter>rules</Filter>
+    </ClInclude>
+    <ClInclude Include="Source.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="SourceOfSources.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="SourceResult.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="SourceRule.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="StartMenuSource.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="TextItemSource.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowSource.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="SearchWithVerbSource.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="SendEmail.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="ShellLink.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="TextSource.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="TextObject.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="ContactSource.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="ClockSource.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="WebsitePlugin.h">
+      <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="unzip.h">
-      <Filter>Header Files</Filter>
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="utf8.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="simpleini.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="WebsiteSearchDlg.h">
+      <Filter>settings</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemTraySDK.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="ShortcutDlg.h">
+      <Filter>settings</Filter>
+    </ClInclude>
+    <ClInclude Include="SettingsDlg.h">
+      <Filter>settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Upgrade.h">
+      <Filter>core</Filter>
     </ClInclude>
     <ClInclude Include="SimpleOptDialog.h">
-      <Filter>Header Files</Filter>
+      <Filter>settings</Filter>
     </ClInclude>
+    <ClInclude Include="IWindowlessGUI.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowlessInput.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="launcher.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="json\block_allocator.cpp">
+      <Filter>json</Filter>
     </ClCompile>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Md5.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="pugixml.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\external_lib\sqlite3\sqlite3.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Object.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="qatapult_i.c">
-      <Filter>Header Files</Filter>
+    <ClCompile Include="json\json.cpp">
+      <Filter>json</Filter>
     </ClCompile>
     <ClCompile Include="CurrentSelectionSource.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Http.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SendEmail.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StartMenuSource.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="NetworkSource.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GetItemVerbs.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ContactSource.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Qatapult.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="levenshtein_distance.cpp">
-      <Filter>Header Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DYNWRAP.CPP">
-      <Filter>Header Files</Filter>
+      <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="DYNACALL.C">
-      <Filter>Header Files</Filter>
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="DYNWRAP.CPP">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="GetItemVerbs.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="levenshtein_distance.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="NetworkSource.cpp">
+      <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="makeObject.cpp">
-      <Filter>Header Files</Filter>
+      <Filter>core</Filter>
     </ClCompile>
-    <ClCompile Include="SystemTraySDK.cpp">
-      <Filter>Header Files</Filter>
+    <ClCompile Include="Object.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="Qatapult.cpp">
+      <Filter>core</Filter>
     </ClCompile>
     <ClCompile Include="Record.cpp">
-      <Filter>Header Files</Filter>
+      <Filter>core</Filter>
     </ClCompile>
-    <ClCompile Include="unzip.cpp">
-      <Filter>Header Files</Filter>
+    <ClCompile Include="Source.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="StartMenuSource.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="SendEmail.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="ContactSource.cpp">
+      <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="WebsitePlugin.cpp">
-      <Filter>Header Files</Filter>
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="qatapult_i.c">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="unzip.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemTraySDK.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external_lib\sqlite3\sqlite3.c">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="pugixml.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="Md5.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="launcher.cpp">
+      <Filter>core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -328,7 +340,7 @@
   </ItemGroup>
   <ItemGroup>
     <Midl Include="qatapult.idl">
-      <Filter>Header Files</Filter>
+      <Filter>script</Filter>
     </Midl>
   </ItemGroup>
 </Project>

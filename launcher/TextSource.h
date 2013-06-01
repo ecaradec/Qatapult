@@ -1,6 +1,6 @@
 #pragma once
 #include "TextObject.h"
-
+/*
 struct TextSource : Source {
     TextSource() : Source(L"TEXT",L"Text (Catalog )") {
         m_ignoreemptyquery=true;
@@ -25,4 +25,4 @@ struct TextSource : Source {
         if(r->id()==0)
             r->rank()=0;
     }
-};
+};*/

@@ -134,6 +134,8 @@
     <ClInclude Include="EmailDlg.h" />
     <ClInclude Include="GeneralDlg.h" />
     <ClInclude Include="HotKeyEditProc.h" />
+    <ClInclude Include="json\block_allocator.h" />
+    <ClInclude Include="json\json.h" />
     <ClInclude Include="makeObject.h" />
     <ClInclude Include="PluginDlg.h" />
     <ClInclude Include="PluginList.h" />
@@ -146,7 +148,6 @@
     <ClInclude Include="EmailFileVerbRule.h" />
     <ClInclude Include="EmailVerbRule.h" />
     <ClInclude Include="EmailVerbSource.h" />
-    <ClInclude Include="FileObject.h" />
     <ClInclude Include="FileSource.h" />
     <ClInclude Include="FileVerbRule.h" />
     <ClInclude Include="FileVerbSource.h" />
@@ -156,7 +157,6 @@
     <ClInclude Include="HistorySource.h" />
     <ClInclude Include="http.h" />
     <ClInclude Include="IWindowlessGUI.h" />
-    <ClInclude Include="JScriptCommand.h" />
     <ClInclude Include="JScriptSource.h" />
     <ClInclude Include="LevhensteinDistance.h" />
     <ClInclude Include="NetworkSource.h" />
@@ -209,6 +209,14 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="DYNWRAP.CPP">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="json\block_allocator.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="json\json.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
