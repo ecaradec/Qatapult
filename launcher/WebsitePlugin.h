@@ -48,7 +48,7 @@ struct WebsiteSource : DBSource {
                                                       type,
                                                       this,
                                                       r.values[L"text"])));
-            results.back().m_uses=r.ivalues[L"uses"];
+            results.back().uses()=r.ivalues[L"uses"];
 
             results.back().object()->values=records[i].values;
             results.back().object()->values[L"icon"]=L"icons\\"+results.back().object()->values[L"text"]+L".png";
@@ -58,7 +58,8 @@ struct WebsiteSource : DBSource {
 
 struct SearchWithVerbSource : Source {
     SearchWithVerbSource() : Source(L"SEARCHWITHVERB") {        
-        m_index[L"Search With"]=SourceResult(L"Search With", L"Search With", L"Search With", this, 0, 0, m_index[L"Search With"].bonus());
+        m_index[L"Search With"]=SourceResult(new Object(L"Search With", L"Search With", this, L"Search With"));
+        m_index[L"Search With"].bonus()=m_index[L"Search With"].bonus();
     }
 };
 

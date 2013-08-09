@@ -182,7 +182,7 @@ void ContactSource::collect(const TCHAR *query, std::vector<SourceResult> &resul
                                                           this,
                                                           UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
                                                           UTF8toUTF16((char*)sqlite3_column_text(stmt,2))) ) );
-        results.back().m_uses=sqlite3_column_int(stmt,3);
+        results.back().uses()=sqlite3_column_int(stmt,3);
     }
 
     const char *errmsg=sqlite3_errmsg(db) ;

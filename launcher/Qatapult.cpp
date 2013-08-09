@@ -355,7 +355,7 @@ void Qatapult::init() {
     addSource(sourceofsources);
     sourceofsources->def=true;*/
 
-    //addSource(L"Filesystem",new FileSource);
+    addSource(L"Filesystem",new FileSource);
     addSource(L"IndexedFiles",new StartMenuSource(m_hwnd));
     /*addSource(L"Network",new NetworkSource);
     addSource(L"Contacts",new ContactSource);
@@ -365,12 +365,13 @@ void Qatapult::init() {
     addSource(L"Windows", new WindowSource);
 
     Source *tt=addSource(new TextSource);
-    tt->def=true;
+    tt->def=true;*/
     addSource(new FileVerbSource);    
-
+    
     //addRule(L"CLOCK", new ClockRule);
     addRule(Type(L"FILE",true), Type(L"FILEVERB"), new FileVerbRule); 
-                
+    
+    /*
     TextItemSource *t;
 
     t=new TextItemSource(L"QATAPULTVERB");

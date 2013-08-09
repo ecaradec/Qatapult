@@ -5,7 +5,7 @@
 #include "TextObject.h"
 
 SourceResult getResultFromIDispatch(const CString &type_, const CString &key_, IDispatch *args,Source *src) {
-    SourceResult sr(L"",L"",L"",src,0,0,0);
+    SourceResult sr;
     
     CComQIPtr<IDispatch> pdispArgs(args);
     CComVariant vtype, vkey;
@@ -57,9 +57,7 @@ SourceResult getResultFromIDispatch(const CString &type_, const CString &key_, I
 SourceResult getResultFromFilePath(const CString &path, Source *s) {
     CString filename=path.Right(path.GetLength() - (path.ReverseFind(L'\\')+1));
     
-    SourceResult sr(path,filename,filename,s);
-    sr.object().reset(new FileObject(path, s, filename, filename, path));
-    return sr;
+    return SourceResult(new FileObject(path, s, filename, filename, path));
 }
 /*
 <object>

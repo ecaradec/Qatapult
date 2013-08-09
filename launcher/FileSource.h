@@ -44,14 +44,8 @@ struct FileSource : Source {
 
         // if we are matching exactly a directory without a ending slash add it
         if((q.Right(1)==L":" || q.Right(2)==L":\\") && q.GetLength()<=3) {
-            SourceResult r;
-            r.display()=d;
-            r.expand()=d+L"\\";
-            r.source()=this;
-            r.bonus()=100;
-            results.push_back(r);
-
-            results.back().object().reset(new FileObject(d+L"\\",this,d,d+L"\\",d+L"\\"));
+            results.push_back(SourceResult(new FileObject(d+L"\\",this,d,d+L"\\",d+L"\\")));
+            results.back().bonus()=100;
         }
 
         HANDLE h;
@@ -66,14 +60,8 @@ struct FileSource : Source {
                 CString foldername=noslash.Mid(noslash.ReverseFind(L'\\')+1);
 
                 if(FuzzyMatch(foldername,f) && f==L"") {
-                    SourceResult r;                    
-                    r.display()=foldername;
-                    r.expand()=noslash+L"\\";
-                    r.source()=this;
-                    r.bonus()=100;
-                    results.push_back(r);
-
-                    results.back().object().reset(new FileObject(noslash+L"\\",this,foldername,noslash+L"\\",noslash+L"\\"));
+                    results.push_back(SourceResult(new FileObject(noslash+L"\\",this,foldername,noslash+L"\\",noslash+L"\\")));
+                    results.back().bonus()=100;
                 }
             } else if(CString(w32fd.cFileName)==L"..") {
             } else {
@@ -84,14 +72,8 @@ struct FileSource : Source {
                     expand = CString(d+L"\\"+w32fd.cFileName);
 
                 if(FuzzyMatch(w32fd.cFileName,f)) {
-                    SourceResult r;
-                    r.display()=w32fd.cFileName;
-                    r.expand()=expand;
-                    r.source()=this;
-                    r.rank()=10;
-                    results.push_back(r);
-
-                    results.back().object().reset(new FileObject(expand,this,w32fd.cFileName,expand,expand));
+                    results.push_back(new FileObject(expand,this,w32fd.cFileName,expand,expand));
+                    results.back().rank()=10;
                 }
             }
             b=!!FindNextFile(h, &w32fd);
@@ -194,19 +176,12 @@ struct FileHistorySource : Source {
             rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q).GetString(), -1, SQLITE_STATIC);
             int i=0;
             while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
-                results.push_back(SourceResult(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),        // key
-                                               UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),        // display
-                                               UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),        // expand
-                                               this,                         // source
-                                               0,                            // id
-                                               0,                            // data                                               
-                                               sqlite3_column_int(stmt,4)));                         // uses
-
-                results.back().object().reset(new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
-                                                     this,
-                                                     UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
-                                                     UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
-                                                     UTF8toUTF16((char*)sqlite3_column_text(stmt,3))));
+                results.push_back(SourceResult(new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+                                                                     this,
+                                                                     UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
+                                                                     UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
+                                                                     UTF8toUTF16((char*)sqlite3_column_text(stmt,3)))));
+                results.back().uses()=sqlite3_column_int(stmt,4);
             }
 
             const char *errmsg=sqlite3_errmsg(db) ;

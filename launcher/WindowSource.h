@@ -1,4 +1,4 @@
-/*
+
 struct WindowSource : Source {
     WindowSource() : Source(L"WINDOW",L"Windows (Catalog )") {
         m_icon=L"icons\\window.png";
@@ -29,4 +29,3 @@ struct WindowSource : Source {
         return TRUE;
     }
 };
-*/

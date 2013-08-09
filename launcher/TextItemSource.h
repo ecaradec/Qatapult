@@ -21,7 +21,7 @@ struct TextItemSource : Source {
         sqlite3_close(db);
     }
     void addItem(const TCHAR *str,const TCHAR *iconname) {
-        m_index[str]=SourceResult(str,str,str, this, 0, 0, m_index[str].bonus());
+        m_index[str]=SourceResult(new Object(str,str,this,str));
         m_index[str].iconname()=iconname;
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {

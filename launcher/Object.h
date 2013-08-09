@@ -33,14 +33,24 @@ inline StringAlignment getStdAlignment(bool h) {
 // derive and gives an correctly typed pointer if in need for extra data
 struct Object {
     Object() {
+        source=0; 
+        m_bonus=0;
+        m_uses=0;
+        m_rank=0;
     }
     Object(const CString &k, const CString &t, Source *s, const CString &text) {
+        m_bonus=0;
+        m_uses=0;
+        m_rank=0;
         type=t;
         key=k;
         source=s;        
         values[L"text"]=text;
     }
     Object(const Object& c) {
+        m_bonus=0;
+        m_uses=0;
+        m_rank=0;
         source=c.source;
         key=c.key;
         values=c.values;
@@ -61,6 +71,11 @@ struct Object {
     CString                          key;
     std::map<CString,CString>        values;
     std::map<CString,__int64>        ivalues;
+
+    int                              m_bonus;
+    int                              m_uses;
+    CString                          m_iconname;
+    int                              m_rank;
 };
 
 struct FileObject : Object {

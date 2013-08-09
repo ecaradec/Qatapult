@@ -23,11 +23,6 @@ struct FileVerbSource : Source {
         int itemcount=GetSettingsInt(L"FileVerbs", L"count", 0);
 
         int b=itemcount+10;
-        m_index[L"Open"]=SourceResult(L"Open", L"Open", L"Open", this, 0, 0, 0);
-        m_index[L"Edit"]=SourceResult(L"Edit", L"Edit", L"Edit", this, 0, 0, 0);
-        m_index[L"RunAs"]=SourceResult(L"RunAs", L"RunAs", L"RunAs", this, 0, 0, 0);
-        m_index[L"Delete"]=SourceResult(L"Delete", L"Delete", L"Delete", this, 0, 0, 0);
-        m_index[L"Properties"]=SourceResult(L"Properties", L"Properties", L"Properties", this, 0, 0, 0);
     }
     ~FileVerbSource() {
         sqlite3_finalize(getusesstmt);
@@ -45,8 +40,7 @@ struct FileVerbSource : Source {
     }
     void conditionalAddObject(std::vector<SourceResult> &results, const CString &name, const CString &q) {
         if(FuzzyMatch(name,q)) {
-            results.push_back(SourceResult(name, name, name, this, 0, 0, 0));
-            results.back().object().reset(new Object(name,L"FILEVERB",this,name));
+            results.push_back(SourceResult(new Object(name,L"FILEVERB",this,name)));
             results.back().uses()=getItemUses(name);
             results.back().bonus()=20;
         }        

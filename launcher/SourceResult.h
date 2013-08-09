@@ -7,120 +7,87 @@ struct Object;
 
 struct SourceResult {
     void clear() {
-        m_source=0;
+        //m_source=0;
         m_object=0;
-        m_bonus=0;
-        m_uses=0;
-        m_rank=0;
+        //m_bonus=0;
+        //m_uses=0;
+        //m_rank=0;
     }
     SourceResult() {
         clear();
     }
     SourceResult(Object *o) {
         clear();
-        m_display=o->getString(L"text");
-        if(m_display==L"")
-            m_display=o->getString(L"display");
-        m_expand=o->getString(L"expand");        
-        m_uses=o->ivalues[L"uses"];
+        //m_uses=o->ivalues[L"uses"];
         m_object.reset(o);
-
-        m_source=o->source;
     }
-    SourceResult(Source *s_, Object *o_, const CString &d_, const CString &e_, int b_, int u_, int id_, void *data_) {
-        clear();
-        m_source=s_;
-        m_object.reset(o_);
-        m_expand=e_;
-        m_bonus=b_;
-        m_uses=u_;
-    }
-    SourceResult(const CString &_key, const CString &_display, const CString &_expand, Source *_s, int _id=0, void *_data=0, int _uses=0) { 
-        clear();
-        m_source=_s;
-        m_display=_display;
-        m_expand=_expand;
-        m_uses=_uses;
-    }
-
     std::shared_ptr<Object> &object() {
         return m_object;
     }
-    Source *&source() {
-        return m_source;
+    Source *source() {
+        if(!m_object.get())
+            return 0;
+        return m_object->source;
     }
-    CString &display() {
-        return m_display;
+    CString display() {
+        if(!m_object.get())
+            return "";
+        CString t=m_object->getString(L"text");
+        if(t!=L"")
+            return m_object->getString(L"display");
+        return t;
     }
-    CString &expand() {
-        return m_expand;
+    CString expand() {
+        if(!m_object.get())
+            return "";
+        return m_object->getString(L"expand");
     }
-    CString &iconname() {
-        return m_iconname;
+    CString iconname() {
+        return m_object->m_iconname;
     }
     int &bonus() {
-        return m_bonus;
+        return m_object->m_bonus;
     }
     int &uses() {
-        return m_uses;
+        return m_object->m_uses;
     }
     int &rank() {
-        return m_rank;
+        return m_object->m_rank;
     }
 
     std::shared_ptr<Object>          m_object;
-    Source                          *m_source;    
-    CString                          m_display;
-    CString                          m_expand;
-    int                              m_bonus;
-    int                              m_uses;
-
-    // temporary for automatic
-    CString                          m_iconname;
-
-    // no saving required (and no copy )
-    int                              m_rank;
 };
 
 struct RuleArg {
     RuleArg() { 
-        //m_results.push_back(SourceResult());
-    }
-    RuleArg(const CString &_key, const CString &_display, const CString &_expand, Source *_s, int _id=0, void *_data=0, int _uses=0) { 
-        //key=_key;
-        m_results.push_back(SourceResult(_s,0,_display,_expand,0, _uses, _id, _data));
     }
     RuleArg(const RuleArg &s) {
         *this=s; // copy all fields stupidly
     }
-
     // easy access to the current object on RuleArg
     std::shared_ptr<Object> &object(int i=0) {
         return item(i).m_object;
     }
-    Source *&source(int i=0) {
-        return item(i).m_source;
+    Source *source(int i=0) {
+        return item(i).source();
     }
-    CString &display(int i=0) {
-        return item(i).m_display;
+    CString display(int i=0) {
+        return item(i).display();
     }
-    CString &expand(int i=0) {
-        return item(i).m_expand;
+    CString expand(int i=0) {
+        return item(i).display();
     }
-    CString &iconname(int i=0) {
-        return item(i).m_iconname;
+    CString iconname(int i=0) {
+        return item(i).iconname();
     }
     int &bonus(int i=0) {
-        return item(i).m_bonus;
+        return item(i).bonus();
     }
     int &uses(int i=0) {
-        return item(i).m_uses;
+        return item(i).uses();
     }
-    /*int &id(int i=0) {
-        return item(i).m_uses;
-    }*/
     int &rank(int i=0) {
-        return item(i).m_rank;
+        return item(i).rank();
     }
     bool isEmpty() {
         return m_results.size()==0;

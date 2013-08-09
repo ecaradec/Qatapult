@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Source.h"
 
- int getResultsCB(void *NotUsed, int argc, char **argv, char **azColName) {
+ /*int getResultsCB(void *NotUsed, int argc, char **argv, char **azColName) {
      Info *pinfo=(Info*)NotUsed;
      pinfo->results->push_back(SourceResult(UTF8toUTF16(argv[0]),         // key
                                             UTF8toUTF16(argv[1]),         // display
@@ -12,7 +12,7 @@
                                             atoi(argv[4]?argv[4]:"0"))); // bonus
     return 0;
 }
-
+*/
 
 int getStringCB(void *NotUsed, int argc, char **argv, char **azColName) {
      *((CString*)NotUsed)=argv[0];
