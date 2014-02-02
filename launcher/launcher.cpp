@@ -42,7 +42,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		strDataToSend.ReleaseBuffer();
         return 0;
     }
-        
+            
     OleInitialize(0);
     //CoInitialize(0);
 
@@ -55,10 +55,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
     Qatapult gui; 
-
-    //CMessageLoop ml;
-    //ml.Run();
-
+    
     MSG msg;
     while(GetMessage(&msg, NULL, 0, 0) > 0)
     {
@@ -76,12 +73,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             BOOL b=TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-
-        /*LRESULT lres=DispatchMessage(&msg);        
-        if(msg.message == WM_KEYDOWN && lres!=FALSE ) {
-            BOOL b=TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }*/
     }
     
     UnregisterClass(L"GUI",0);

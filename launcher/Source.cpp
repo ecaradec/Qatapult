@@ -49,7 +49,7 @@ CStringW sqlEscapeStringW(const CStringW &args) {
     return tmp;
 }
 
-void drawEmphased(Graphics &g, CString text, CString query, RectF &rect, int flags, StringAlignment align, float fontSize, DWORD color) {       
+void drawEmphased(Graphics &g, CString text, CString query, RectF &rect, int flags, int from, StringAlignment align, float fontSize, DWORD color) {       
     Gdiplus::Font hifont(g_fontfamily, fontSize, Gdiplus::FontStyleUnderline);
     Gdiplus::Font lofont(g_fontfamily, fontSize);
     Gdiplus::SolidBrush hibrush(Gdiplus::Color(color|0xFF000000));
@@ -92,6 +92,7 @@ void drawEmphased(Graphics &g, CString text, CString query, RectF &rect, int fla
     // I should really measure one by one then center the resulting text
     maxright+=hyphenbbox.Width/2;
     int q=0;
+
     for(int i=0;i<text.GetLength();i++) {
         CString cur=text[i];
         
@@ -102,16 +103,19 @@ void drawEmphased(Graphics &g, CString text, CString query, RectF &rect, int fla
             break;
         }
         
-        bool same=T[i]==Q[q];
-        if(same)
-            q++;
+        bool emphased=false;
+        if(i>=from) {
+            emphased=T[i]==Q[q];
+            if(emphased)
+                q++;
+        }
 
         Brush *b=&hibrush;
         Font *f=&lofont;
         if(flags==DE_UNDERLINE)
-            f=same?&hifont:&lofont;
+            f=emphased?&hifont:&lofont;
         else
-            b=same?&hibrush:&lobrush;
+            b=emphased?&hibrush:&lobrush;
         
         g.DrawString(cur, -1, f, r1, &sfmtdraw, b);
 

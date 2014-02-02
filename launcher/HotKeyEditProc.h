@@ -180,18 +180,28 @@ CString HotKeyToString(int modifier, int vk) {
     return mod+c;
 }
 
+struct HotKeyEdit : CWindowImpl<HotKeyEdit, CEdit> {
+    BEGIN_MSG_MAP(HotKeyEdit)
+        MESSAGE_HANDLER(WM_GETDLGCODE, OnGetDlgCode)
+        MESSAGE_HANDLER(WM_KEYDOWN, OnKeydown)
+        MESSAGE_HANDLER(WM_SYSKEYDOWN, OnSysKeydown)
+        MESSAGE_HANDLER(WM_CHAR, OnChar)
+    END_MSG_MAP()
 
-int lastEditHotkey=0;
-int lastEditHotkeyModifier=0;
+    int m_mod;
+    int m_vk;
 
-LRESULT CALLBACK HotKeyEditProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    if(msg == WM_GETDLGCODE) {
+    void setHotKey(int mod, int vk) {
+        m_mod=mod;
+        m_vk=vk;
+        SetWindowText(HotKeyToString(mod,vk));
+    }
+
+    LRESULT OnGetDlgCode(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
+        bHandled=TRUE;
         return DLGC_WANTALLKEYS;
-    } else if(msg==WM_KEYDOWN) { 
-
-        //CString tmp; tmp.Format(L"X : %x \n", hWnd);
-        //OutputDebugString(tmp);
-
+    }
+    LRESULT OnKeydown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
         // ignore dead keys
         if(wParam==VK_CAPITAL)
             return TRUE;
@@ -203,44 +213,39 @@ LRESULT CALLBACK HotKeyEditProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             return TRUE;
 
         //if(wParam>VK_MENU) {
-        lastEditHotkeyModifier=0;
-        CString mod;
+        int mod=0;
         BOOL bShift = GetKeyState(VK_SHIFT) & 0x8000;
         if(bShift) {
-            lastEditHotkeyModifier|=MOD_SHIFT;
+            mod|=MOD_SHIFT;
         }
         BOOL bCtl = GetKeyState(VK_CONTROL) & 0x8000;
         if(bCtl) {
-            lastEditHotkeyModifier|=MOD_CONTROL;
+            mod|=MOD_CONTROL;
         }
         BOOL bAlt = GetKeyState(VK_MENU) & 0x8000;
         if(bAlt) {
-            lastEditHotkeyModifier|=MOD_ALT;
+            mod|=MOD_ALT;
         }
         BOOL blWin= GetKeyState(VK_LWIN) & 0x8000;
         BOOL brWin= GetKeyState(VK_RWIN) & 0x8000;
         if(blWin ||brWin) {
-            lastEditHotkeyModifier|=MOD_WIN;
+            mod|=MOD_WIN;
         }
 
-        lastEditHotkey=wParam;
+        setHotKey(mod,wParam);
 
-        CString txt=HotKeyToString(lastEditHotkeyModifier, lastEditHotkey);
-        SetWindowText(hWnd,txt);
-        //ListView_SetItemText(hListView, ((NMLVDISPINFO*)lParam)->item.iItem, 0, (LPWSTR)txt.GetString()); 
-        // cancel just after giving the control the time to close with enter to differenciate
-        //SetFocus(::GetParent(hWnd));
         return TRUE;
-    } else if(msg==WM_SYSKEYDOWN) {
-        
+    }
+    LRESULT OnSysKeydown(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
+        bHandled=true;
         if(wParam==VK_RETURN) {
             return TRUE;
         }
 
-        return TRUE;
-    } else if(msg==WM_CHAR) {
-        return TRUE;
+        return TRUE;    
     }
-
-    return CallWindowProc(OldHotKeyEditProc,hWnd, msg, wParam, lParam);
-}
+    LRESULT OnChar(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
+        bHandled=true;
+        return TRUE;    
+    }
+};

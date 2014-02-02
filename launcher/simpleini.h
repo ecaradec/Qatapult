@@ -12,7 +12,7 @@ extern pugi::xml_document settings;
 extern pugi::xml_document settingsWT; // settings for the working thread
 
 
-inline pugi::xml_node ensureXMLPath(pugi::xml_document &settings, const char *path) {
+inline pugi::xml_node ensureXMLPath(pugi::xml_node &settings, const char *path) {
     CStringA p(path);
     pugi::xml_node n=settings.select_single_node(p).node();
     if( n.empty() ) {

@@ -33,7 +33,7 @@ struct WebsiteSource : DBSource {
         m_icon=L"icons\\website.png";
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
-        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+        if(activetypes.size()>0 && activetypes.find(L"WEBSITE")==activetypes.end())
             return;
 
         CString q(query);
@@ -44,10 +44,10 @@ struct WebsiteSource : DBSource {
         websites.findBy(records, "text", UTF16toUTF8(fuzzyfyArg(q)) );
         for(int i=0;i<records.size();i++) {
             Record &r=records[i];
-            results.push_back(SourceResult(new Object(ItoS(r.ivalues[L"key"]),
-                                                      type,
+            results.push_back(new Object(ItoS(r.ivalues[L"key"]),
+                                                      L"WEBSITE",
                                                       this,
-                                                      r.values[L"text"])));
+                                                      r.values[L"text"]));
             results.back().uses()=r.ivalues[L"uses"];
 
             results.back().object()->values=records[i].values;

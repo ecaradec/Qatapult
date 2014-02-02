@@ -1,4 +1,4 @@
-   
+#pragma once
 struct PluginDesc {
     PluginDesc(){}
     PluginDesc(const TCHAR *n): name(n), key(n) {
@@ -36,12 +36,12 @@ void getPluginList(std::vector<PluginDesc> &plugins) {
     //plugins.push_back(L"Websites");           plugins.back().desc=L"";
     //plugins.push_back(L"FileHistory");
     plugins.push_back(L"Network");            plugins.back().desc=L"Add shared drives objects";
-    plugins.push_back(L"Contacts");           plugins.back().desc=L"Add your Gmail contacts (requires some configuration in Gmail pane )";
+    //plugins.push_back(L"Contacts");           plugins.back().desc=L"Add your Gmail contacts (requires some configuration in Gmail pane )";
     plugins.push_back(L"ExplorerSelection");  plugins.back().desc=L"Add a currentselection object that's the currently selected item in Windows Explorer";
     plugins.push_back(L"Windows");            plugins.back().desc=L"Add objects for the currently opened window";
 
-    plugins.push_back(L"EmailFile");          plugins.back().desc=L"Allow to send file to some contact";
-    plugins.push_back(L"EmailText");          plugins.back().desc=L"Allow to send a text to some contact";
+    //plugins.push_back(L"EmailFile");          plugins.back().desc=L"Allow to send file to some contact";
+    //plugins.push_back(L"EmailText");          plugins.back().desc=L"Allow to send a text to some contact";
     plugins.push_back(L"WebsiteSearch");      plugins.back().desc=L"Trigger browser searches";
 
     std::vector<CString> pluginsfolders;

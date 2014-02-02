@@ -56,16 +56,10 @@
     <ClInclude Include="EmailVerbRule.h">
       <Filter>rules</Filter>
     </ClInclude>
-    <ClInclude Include="EmailVerbSource.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="DBSource.h">
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="FileSource.h">
-      <Filter>sources</Filter>
-    </ClInclude>
-    <ClInclude Include="FileVerbSource.h">
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="FileVerbRule.h">
@@ -191,9 +185,6 @@
     <ClInclude Include="WindowSource.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="SearchWithVerbSource.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="SendEmail.h">
       <Filter>helpers</Filter>
     </ClInclude>
@@ -254,6 +245,15 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="DllSource.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="ActionsDlg.h">
+      <Filter>settings</Filter>
+    </ClInclude>
+    <ClInclude Include="Layout.h">
+      <Filter>settings</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="json\block_allocator.cpp">
@@ -331,6 +331,9 @@
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="launcher.cpp">
       <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="Layout.cpp">
+      <Filter>settings</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -42,12 +42,12 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\devel\external_lib\zlib-1.2.5;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;;c:\devel\external_lib;C:\Program Files (x86)\Visual Leak Detector\include\;C:\devel\external_lib\atlserver\include;;C:\devel\external_lib\WTL\include</IncludePath>
-    <LibraryPath>$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib;C:\Program Files (x86)\Visual Leak Detector\lib\Win32</LibraryPath>
+    <IncludePath>C:\devel\external_lib\zlib-1.2.5;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;c:\devel\external_lib;C:\Program Files (x86)\Visual Leak Detector\include\;C:\devel\external_lib\WTL80\include;C:\devel\external_lib\atlserver\include</IncludePath>
+    <LibraryPath>C:\Qt\5.1.1\msvc2010\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib;C:\Program Files (x86)\Visual Leak Detector\lib\Win32</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\devel\external_lib\zlib-1.2.5;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;;c:\devel\external_lib;C:\Program Files (x86)\Visual Leak Detector\include\;C:\devel\external_lib\atlserver\include;C:\devel\external_lib\WTL\include</IncludePath>
+    <IncludePath>C:\devel\external_lib\zlib-1.2.5;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;c:\devel\external_lib;C:\Program Files (x86)\Visual Leak Detector\include\;C:\devel\external_lib\WTL80\include;C:\devel\external_lib\atlserver\include</IncludePath>
     <LibraryPath>$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib;C:\Program Files (x86)\Visual Leak Detector\lib\Win32</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -125,17 +125,20 @@
     <None Include="res\launcher.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ActionsDlg.h" />
     <ClInclude Include="ActiveScriptHost.h" />
     <ClInclude Include="activscp.h" />
     <ClInclude Include="activscp_plus.h" />
     <ClInclude Include="ClockSource.h" />
     <ClInclude Include="CommandObject.h" />
+    <ClInclude Include="DllSource.h" />
     <ClInclude Include="DYNACALL.H" />
     <ClInclude Include="EmailDlg.h" />
     <ClInclude Include="GeneralDlg.h" />
     <ClInclude Include="HotKeyEditProc.h" />
     <ClInclude Include="json\block_allocator.h" />
     <ClInclude Include="json\json.h" />
+    <ClInclude Include="Layout.h" />
     <ClInclude Include="makeObject.h" />
     <ClInclude Include="PluginDlg.h" />
     <ClInclude Include="PluginList.h" />
@@ -147,10 +150,8 @@
     <ClInclude Include="DBSource.h" />
     <ClInclude Include="EmailFileVerbRule.h" />
     <ClInclude Include="EmailVerbRule.h" />
-    <ClInclude Include="EmailVerbSource.h" />
     <ClInclude Include="FileSource.h" />
     <ClInclude Include="FileVerbRule.h" />
-    <ClInclude Include="FileVerbSource.h" />
     <ClInclude Include="FindFileRecursively.h" />
     <ClInclude Include="geticon.h" />
     <ClInclude Include="getItemVerbs.h" />
@@ -171,7 +172,6 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Rule.h" />
     <ClInclude Include="ScriptRule.h" />
-    <ClInclude Include="SearchWithVerbSource.h" />
     <ClInclude Include="SendEmail.h" />
     <ClInclude Include="SettingsDlg.h" />
     <ClInclude Include="ShellExecuteRule.h" />
@@ -220,6 +220,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Layout.cpp" />
     <ClCompile Include="levenshtein_distance.cpp" />
     <ClCompile Include="makeObject.cpp" />
     <ClCompile Include="Qatapult.cpp" />

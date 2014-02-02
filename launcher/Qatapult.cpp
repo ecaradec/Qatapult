@@ -1,3 +1,46 @@
+//
+// Role of objects :
+// Sources : produces list of objects with types
+// Types   : define the individual item in a rule and manage if it match a level of a rule
+// Rules   : controls what to do when a sequence of types has been typed
+//
+// Sources are never filtered, they are always asked for everything and are trusted to only
+// output objects when appropriate. They act as if there was only one single large source actually.
+
+// Issues to work on :
+// GET A NEW WORKING VERSION OUT
+// PROCESS PLUGIN
+// DISAPEARED RESULTS : selected file objects indexed should be removed if they don't exists anymore 
+// DRAWICON - drawIcon should replace getIcon everywhere, it's not possible to return a pointer to such a complete type and use it internally between languages
+//      - it also requires to store a pointer to the icon inside each object whereas a single pointer to the source might be enough
+// DEPLICATE RESULTS : filesystem,filehistory,startmenuindex can produce duplicates
+//      - should sources of the same type store in the same database to ensure unicity ?
+//      - should theses 3 sources be merged into one that seek both the filesystem dans the index and returns merged results
+//      - even filesource need a db to save it's previous results
+// SQL MIGRATIONS : devise a standard way to handle the sqlite migrations
+//      - currently all DB can update in seconds but the GMAIL DB and it doesn't work. So we can just erase all DB to upgrade.
+//      - each DB should store a version number in a table to indicate the version of it's current scheme
+//      - each DB should store data in a table of the same name (objects ?)
+// DATA IN OBJECT TYPE : the storage of data in the type Object is not always used when objects are derived which makes things unclear about where data come from in code
+//      - we should create an mapobject which has a map and a standard object that can be derived
+//      - we should create one map that can contain various type of data
+// SERIALISATION : serialisation of data in json and in xml could be removed to a single serialize/unserialize concept where json could be send to the 
+// source object that created the object first
+// PRESENTATION OF RESULT : results could be present as a sentence like alfred
+// some things are more complex than alfred like : 5*5, search anything go to google
+// 3RD PANE IS NOT SHOW IMMEDIATLY : type_something, search_with should show Google immediatly
+//      - if a rule trigger a 3rd pane it should show immediatly if the second rule requires it
+//      - it means that there can be more than two search when typing things (might show things a little bit ? )
+//      - but a cache could be used to avoid changing results in next pane if types are identical to the previous query ?
+//      - it might not be enough : calc use the content of the first pane to show content so it needs to be active after each change
+//      - would allow faster execution
+// SCRIPT PLUGINS : allows to load dll with midl defined method
+// NATIVE PLUGINS : allows plugins to be created in a native language for accessing everything available on the PC not just what's available in javascript
+// OUT OF ORDER RULES : rules could be made to match anything a rule still match even if it's not in order : it might make things easier to use
+//      - open / file would work the same as file / open
+
+// LUA ? Not sure it would help
+
 #include "stdafx.h"
 #include "Qatapult.h"
 #include "PainterScript.h"
@@ -13,13 +56,10 @@
 #include "CommandRule.h"
 #include "Record.h"
 
-UI *g_pUI; // very lazy way to give access to the ui to the ui window proc
+UI       *g_pUI; // very lazy way to give access to the ui to the ui window proc
 Qatapult *g_pQatapult;
 
-#include "QatapultPlugin.h"
 #include "PluginList.h"
-#include "HotKeyEditProc.h"
-#include "GeneralDlg.h"
 
 CString settingsini;
 pugi::xml_document settings;
@@ -77,6 +117,13 @@ Hotkey hotkeys[]={
 
 #define WM_ICON_NOTIFY WM_APP+10
 
+
+#include "SettingsDlg.h"
+#include "QatapultPlugin.h"
+#include "DllSource.h"
+
+SettingsDlg* settingsdlg=0;
+
 struct QatapultAtlModule : CAtlModule {
     HRESULT AddCommonRGSReplacements(IRegistrarBase *) {
         return S_OK;
@@ -93,107 +140,6 @@ CString getGUID() {
 int DelayLoadExceptionFilter(unsigned int code, struct _EXCEPTION_POINTERS *ep) {
     return EXCEPTION_CONTINUE_EXECUTION;
 }
-
-BOOL CALLBACK ToggleSettingsEWProc(HWND hwnd, LPARAM lParam) {
-    TCHAR className[256];
-    GetClassName(hwnd, className, sizeof(className));
-    if(_tcscmp(L"#32770", className)==0)
-        ShowWindow(hwnd, (hwnd==(HWND)lParam)?SW_SHOW:SW_HIDE);
-    return TRUE;
-}
-
-#include "SettingsDlg.h"
-#include "EmailDlg.h"
-
-#include <atlrx.h>
-
-#include "PluginDlg.h"
-#include "ShortcutDlg.h"
-#include "WebsiteSearchDlg.h"
-
-struct DllSource : Source {
-
-    struct DllObject : Object {
-        DllObject(DllSource *dllsource,DWORD hobject) {
-            m_hobject=hobject;
-            m_dllsource=dllsource;
-        }
-
-        DllSource  *m_dllsource;
-        DWORD       m_hobject;
-    };
-
-    FARPROC _drawItem;
-    FARPROC _collect;
-    FARPROC _beginCollect;
-    FARPROC _validate;
-    FARPROC _crawl;
-    FARPROC _getString;
-    FARPROC _getInt;
-    FARPROC _rate;
-
-    DllSource(TCHAR *path) : Source(L"Unknown") {
-        hmod=LoadLibrary(path);
-
-        _drawItem=GetProcAddress(hmod, "drawItem");
-        _beginCollect=GetProcAddress(hmod, "beginCollect");
-        _collect=GetProcAddress(hmod, "collect");
-        _validate=GetProcAddress(hmod, "validate");
-        _crawl=GetProcAddress(hmod, "crawl");
-        _getString=GetProcAddress(hmod, "getString");
-        _getInt=GetProcAddress(hmod, "getInt");
-        _rate=GetProcAddress(hmod, "rate");
-        //_rate=GetProcAddress(hmod, "getOptionDlg");
-
-        // _setMatchFn(FuzzyMatch)
-        //TCHAR buff[4096];
-        //_getString(L"type",buff,4086);
-        //type=buff;
-    }
-    virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
-        // empty result may not have an object
-        if(sr->object())
-            sr->object()->drawItem(g,sr,r);
-    }
-    // get results
-    // fuse index and bonus from the db
-    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
-        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
-            return;
-        
-        _beginCollect();
-
-        DWORD hobject;
-        while( _collect(/*&hobject*/) ) {
-            results.push_back(SourceResult(new DllObject(this,hobject)));
-        }
-    }    
-    virtual void validate(SourceResult *r)  {
-        //_validate(r);
-    }
-    virtual void crawl() {
-    }
-    // unused yet
-    // get named data of various types
-    virtual Source *getSource(SourceResult &sr, CString &q) {
-        return 0;
-    }
-    virtual int getInt(const TCHAR *itemquery) { 
-        return false;
-    }
-
-    virtual void rate(const CString &q, SourceResult *r) {
-        /*r->rank()=0;
-        if(m_prefix!=0 && r->display()[0]==m_prefix)
-            r->rank()+=100;
-
-        CString T(r->object()->getString(L"text"));
-        r->rank()=min(100.0f,r->uses()*5.0f) + r->bonus() + r->rank()+100.0f*evalMatch(T,q);*/
-    }
-
-    HMODULE hmod;
-};
-
 
 int objects=0;
 Qatapult::Qatapult():m_input(this), m_invalidatepending(false) {
@@ -282,10 +228,22 @@ bool Qatapult::isSourceEnabled(const char *name) {
     if(n.empty()) return true;
     return CStringA(n.child_value())=="1";
 }
-bool Qatapult::isSourceByDefault(const char *name) {
-    pugi::xml_node n=settings.select_single_node("settings/sources/"+CStringA(name)+"/default").node();
-    if(n.empty()) return true;
-    return CStringA(n.child_value())=="1";
+LRESULT CALLBACK WndProcedure(HWND hWnd, UINT Msg,
+			   WPARAM wParam, LPARAM lParam)
+{
+    switch(Msg)
+    {
+    // If the user wants to close the application
+    case WM_DESTROY:
+        // then close it
+        PostQuitMessage(WM_QUIT);
+        break;
+    default:
+        // Process the left-over messages
+        return DefWindowProc(hWnd, Msg, wParam, lParam);
+    }
+    // If something was not done, let it go
+    return 0;
 }
 
 void Qatapult::init() {
@@ -319,6 +277,25 @@ void Qatapult::init() {
   
     m_buffer.Create(640,800,32,PixelFormat32bppARGB);
 
+	WNDCLASSEX WndClsEx;
+
+	// Create the application window
+	WndClsEx.cbSize        = sizeof(WNDCLASSEX);
+	WndClsEx.style         = CS_HREDRAW | CS_VREDRAW;
+	WndClsEx.lpfnWndProc   = WndProcedure;
+	WndClsEx.cbClsExtra    = 0;
+	WndClsEx.cbWndExtra    = 0;
+	WndClsEx.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
+	WndClsEx.hCursor       = LoadCursor(NULL, IDC_ARROW);
+	WndClsEx.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	WndClsEx.lpszMenuName  = NULL;
+	WndClsEx.lpszClassName = L"Qatapult";
+	WndClsEx.hInstance     = 0;
+	WndClsEx.hIconSm       = LoadIcon(NULL, IDI_APPLICATION);
+
+	// Register the application
+	RegisterClassEx(&WndClsEx);
+
     HRESULT hr;
     if(m_hwnd==0) {
         m_hwnd=CreateWindowEx(WS_EX_TOOLWINDOW|WS_EX_LAYERED|WS_EX_TOPMOST, L"STATIC", L"Qatapult", /*WS_VISIBLE|*/WS_POPUP|WS_CHILD, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -342,7 +319,6 @@ void Qatapult::init() {
     m_commandsHost.Initialize(L"Qatapult",L"JScript");
     m_commandsHost.AddObject(L"qatapult",(IDispatch*)m_pQatapultScript);
     
-
     m_focusedresult=0;
     m_resultspos=0;
     m_textalign=StringAlignmentCenter;
@@ -351,84 +327,56 @@ void Qatapult::init() {
     // sources
     //settings.select_single_node("settings/sources/")
 
-    /*sourceofsources=new SourceOfSources;
+    sourceofsources=new SourceOfSources;
     addSource(sourceofsources);
-    sourceofsources->def=true;*/
-
+    
     addSource(L"Filesystem",new FileSource);
     addSource(L"IndexedFiles",new StartMenuSource(m_hwnd));
-    /*addSource(L"Network",new NetworkSource);
-    addSource(L"Contacts",new ContactSource);
+    addSource(L"Network",new NetworkSource);
+    //addSource(L"Contacts",new ContactSource);
     addSource(L"Websites",new WebsiteSource);
     addSource(L"FileHistory",new FileHistorySource);
     addSource(L"ExplorerSelection",new CurrentSelectionSource);
     addSource(L"Windows", new WindowSource);
 
     Source *tt=addSource(new TextSource);
-    tt->def=true;*/
-    addSource(new FileVerbSource);    
+
+    //addRule(L"CLOCK", new ClockRule);    
     
-    //addRule(L"CLOCK", new ClockRule);
-    addRule(Type(L"FILE",true), Type(L"FILEVERB"), new FileVerbRule); 
+    // file rules
+    addRule(Type(L"FILE",true), Keyword(L"Open",L"icons\\open.png"), new OpenFileRule);
+    addRule(Type(L"FILE",true), Keyword(L"Edit",L"icons\\edit.png"), new EditFileRule);
+    addRule(Type(L"FILE",true), Keyword(L"Run As",L"icons\\runas.png"), new RunAsFileRule);
+    addRule(Type(L"FILE",true), Keyword(L"Properties",L"icons\\properties.png"), new PropertiesFileRule);    
     
-    /*
-    TextItemSource *t;
-
-    t=new TextItemSource(L"QATAPULTVERB");
-    addSource(t);
-    t->addItem(L"Quit",L"icons\\exit.png");
-    t->addItem(L"Reload",L"icons\\reload.png");
-    t->addItem(L"Options",L"icons\\options.png");
-    //t->def=true;
-    addRule(Type(L"FILE", false, Array(Type::Predicat(L"rfilename", L"QATAPULT.EXE"))), Type(L"QATAPULTVERB"), new QatapultRule);
-
-    if(isSourceEnabled("EmailFile")) {
-        t=new TextItemSource(L"EMAILFILEVERB");
-        addSource(t);
-        t->addItem(L"Email to",L"icons\\emailto.png");
-        addRule(Type(L"FILE"),Type(t->type),Type(L"CONTACT"),new EmailFileVerbRule);
-    }
-
-    if(isSourceEnabled("EmailText")) {
-        t=new TextItemSource(L"EMAILTEXTVERB");
-        addSource(t);
-        t->addItem(L"Email to",L"icons\\emailto.png");        
-        addRule(Type(L"TEXT"),Type(t->type),Type(L"CONTACT"),new EmailVerbRule);        
-    }
-
-    if(isSourceEnabled("WebsiteSearch")) {
-        t=new TextItemSource(L"SEARCHWITHVERB");
-        addSource(t);
-        t->addItem(L"Search With",L"icons\\searchwith.png");        
-        addRule(Type(L"TEXT"),Type(t->type),Type(L"WEBSITE"),new WebSearchRule);
-    }
+    // qatapult rule
+    Type qatapultExeType=Type(L"FILE", false, Array(Type::Predicat(L"rfilename", L"=", L"QATAPULT.EXE")));
+    addRule(qatapultExeType, Keyword(L"Quit",L"icons\\exit.png"), new QuitQatapultRule);
+    addRule(qatapultExeType, Keyword(L"Reload",L"icons\\reload.png"), new ReloadQatapultRule);
+    addRule(qatapultExeType, Keyword(L"Options",L"icons\\options.png"), new OptionsQatapultRule);    
     
+    // mail rule
+    addRule(Type(L"FILE"), Keyword(L"Email to",L"icons\\emailto.png"), Type(L"CONTACT"),new EmailFileVerbRule);
+    addRule(Type(L"TEXT"), Keyword(L"Email to",L"icons\\emailto.png"), Type(L"CONTACT"),new EmailVerbRule);    
+    
+    // website rule
+    addRule(Type(L"TEXT"), Keyword(L"Search With",L"icons\\searchwith.png"), Type(L"WEBSITE"),new WebSearchRule);        
+
     // sources
-    t=new TextItemSource(L"SOURCEVERB");
-    addSource(t);
-    t->addItem(L"Open",L"icons\\open.png");
-    addRule(Type(L"SOURCE"),Type(t->type),new SourceRule(this));
-
-    */
-
-    // commands 
-    /*t=new TextItemSource(L"COMMANDVERB");
-    addSource(t);
-    t->addItem(L"Save",L"icons\\open.png");
-    t->addItem(L"Run after delay",L"icons\\open.png");
-    t->addItem(L"Run at time",L"icons\\open.png");
-    addRule(Type(L"COMMAND"),Type(t->type),new CommandRule);*/
-
+    addRule(Type(L"TEXT"),Keyword(L"Open",L"icons\\open.png"),Type(L"WEBSITE"),new SourceRule(this));
+    
     // empty
-    /*m_emptysource=t=new TextItemSource(L"EMPTY");
+    TextItemSource *t;
+    m_emptysource=t=new TextItemSource(L"EMPTY");
     t->addItem(L"",L"");
     addSource(m_emptysource);
 
     // pseudo source for object created as return
+    // objects created that way should probably store which source has created them and send to the correct source for loading
     m_inputsource=new Source(L"INPUTSOURCE");
     addSource(m_inputsource);
     //m_history.m_inputsource = m_inputsource;
-    */
+    
 
     //
     // load hotkeys
@@ -444,10 +392,10 @@ void Qatapult::init() {
     RegisterHotKey(g_pUI->getHWND(), 1, hotkeys[HK_SHOW].mod, hotkeys[HK_SHOW].vk);
 
     // everything else
-    for(int i=1;i<HK_LAST;i++) {
-        hotkeys[i].vk=GetSettingsInt(L"hotKeys/"+CString(hotkeys[i].name), L"vk", hotkeys[i].vk);
-        hotkeys[i].mod=GetSettingsInt(L"hotKeys/"+CString(hotkeys[i].name), L"mod", hotkeys[i].mod);
-    }    
+    //for(int i=1;i<HK_LAST;i++) {
+    //    hotkeys[i].vk=GetSettingsInt(L"hotKeys/"+CString(hotkeys[i].name), L"vk", hotkeys[i].vk);
+    //    hotkeys[i].mod=GetSettingsInt(L"hotKeys/"+CString(hotkeys[i].name), L"mod", hotkeys[i].mod);
+    //}
 
     loadRules(settings);
 
@@ -475,7 +423,6 @@ void Qatapult::init() {
             str=str.Left(str.Find(L"\\"));
             str=str.MakeLower();
             Source *s=new JScriptSource(this,str,*it);
-            s->def=true;
             addSource(s);
         }
 
@@ -519,12 +466,28 @@ void Qatapult::init() {
     PostThreadMessage(m_crawlThreadId, WM_RELOADSETTINGS, 0, 0);            
     //PostThreadMessage(m_crawlThreadId, WM_INVALIDATEINDEX, 0, 0);
     //PostQuitMessage(0);
+
+    //createSettingsDlg();
+    //settingsdlg->CenterWindow();
+    //settingsdlg->ShowWindow(SW_SHOW);
 }
 
-PluginsDlg       pluginsdlg;
-SearchFoldersDlg searchfolderdlg;
-ShortcutDlg      shortcutdlg;
-WebsiteSearchDlg websiteSearchDlg;
+Type Qatapult::Keyword(const TCHAR *text, const TCHAR *icon, bool def) {
+    //TextItemSource *t=new TextItemSource(getGUID());
+    CString type=CString(L"keyword/")+text;
+    TextItemSource *t=0;
+    for(std::vector<Source*>::iterator it=m_sources.begin(); it!=m_sources.end(); it++) {
+        if((*it)->m_name == type) {
+            return Type(type);
+        }
+    }
+
+    t=new TextItemSource(CString(L"keyword/")+text);
+    addSource(t);
+    t->addItem(text,icon);
+
+    return Type(type);
+}
 
 void clearRuleArg(RuleArg &r) {
     r.m_results.clear();
@@ -533,22 +496,7 @@ void clearRuleArg(RuleArg &r) {
 
 void Qatapult::reset() {
     m_systray.Destroy();
-
-    if(pluginsdlg.IsWindow())
-        pluginsdlg.DestroyWindow();
-
-    if(searchfolderdlg.IsWindow())
-        searchfolderdlg.DestroyWindow();
     
-    if(shortcutdlg.IsWindow())
-        shortcutdlg.DestroyWindow();
-
-    if(websiteSearchDlg.IsWindow())
-        websiteSearchDlg.DestroyWindow();
-
-    if(shortcutdlg.IsWindow())
-        shortcutdlg.DestroyWindow();
-
     m_buffer.Destroy();
 
     bool b=!!PostThreadMessage(m_crawlThreadId,WM_STOPWORKERTHREAD,0,0);
@@ -620,28 +568,23 @@ void Qatapult::loadRules(pugi::xml_document &settings) {
 
                 std::vector<Type::Predicat> preds;
                 pugi::xpath_node_set elts=itarg->node().select_nodes("pred");
-                for(pugi::xpath_node_set::const_iterator itelt=elts.begin(); itelt!=elts.end(); itelt++) {
-                    CHAR name[256];
-                    CHAR op[256];
-                    CStringA str(itelt->node().child_value());
-                    sscanf_s(str, "%[^~=]", name, sizeof(name));
-                    sscanf_s(str.Mid(strlen(name)), "%[~=]", op, sizeof(op));
-                    CString value(str.Mid(strlen(name)+strlen(op)));
-                    preds.push_back(Type::Predicat(name,value,op));
-                }
+                pugi::xpath_node_set::const_iterator itelt=elts.begin();
+                CHAR name[256];
+                CHAR op[256];
+                CStringA str(itelt->node().child_value());
+                sscanf_s(str, "%[^~=]", name, sizeof(name));
+                sscanf_s(str.Mid(strlen(name)), "%[~=]", op, sizeof(op));
+                CString value(str.Mid(strlen(name)+strlen(op)));
+                preds.push_back(Type::Predicat(name,op,value));                
                 
                 r->m_types.push_back(Type(type,false,preds));
             } else {
-                pugi::xpath_node_set elts=itarg->node().select_nodes("item");
-                TextItemSource *t=new TextItemSource(getGUID());
-                addSource(t);
-                t->def = (itarg==ns.begin()); // if first then it's a default source
-                for(pugi::xpath_node_set::const_iterator itelt=elts.begin(); itelt!=elts.end(); itelt++) {
-                    CString lbl=UTF8toUTF16(itelt->node().child_value("lbl"));
-                    CString ico=UTF8toUTF16(itelt->node().child_value("ico"));
-                    t->addItem(lbl.GetString(),ico.GetString());                        
-                }
-                r->m_types.push_back(Type(t->type));
+                pugi::xpath_node_set elts=itarg->node().select_nodes("item");                
+                
+                CString lbl=UTF8toUTF16(itarg->node().child_value("lbl"));
+                CString ico=UTF8toUTF16(itarg->node().child_value("ico"));
+                
+                r->m_types.push_back(Keyword(lbl,ico));
             }
 
             r->m_types.back().m_multi=itarg->node().attribute("multi").as_bool();
@@ -658,9 +601,8 @@ Source *Qatapult::addSource(Source *s) {
 Source *Qatapult::addSource(const TCHAR *name,Source *s) {
     CStringA n(UTF16toUTF8(name));
     if(isSourceEnabled(n)) {
-        //sourceofsources->m_sources.push_back(s);
+        sourceofsources->m_sources.push_back(s);
         addSource(s);
-        s->def=isSourceByDefault(n);        
     } else {
         delete s;
     }
@@ -744,82 +686,17 @@ void Qatapult::invalidate() {
 }
 
 void Qatapult::destroySettingsDlg() {
-    DestroyWindow(m_hwndsettings);
-    //DestroyWindow();
+    if(settingsdlg) {
+        settingsdlg->DestroyWindow();
+        delete settingsdlg;
+        settingsdlg=0;
+    }
 }
 
 extern BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-void Qatapult::createSettingsDlg() {
-    m_hwndsettings=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_SETTINGS), 0, (DLGPROC)SettingsDlgProc);
-    //ShowWindow(m_hwndsettings, SW_SHOW);
-    HWND hTreeView=GetDlgItem(m_hwndsettings, IDC_TREE);    
-
-    pluginsdlg.Create(m_hwndsettings);
-    pluginsdlg.SetWindowPos(0, 160, 11, 0, 0, SWP_NOSIZE);
-
-    HWND hwndGmail=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GMAILCONTACTS), m_hwndsettings, (DLGPROC)DlgProc);
-    SetWindowPos(hwndGmail, 0, 160, 0, 0, 0, SWP_NOSIZE);
-
-    //HWND hwndEmail=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_EMAIL), m_hwndsettings, (DLGPROC)DlgProc);
-    //SetWindowPos(hwndEmail, 0, 160, 0, 0, 0, SWP_NOSIZE);
-
-    searchfolderdlg.Create(m_hwndsettings);
-    searchfolderdlg.SetWindowPos(0, 160, 11, 0, 0, SWP_NOSIZE);
-
-    shortcutdlg.Create(m_hwndsettings);
-    shortcutdlg.SetWindowPos(0, 160, 11, 0, 0, SWP_NOSIZE);
-    shortcutdlg.ShowWindow(SW_SHOW);
-
-    websiteSearchDlg.Create(m_hwndsettings);
-    websiteSearchDlg.SetWindowPos(0, 160, 11, 0, 0, SWP_NOSIZE);
-
-    HWND hwndG=CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_GENERAL), m_hwndsettings, (DLGPROC)GeneralDlgProc);
-    SetWindowPos(hwndG, 0, 160, 0, 0, 0, SWP_NOSIZE);
-
-
-    TV_INSERTSTRUCT tviis;
-    ZeroMemory(&(tviis.item), sizeof(TV_ITEM));    
-    tviis.itemex.state=TVIS_BOLD;    
-    tviis.itemex.stateMask=TVIS_BOLD;
-    tviis.hParent = TVI_ROOT;
-
-    tviis.item.pszText = L"Preferences";
-    tviis.item.mask = TVIF_TEXT|TVIF_STATE;
-    HTREEITEM htreeP=TreeView_InsertItem(hTreeView, &tviis);
-
-    tviis.item.mask = TVIF_TEXT|TVIF_PARAM;
-
-    tviis.item.pszText = L"General";
-    tviis.item.lParam=(LPARAM)hwndG;
-    HTREEITEM htreeG=TreeView_InsertItem(hTreeView, &tviis);
-
-    tviis.item.pszText = L"Shortcuts";
-    tviis.item.lParam=(LPARAM)shortcutdlg.m_hWnd;
-    HTREEITEM htreeShortcuts=TreeView_InsertItem(hTreeView, &tviis);
-
-    tviis.item.pszText = L"Plugins";
-    tviis.item.lParam=(LPARAM)pluginsdlg.m_hWnd;
-    HTREEITEM htreePl=TreeView_InsertItem(hTreeView, &tviis);
-
-    tviis.item.pszText = L"Plugins preferences";
-    tviis.item.mask = TVIF_TEXT|TVIF_STATE;
-    HTREEITEM htreePg=TreeView_InsertItem(hTreeView, &tviis);
-
-    tviis.item.mask = TVIF_TEXT|TVIF_PARAM;
-
-    tviis.item.pszText = L"Search folders";
-    tviis.item.lParam=(LPARAM)searchfolderdlg.m_hWnd;
-    HTREEITEM htreeSF=TreeView_InsertItem(hTreeView, &tviis);
-
-    tviis.item.pszText = L"Gmail contacts";
-    tviis.item.lParam=(LPARAM)hwndGmail;
-    HTREEITEM htreeGmail=TreeView_InsertItem(hTreeView, &tviis);
-
-    tviis.item.pszText = L"Website search";
-    tviis.item.lParam=(LPARAM)websiteSearchDlg.m_hWnd;
-    HTREEITEM htreeSearch=TreeView_InsertItem(hTreeView, &tviis);
-
-    BOOL b=TreeView_SelectItem(hTreeView, htreeG);
+void Qatapult::createSettingsDlg() {    
+    settingsdlg=new SettingsDlg;
+    settingsdlg->Create(0);
 }
 
 int Qatapult::getActiveRules(int pane, std::vector<RuleArg> &args, std::vector<Rule*> &activerules) {
@@ -861,13 +738,13 @@ void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleA
             return;
         }
 
-        // collect all active sources at this level            
-        std::map<CString,bool> activesources;
+        // collect all active types           
+        std::map<CString,bool> activetypes;
         for(uint i=0;i<activerules.size();i++)
             if(activerules[i]->m_types.size()>pane)
-                activesources[activerules[i]->m_types[pane].m_type]=true;
+                activetypes[activerules[i]->m_types[pane].m_type]=true;
 
-        if(activesources.size()==0) {
+        if(activetypes.size()==0) {
             return;
         }
 
@@ -875,24 +752,13 @@ void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleA
         // - sources need to filter by themselve from the 'activesources' arguments => this allows sources to output different types at once
         for(std::vector<Source*>::iterator it=m_sources.begin();it!=m_sources.end();it++) {                
             if(pane==0 && q==L"")
-                ;
-            else if(pane==0 && !(*it)->def)
-                ;
-            else {
-                //LONGLONG t0;
-	            //QueryPerformanceCounter((LARGE_INTEGER *) &t0);
-                CString sourcename=(*it)->type;
-                (*it)->collect(q, results, def, activesources);
-
-                //LONGLONG t1;
-	            //QueryPerformanceCounter((LARGE_INTEGER *) &t1);
-                //OutputDebugString((*it)->m_name+" : "+ItoS(t1-t0)+"\n");
-            }
+                continue;            
+            (*it)->collect(q, results, def, activetypes);
         }
         
     } else {
-        std::map<CString,bool> activesources;
-        m_customsources[pane]->collect(q,results,def,activesources);
+        std::map<CString,bool> activetypes;
+        m_customsources[pane]->collect(q,results,def,activetypes);
     }
 
     time_t currentTime;
@@ -946,11 +812,6 @@ void Qatapult::showNextArg() {
     }
 }
 
-// TODO : move to rulearg ??
-void copySourceResult(RuleArg &ra, SourceResult &r) {
-    ra.m_results.back()=r;
-}
-
 void Qatapult::ensureArgsCount(std::vector<RuleArg> &ral, int l, int flags) {
     if(flags&EA_REMOVE_EXTRA) {
         while(ral.size()>l) {
@@ -994,8 +855,10 @@ void Qatapult::cancelResult() {
 // setarg should not be used for appending objects
 void Qatapult::setResult(uint pane, SourceResult &r) {
     ensureArgsCount(m_args,pane+1,EA_NO_REMOVE_EXTRA);
-    if(m_args[pane].m_results.size()==0) m_args[pane].m_results.push_back(SourceResult());
-    copySourceResult(m_args[pane],r);
+    if(m_args[pane].m_results.size()==0)
+        m_args[pane].m_results.push_back(r);
+    else
+        m_args[pane].m_results.back()=r;
 }
 
 CString Qatapult::getResString(int i, const TCHAR *name) {
@@ -1086,7 +949,7 @@ void Qatapult::drawItem(INT i, INT e, INT x, INT y, INT w, INT h){
     g.SetInterpolationMode(InterpolationModeHighQualityBicubic);        
     g.SetCompositingQuality(CompositingQualityHighQuality);
     
-    o->drawItem(g, &m_args[i].item(e), RectF(float(x), float(y), float(w), float(h)));
+    o->drawIcon(g, RectF(float(x), float(y), float(w), float(h)));
 
     m_curWidth=max(m_curWidth,x+w);
     m_curHeight=max(m_curWidth,y+h);
@@ -1102,17 +965,17 @@ void Qatapult::drawResItem(INT i, INT x, INT y, INT w, INT h){
     g.SetInterpolationMode(InterpolationModeHighQualityBicubic);        
     g.SetCompositingQuality(CompositingQualityHighQuality);
 
-    o->drawItem(g, &m_results[i], RectF(float(x), float(y), float(w), float(h)));
+    o->drawIcon(g, RectF(float(x), float(y), float(w), float(h)));
 
     m_curWidth=max(m_curWidth,x+w);
     m_curHeight=max(m_curWidth,y+h);
 }
 
 
-void Qatapult::drawEmphased(const TCHAR *text, const TCHAR *highlight, INT flag, INT x, INT y, INT w, INT h){
+void Qatapult::drawEmphased(const TCHAR *text, const TCHAR *highlight, INT flag, INT from, INT x, INT y, INT w, INT h){
     Graphics g(g_HDC);
     g.SetTextRenderingHint(TextRenderingHint(m_textrenderinghint));
-    ::drawEmphased(g,text,highlight,RectF(float(x),float(y),float(w),float(h)),flag,StringAlignment(m_textalign),m_fontsize,g_textcolor);
+    ::drawEmphased(g,text,highlight,RectF(float(x),float(y),float(w),float(h)),flag,from,StringAlignment(m_textalign),m_fontsize,g_textcolor);
 }
 
 void Qatapult::drawResults(INT x, INT y, INT w, INT h){
@@ -1244,7 +1107,7 @@ void Qatapult::clearPanes() {
     m_queries.clear();
     m_queries.push_back(L"");
     m_input.setText(L"");
-    m_customsources.clear();
+    //m_customsources.clear();
 
     clearResults(m_results);
     clearResults(m_nextresults);
@@ -1478,7 +1341,7 @@ BOOL Qatapult::isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
         if(!r)
             return FALSE;
         CString q;
-        Source *s=r->source()->getSource(*r,q);
+        Source *s=r->source()->getSubSource(*r,q);
         if(s!=0) {
             setCurrentSource(m_pane,s,q);
             m_input.setText(L"");
@@ -1763,13 +1626,13 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             show();
         } else if(wParam==ID_SYSTRAY_QUIT) {
             PostQuitMessage(0);
-        } else if(wParam==ID_SYSTRAY_OPTIONS) {                            
-            destroySettingsDlg();
+        } else if(wParam==ID_SYSTRAY_OPTIONS) {                                        
             // create dialogs
-            createSettingsDlg();
+            if(!settingsdlg)
+                createSettingsDlg();
 
-            CenterWindow(m_hwndsettings);
-            ShowWindow(m_hwndsettings,SW_SHOW);
+            settingsdlg->CenterWindow();
+            settingsdlg->ShowWindow(SW_SHOW);
             ShowWindow(m_hwnd, SW_HIDE);
         }
     }
@@ -1847,6 +1710,12 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         m_args=*ruleargs;
         delete ruleargs;
         
+        if(m_args.size()==0) {
+            if(msg == WM_SHOWRULE)
+                show();
+            return S_OK;
+        }
+
         m_pane=m_args.size()-1;
         m_queries.resize(m_args.size());        
 

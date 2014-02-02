@@ -5,6 +5,7 @@ struct TextItemSource : Source {
     sqlite3_stmt *validatestmt;
     
     TextItemSource(const TCHAR *name) : Source(name) {
+        type=name;
         int rc = sqlite3_open("databases\\textitems.db", &db);
 
         char *zErrMsg = 0;
@@ -33,7 +34,7 @@ struct TextItemSource : Source {
             if(FuzzyMatch(it->second.display(),q)) {
                 results.push_back(it->second);
                 Object *o=new Object(it->second.expand(), type, this, it->second.expand());
-                o->values[L"icon"]=it->second.iconname();
+                o->m_iconname=it->second.iconname();
                 results.back().object().reset(o);
                 results.back().bonus()=20; // special bonus for helping keywords
 
@@ -53,5 +54,6 @@ struct TextItemSource : Source {
         const char *err=sqlite3_errmsg(db);
     }
 
+    CString                         type;
     std::map<CString, SourceResult> m_index;
 };

@@ -4,7 +4,7 @@ struct WindowSource : Source {
         m_icon=L"icons\\window.png";
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
-        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+        if(activetypes.size()>0 && activetypes.find(L"WINDOW")==activetypes.end())
             return;
 
         CString q(query); q.MakeUpper();
@@ -16,10 +16,10 @@ struct WindowSource : Source {
             TCHAR title[MAX_PATH]={0};
             GetWindowText(*it,title,sizeof(title));
             if(FuzzyMatch(title,q)) {                
-                Object *o=new Object(ItoS((int)*it),type,this,title);
+                Object *o=new Object(ItoS((int)*it),L"WINDOW",this,title);
                 o->values[L"title"]=title;
                 o->values[L"hwnd"]=ItoS((int)*it);
-                results.push_back(SourceResult(o));
+                results.push_back(o);
             }
         }
     }

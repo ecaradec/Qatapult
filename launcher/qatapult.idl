@@ -65,7 +65,7 @@ interface IPainterScript : IDispatch
     HRESULT drawItem([in] INT arg, [in] INT x, [in] INT y, [in] INT w, [in] INT h);
     HRESULT drawSubItem([in] INT arg, [in] INT e, [in] INT x, [in] INT y, [in] INT w, [in] INT h);
     HRESULT drawResItem([in] INT arg, [in] INT x, [in] INT y, [in] INT w, [in] INT h);
-    HRESULT drawEmphased([in] BSTR text, [in] BSTR highlight, [in] INT x, [in] INT y, [in] INT w, [in] INT h, [in,defaultvalue(1)] INT flag);
+    HRESULT drawEmphased([in] BSTR text, [in] BSTR highlight, [in] INT x, [in] INT y, [in] INT w, [in] INT h, [in,defaultvalue(1)] INT flag, [in,defaultvalue(0)] INT from);
     HRESULT drawResults([in] INT x, [in] INT y, [in] INT w, [in] INT h);
     HRESULT fillRectangle([in] INT x, [in] INT y, [in] INT w, [in] INT h, [in] DWORD color);
     [propput] HRESULT resultScrollbarColor([in] DWORD c);

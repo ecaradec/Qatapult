@@ -4,7 +4,7 @@
 struct Type {
     // only equality first
     struct Predicat {
-        Predicat(const CString &n, const CString &v, const CString &op=L"="):m_name(n), m_value(v) {
+        Predicat(const CString &n, const CString &op, const CString &v):m_name(n), m_value(v) {
             if(op==L"=")
                 m_operator=0;
             else if(op==L"~=") {
@@ -13,9 +13,11 @@ struct Type {
         }
         int             m_operator;
         CString         m_name;
-        CString         m_value;            
+        CString         m_value;
     };
-
+    /*Type(const std::map<CString,CString> &values) {
+        
+    }*/
     Type(const CString &type, bool multi=false, std::vector<Predicat> &predicates=std::vector<Predicat>()) {
         m_type=type;
         m_predicates=predicates;
@@ -35,7 +37,7 @@ struct Type {
         if(o->m_results[0].object()==0)
             return false;
 
-        // multi results only match if the type is not multi
+        // non multi results only match if the type is not multi
         if(!m_multi && o->m_results.size()>1)
             return false;
 
@@ -74,6 +76,7 @@ struct Type {
         // match
         return true;
     }
+    
     bool                  m_multi;
     CString               m_type;
     CString               m_icon;
@@ -99,6 +102,7 @@ struct Rule {
     virtual ~Rule() {
     }
     int match(std::vector<RuleArg> &args, int l) {
+        // count how many args match the rule
         uint i; 
         for(i=0;i<args.size() && i<m_types.size() ;i++) {
             if(!m_types[i].match(&args[i]))

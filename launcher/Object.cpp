@@ -66,22 +66,23 @@ CString Object::getString(const TCHAR *val_) {
         return values[L"text"];
     return values[val_];
 }
-Gdiplus::Bitmap *Object::getIcon(long flags) {
-    if(values[L"icon"]!=L"")
-        return Gdiplus::Bitmap::FromFile(values[L"icon"]);
 
-    if(source->m_icon!=L"")
-        return Gdiplus::Bitmap::FromFile(source->m_icon);
+void Object::drawIcon(Graphics &g, RectF &r) {
+    if(!m_icon && values["icon"]!=L"")
+        m_icon.reset(Gdiplus::Bitmap::FromFile(values["icon"]));
 
-    Gdiplus::Bitmap *bmp=Gdiplus::Bitmap::FromFile(L"icons\\"+key+L".png");
-    if(bmp)
-        return bmp;
+    if(!m_icon && m_iconname!=L"")
+        m_icon.reset(Gdiplus::Bitmap::FromFile(m_iconname));
 
-    return Gdiplus::Bitmap::FromFile(L"icons\\default.png");
-}
-void Object::drawItem(Graphics &g, SourceResult *sr, RectF &r) {        
+    if(!m_icon && source->m_icon!=L"")
+        m_icon.reset(Gdiplus::Bitmap::FromFile(source->m_icon));
+
     if(!m_icon)
-        m_icon.reset( getIcon(ICON_SIZE_LARGE) );
+        m_icon.reset(Gdiplus::Bitmap::FromFile(L"icons\\"+key+L".png"));
+        
+    if(!m_icon)
+        m_icon.reset(Gdiplus::Bitmap::FromFile(L"icons\\default.png"));
+    
     if(m_icon)
         g.DrawImage(m_icon.get(), r);
 }
@@ -95,11 +96,7 @@ void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSiz
     else
         g.FillRectangle(&SolidBrush(Color(bgcolor)), r);
 
-    if(!m_smallicon)
-        m_smallicon.reset(getIcon(ICON_SIZE_SMALL));
-        
-    if(m_smallicon)
-        g.DrawImage(m_smallicon.get(), RectF(r.X+10, r.Y, r.Height, r.Height)); // height not a bug, think a minute
+    drawIcon(g, RectF(r.X+10, r.Y, r.Height, r.Height)); // Height is not a bug : think a minute    
         
     REAL x=r.X+r.Height+5+10;
         
@@ -127,13 +124,14 @@ FileObject::FileObject(Record &r,Source *s) {
     source=s;
     values=r.values;
     ivalues=r.ivalues;
+    m_jumboDrawMethod=0;
 }
 FileObject::FileObject(const CString &k, Source *s, const CString &text, const CString &expand, const CString &path) :Object(k,L"FILE",s,text) {
     values[L"expand"]=expand;
     values[L"path"]=path;
+    m_jumboDrawMethod=0;
 }
-FileObject::FileObject(const FileObject &f):Object(f) {
-}
+
 CString FileObject::getString(const TCHAR *val_) {
     CString val(val_);
 
@@ -164,12 +162,167 @@ CString FileObject::getString(const TCHAR *val_) {
 
     return Object::getString(val);
 }
-Gdiplus::Bitmap *FileObject::getIcon(long flags) {    
-    // allows to override the default system icon
-    if(values[L"icon"]!=L"")
-        return Gdiplus::Bitmap::FromFile(values[L"icon"]);
 
-    return ::getIcon(values[L"path"],flags);
+int GetIconIndex(PCTSTR pszFile)
+{
+    SHFILEINFO sfi;
+    SHGetFileInfo(pszFile, 0, &sfi, sizeof(sfi), SHGFI_SYSICONINDEX);
+    return sfi.iIcon;
 }
 
+HICON GetJumboIcon(int iImage)
+{
+  CComPtr<IImageList> pil;
+  SHGetImageList(SHIL_JUMBO, IID_IImageList, (void**)&pil);
+
+  HICON hico;
+  pil->GetIcon(iImage, ILD_TRANSPARENT, &hico);
+  return hico;
+}
+/*
+bool hasJumboIcon(TCHAR *path) {
+    CComPtr<IShellItem> pSI;
+    SHCreateItemFromParsingName(path, 0, __uuidof(IShellItem), (void**)&pSI);
+    
+
+    CComQIPtr<IShellItemImageFactory> pSIIF(pSI);
+    HBITMAP hbmp;
+    HRESULT hr=pSIIF->GetImage(CSize(1,1), SIIGBF_THUMBNAILONLY, &hbmp);
+    
+
+    BITMAP bm;
+    GetObject(hbmp,sizeof(bm), &bm); 
+    return hbmp!=0;
+}*/
+
+
+void detectRealJumboSize(DWORD *pixels, int w, int h, int &cx, int &cy) {
+    // read each pixel to detect if the icon is 256 pixels
+    // it's a very slow way of detecting if icons are 256
+    // but it doesn't seems there is any other
+    // 
+    int leftMax=0;
+    int bottomMax=0;
+    for(int y=0;y<h;y++)
+        for(int x=0;x<w;x++) {
+            DWORD pixel=pixels[x+y*w];
+            if(pixel!=0) {
+                leftMax=max(leftMax, x);
+                bottomMax=max(bottomMax, y);
+            }
+        }
+
+    cx=getNextHigherIconSize(leftMax);
+    cy=getNextHigherIconSize(bottomMax);
+}
+
+void FileObject::drawIcon(Graphics &g, RectF &r) {
+    // function is based on
+    // http://blogs.msdn.com/b/oldnewthing/archive/2014/01/20/10490951.aspx
+    
+    if(r.Width<=64) {
+        if(!m_smallicon)
+            m_smallicon.reset(getIcon(values[L"path"],ICON_SIZE_SMALL));
+
+        if(m_smallicon)
+            g.DrawImage(m_smallicon.get(), r);
+
+        return;
+    }
+
+    // the function is a bit complex because :
+    // - I didn't find a way to detect if jumbo size was supported for a file
+    // - some file have issues with alpha mask that is not correctly rendered when transfering to gdiplus (like command.exe)
+    // - IImageList::Draw seems to have some premultiplication issues is the rendering is less good than the gdiplus one
+    // => but it works    
+    
+    if(m_jumboDrawMethod==0) {
+        IImageList *pil=0;
+
+        SHGetImageList(SHIL_JUMBO, IID_IImageList, (void**)&pil);
+        // XP support
+        if(pil==0)
+            SHGetImageList(SHIL_LARGE, IID_IImageList, (void**)&pil); 
         
+        SHFILEINFO sh;
+        SHGetFileInfo(values[L"path"], FILE_ATTRIBUTE_NORMAL, &sh, sizeof(sh), SHGFI_SYSICONINDEX|SHGFI_SHELLICONSIZE);
+
+        HICON hicon;
+        HRESULT hr=pil->GetIcon(sh.iIcon, ILD_TRANSPARENT|ILD_PRESERVEALPHA, &hicon);
+    
+        IMAGEINFO im;
+        pil->GetImageInfo(sh.iIcon, &im);
+
+        ICONINFO iconinfo;
+        GetIconInfo(hicon, &iconinfo);
+
+        BITMAP bmMask;
+        GetObject(iconinfo.hbmMask, sizeof(BITMAP), &bmMask);
+        BITMAP bmColor;
+        GetObject(iconinfo.hbmColor, sizeof(BITMAP), &bmColor);
+
+        DWORD pixels[256*256];
+        LONG l=sizeof(pixels);
+        if(GetBitmapBits(iconinfo.hbmColor, l, pixels)==0) {
+            m_jumboDrawMethod=1; // try the default way just in case
+        } else {
+            int cx, cy;
+            detectRealJumboSize(pixels, bmColor.bmWidth, bmColor.bmHeight, cx, cy);
+
+            if(cx==256) {
+                m_jumboDrawMethod=1;
+            } else {
+                m_jumboDrawMethod=2;
+                // draw icon
+                m_icon.reset(new Gdiplus::Bitmap(cx, cy, PixelFormat32bppARGB));
+                Gdiplus::Graphics g3(m_icon.get());
+                HDC hdc3=g3.GetHDC();
+
+                for(int y=0;y<cx;y++) {
+                    for(int x=0;x<cy;x++) {
+                        DWORD pixel=pixels[x+y*bmColor.bmWidth];
+                        m_icon->SetPixel(x,y,pixel);
+                        //CString tmp; tmp.Format(L"%2x",(pixel&0xFF));
+                        //OutputDebugString(tmp);
+                    }
+                    //OutputDebugString(L"\n");
+                }
+
+                g3.ReleaseHDC(hdc3);
+            }
+        }         
+
+        pil->Release();
+
+        DestroyIcon(hicon);
+    }
+    
+    if(m_jumboDrawMethod==2) {
+        if(m_icon)
+            g.DrawImage(m_icon.get(), r);
+    } else {
+        HRESULT hr;
+        HDC hdc=g.GetHDC();
+
+        CComPtr<IImageList> pil;
+
+        SHGetImageList(SHIL_JUMBO, IID_IImageList, (void**)&pil);
+        // XP support
+        if(pil==0)
+            SHGetImageList(SHIL_LARGE, IID_IImageList, (void**)&pil); 
+
+        IMAGELISTDRAWPARAMS ildp = { sizeof(ildp) };
+        ildp.himl = IImageListToHIMAGELIST(pil);
+        ildp.i = GetIconIndex(values[L"path"]);
+        ildp.hdcDst = hdc;
+        ildp.x = r.X;
+        ildp.y = r.Y;
+        ildp.cx = r.Width;
+        ildp.cy = r.Height;
+        ildp.rgbBk = CLR_NONE;
+        ildp.fStyle = ILD_TRANSPARENT|ILD_SCALE;
+        pil->Draw(&ildp);
+
+        g.ReleaseHDC(hdc);
+    }
+}

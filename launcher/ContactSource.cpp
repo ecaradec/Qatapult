@@ -52,10 +52,16 @@ ContactObject::ContactObject(const CString &k, Source *s, const CString &text, c
     values[L"expand"]=text;
     values[L"email"]=email;
 }
-Gdiplus::Bitmap *ContactObject::getIcon(long flags) {
-    if(GetFileAttributes("photos\\"+key+".jpg")!=INVALID_FILE_ATTRIBUTES)
-        return Gdiplus::Bitmap::FromFile(L"photos\\"+key+".jpg");
-    return Gdiplus::Bitmap::FromFile(L"icons\\contact.png");
+
+void ContactObject::drawIcon(Graphics &g, RectF &r) {    
+    if(!m_icon && GetFileAttributes("photos\\"+key+".jpg")!=INVALID_FILE_ATTRIBUTES)
+        m_icon.reset(Gdiplus::Bitmap::FromFile(L"photos\\"+key+".jpg"));
+
+    if(!m_icon)
+        m_icon.reset(Gdiplus::Bitmap::FromFile(L"icons\\contact.png"));
+    
+    if(m_icon)
+        g.DrawImage(m_icon.get(), r);
 }
 ContactSource::ContactSource() : DBSource(L"CONTACT",L"Contacts (Catalog )", L"contacts") {
     char *zErrMsg = 0;
@@ -165,7 +171,7 @@ void ContactSource::crawl() {
     }
 }
 void ContactSource::collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
-    if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+    if(activetypes.size()>0 && activetypes.find(L"CONTACT")==activetypes.end())
         return;
 
     CString q(query);
@@ -178,19 +184,19 @@ void ContactSource::collect(const TCHAR *query, std::vector<SourceResult> &resul
     int i=0;
     while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
 
-        results.push_back(SourceResult( new ContactObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+        results.push_back(new ContactObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
                                                           this,
                                                           UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
-                                                          UTF8toUTF16((char*)sqlite3_column_text(stmt,2))) ) );
+                                                          UTF8toUTF16((char*)sqlite3_column_text(stmt,2))) );
         results.back().uses()=sqlite3_column_int(stmt,3);
     }
 
     const char *errmsg=sqlite3_errmsg(db) ;
     sqlite3_finalize(stmt);         
 }
-Gdiplus::Bitmap *ContactSource::getIcon(SourceResult *r, long flags) {
+/*Gdiplus::Bitmap *ContactSource::getIcon(SourceResult *r, long flags) {
     return r->object()->getIcon(flags);
-}
+}*/
 
 
 //key TEXT PRIMARY KEY ASC, display TEXT, email TEXT, bonus INTEGER

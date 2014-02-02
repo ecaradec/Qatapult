@@ -37,45 +37,44 @@ struct Object {
         m_bonus=0;
         m_uses=0;
         m_rank=0;
+        subsource=0;
     }
     Object(const CString &k, const CString &t, Source *s, const CString &text) {
         m_bonus=0;
         m_uses=0;
         m_rank=0;
+        subsource=0;
         type=t;
         key=k;
         source=s;        
         values[L"text"]=text;
-    }
-    Object(const Object& c) {
-        m_bonus=0;
-        m_uses=0;
-        m_rank=0;
-        source=c.source;
-        key=c.key;
-        values=c.values;
-        type=c.type;
-    }
+    }    
+    
     virtual ~Object();
     virtual CString toJSON();
     virtual CString toXML();
     virtual CString getString(const TCHAR *val_);
-    virtual Gdiplus::Bitmap *getIcon(long flags);
-    virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r);
+    //virtual Gdiplus::Bitmap *getIcon(long flags);
+    virtual void drawIcon(Graphics &g, RectF &r);
     virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontsize, bool b, DWORD textcolor, DWORD bgcolor, DWORD focuscolor);
 
     std::shared_ptr<Gdiplus::Bitmap> m_icon;
     std::shared_ptr<Gdiplus::Bitmap> m_smallicon;
+    
     CString                          type;
     Source                          *source;
+    Source                          *subsource;
     CString                          key;
     std::map<CString,CString>        values;
     std::map<CString,__int64>        ivalues;
-
+    
     int                              m_bonus;
     int                              m_uses;
     CString                          m_iconname;
     int                              m_rank;
+
+private:
+    Object(const Object& c); // disable copy constructor
 };
 
 struct FileObject : Object {
@@ -84,5 +83,7 @@ struct FileObject : Object {
     FileObject(Record &r,Source *s);
     FileObject *clone();
     CString getString(const TCHAR *val_);
-    Gdiplus::Bitmap *getIcon(long flags);
+    void drawIcon(Graphics &g, RectF &r);
+
+    int m_jumboDrawMethod;
 };

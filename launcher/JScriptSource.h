@@ -24,8 +24,7 @@ struct JScriptSource : Source {
 
         int rc = sqlite3_open(m_dbname, &db);
 
-        // as the pluginname is the name of it's folder use a default name for the table to allow moving 
-        // the plugin without losing history
+        // use the database as storage for the number of uses of the object
         char *zErrMsg = 0;
         sqlite3_exec(db, "CREATE TABLE main(key TEXT PRIMARY KEY ASC, bonus INTEGER)", 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
@@ -34,7 +33,6 @@ struct JScriptSource : Source {
 
         const char *unused=0;                    
         rc = sqlite3_prepare_v2(db,"SELECT uses FROM main WHERE key = ?;",-1, &getusesstmt, &unused);
-
         rc = sqlite3_prepare_v2(db,"INSERT OR REPLACE INTO main (key, uses, lastUse) VALUES(?, coalesce((SELECT uses FROM main WHERE key=?), 0)+1);",-1, &validatestmt, &unused);
     }
     ~JScriptSource() {
@@ -44,6 +42,7 @@ struct JScriptSource : Source {
         sqlite3_close(db);
     }
     void validate(SourceResult *r) {
+        // increase the rating of this result
         sqlite3_stmt *stmt=0;
         const char *unused=0;
         int rc;        
@@ -69,6 +68,7 @@ struct JScriptSource : Source {
 
         host.Run(CComBSTR(L"collect"),ary.GetSafeArrayPtr(),&ret);
 
+        // find the rating of this key
         for(int i=nbresults;i<results.size();i++) {
             SourceResult *r=&results[i];
 
@@ -83,5 +83,3 @@ struct JScriptSource : Source {
 
     QatapultScript *m_pQatapultScript;
 };
-
-

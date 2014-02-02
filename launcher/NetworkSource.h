@@ -28,7 +28,7 @@ struct NetworkSource : Source {
         //sqlite3_close(db);
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags, std::map<CString,bool> &activetypes) {
-        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+        if(activetypes.size()>0 && activetypes.find(L"FILE")==activetypes.end())
             return;
 
         // could probably be done in subclass as well as the callback since sourceresult will not change 
@@ -38,7 +38,7 @@ struct NetworkSource : Source {
         networkshares.findBy(records, "text", UTF16toUTF8(fuzzyfyArg(q)));
         
         for(int i=0;i<records.size();i++) {
-            results.push_back(SourceResult(new FileObject(records[i],this)));
+            results.push_back(new FileObject(records[i],this));
             results.back().object()->values[L"icon"]=L"icons\\networklocal.png";
         }
     }
@@ -64,9 +64,6 @@ struct NetworkSource : Source {
         }
 
         networkshares.sqlExec((char*)(CStringA("DELETE FROM networkshares WHERE mark=")+CStringA(ItoS(mark))).GetString());
-    }
-    Source *getSource(SourceResult &r, CString &query) {
-        return 0;
     }
     void validate(SourceResult *r)  {
         networkshares.sqlExec((char*)(CStringA("UPDATE networkshares SET uses=uses+1 WHERE key=")+CStringA(r->object()->key)).GetString());

@@ -7,18 +7,13 @@ struct Object;
 
 struct SourceResult {
     void clear() {
-        //m_source=0;
         m_object=0;
-        //m_bonus=0;
-        //m_uses=0;
-        //m_rank=0;
     }
     SourceResult() {
         clear();
     }
     SourceResult(Object *o) {
         clear();
-        //m_uses=o->ivalues[L"uses"];
         m_object.reset(o);
     }
     std::shared_ptr<Object> &object() {
@@ -33,7 +28,7 @@ struct SourceResult {
         if(!m_object.get())
             return "";
         CString t=m_object->getString(L"text");
-        if(t!=L"")
+        if(t==L"")
             return m_object->getString(L"display");
         return t;
     }
@@ -42,7 +37,7 @@ struct SourceResult {
             return "";
         return m_object->getString(L"expand");
     }
-    CString iconname() {
+    CString &iconname() {
         return m_object->m_iconname;
     }
     int &bonus() {
@@ -54,7 +49,7 @@ struct SourceResult {
     int &rank() {
         return m_object->m_rank;
     }
-
+    // add all new values to Object class
     std::shared_ptr<Object>          m_object;
 };
 
@@ -77,7 +72,7 @@ struct RuleArg {
     CString expand(int i=0) {
         return item(i).display();
     }
-    CString iconname(int i=0) {
+    CString &iconname(int i=0) {
         return item(i).iconname();
     }
     int &bonus(int i=0) {

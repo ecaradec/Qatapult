@@ -30,8 +30,8 @@
 #include <commoncontrols.h>
 #include <atlstr.h>
 #include <shlobj.h>
-#include <atlimage.h>
 
+#include <atlimage.h>
 #include <atlapp.h>
 #include <atlctrls.h>
 
@@ -39,7 +39,7 @@
 
 #include <Winhttp.h>
 #include <Shlwapi.h>
-#include <windowsx.h>
+//#include <windowsx.h>
 #include <dispex.h>
 
 #ifdef _UNICODE
@@ -71,6 +71,7 @@ typedef unsigned int uint;
 #include <atlapp.h>
 #include <atlwinx.h>
 #include <atldlgs.h>
+#include <atlrx.h>
 #include <assert.h>
 
 #include "pugixml.hpp"

@@ -55,10 +55,8 @@
 		<rule>
 			<arg>FILE</arg>
 			<arg>
-				<item>
-					<lbl>Explore here</lbl>
-					<ico>icons\defaultverb.png</ico>
-				</item>
+                <lbl>Explore here</lbl>
+                <ico>icons\defaultverb.png</ico>
 			</arg>
 			<cmd>explorer.exe</cmd>
 			<args>/e,/root,"$0.rdirectory"</args>
@@ -66,10 +64,8 @@
 		<rule>
 			<arg>FILE</arg>
 			<arg>
-				<item>
-					<lbl>Cmd here</lbl>
-					<ico>icons\command.png</ico>
-				</item>
+                <lbl>Cmd here</lbl>
+                <ico>icons\command.png</ico>
 			</arg>
 			<cmd>cmd.exe</cmd>
 			<workdir>$0.rdirectory</workdir>

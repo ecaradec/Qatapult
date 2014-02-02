@@ -31,8 +31,8 @@ struct PainterScript : IDispatchImpl<IPainterScript,&__uuidof(IPainterScript),&C
         m_pUI->drawResItem(i,x,y,w,h);
         return S_OK;
     }
-    STDMETHOD(drawEmphased)(BSTR text, BSTR highlight, INT x, INT y, INT w, INT h, INT flag) {
-        m_pUI->drawEmphased(CString(text),CString(highlight),flag,x,y,w,h);
+    STDMETHOD(drawEmphased)(BSTR text, BSTR highlight, INT x, INT y, INT w, INT h, INT flag, INT from) {
+        m_pUI->drawEmphased(CString(text),CString(highlight),flag,from,x,y,w,h);
         return S_OK;
     }    
     STDMETHOD(drawResults)(INT x,INT y,INT w,INT h)

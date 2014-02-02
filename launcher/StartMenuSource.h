@@ -31,7 +31,7 @@ struct StartMenuSource : Source {
         sqlite3_close(db);
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
-        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+        if(activetypes.size()>0 && activetypes.find(L"FILE")==activetypes.end())
             return;
 
         // could probably be done in subclass as well as the callback since sourceresult will not change 
@@ -44,11 +44,11 @@ struct StartMenuSource : Source {
         rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q), -1, SQLITE_STATIC);
         int i=0;
         while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
-            results.push_back(SourceResult(new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
+            results.push_back(new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
                                                  this,
                                                  UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
                                                  UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
-                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,3)))));                       // Use
+                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,3))));                       // Use
             results.back().uses()=sqlite3_column_int(stmt,4);
         }
 
@@ -182,95 +182,250 @@ while(pEIDL->Next(1, &pidl2, &fetched)==S_OK) {
     m_results.back().icon=::getIcon(pidlCF);
 }*/
 
-#include "SimpleOptDialog.h"
-
-class SearchFoldersDlg : public SimpleOptDialog
+//#include "SimpleOptDialog.h"
+//#include "Qatapult.h"
+#include "Layout.h"
+#define WM_SAVESETTINGS (WM_USER+10)
+class SearchFoldersDlg : public CDialogImpl<SearchFoldersDlg>
 {
 public:
     enum { IDD = IDD_EMPTY };
+
+    enum {
+        ID_PATH,
+        ID_PICKFOLDER,
+        ID_FOLDERLIST,
+        ID_NEW,
+        ID_SAVE,
+        ID_DEL
+    };
  
+    CStatic         folderLbl; 
+    CButton         newBtn, delBtn, saveBtn;
+    CStatic         pathLbl;
+    CEdit           pathEdit;
+    CButton         pickFolderBtn;
+    CListViewCtrl   foldersLVC;
+
     BEGIN_MSG_MAP(SearchFoldersDlg)
         MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-        MESSAGE_HANDLER(WM_NOTIFY, OnNotify)
-        CHAIN_MSG_MAP(SimpleOptDialog)      
+        MESSAGE_HANDLER(WM_SAVESETTINGS, OnSaveSettings)
+        NOTIFY_HANDLER(ID_FOLDERLIST, LVN_ITEMCHANGING, OnRuleSelecting)
+        NOTIFY_HANDLER(ID_FOLDERLIST, LVN_ITEMCHANGED, OnRuleSelected)
+        
+        COMMAND_HANDLER(ID_NEW, BN_CLICKED, OnNew)
+        COMMAND_HANDLER(ID_DEL, BN_CLICKED, OnDel)
+        COMMAND_HANDLER(ID_SAVE, BN_CLICKED, OnSave)
+        COMMAND_HANDLER(ID_PICKFOLDER, BN_CLICKED, OnPickFolder)
+        
+        //MESSAGE_HANDLER(WM_NOTIFY, OnNotify)
+        //CHAIN_MSG_MAP(SimpleOptDialog)      
     END_MSG_MAP()
 
-    void saveBut(Record *r) {
-        WCHAR curDir[MAX_PATH];
-        GetCurrentDirectory(MAX_PATH, curDir);
+    void OnFinalMessage(HWND) {
+        folderLbl.Detach(); 
+        newBtn.Detach(); 
+        delBtn.Detach();
+        saveBtn.Detach();
+        pathLbl.Detach();
+        pathEdit.Detach();
+        pickFolderBtn.Detach();
+        foldersLVC.Detach();
+    }
 
-        pugi::xml_node settingsnode=settings.select_single_node("settings").node();
-        settingsnode.remove_child("searchFolders");
-        pugi::xml_node searchfolders=settingsnode.append_child("searchFolders");
-        for(int i=0;i<records.size();i++) {
-            if(&records[i] == r)
-                searchfolders.append_child("folder").append_child(pugi::node_pcdata).set_value(UTF16toUTF8(records[i].values[L"path"]));
-        }
-        settings.save_file("settings.xml");
+    void saveBut(Record *r) {
+        //WCHAR curDir[MAX_PATH];
+        //GetCurrentDirectory(MAX_PATH, curDir);
+
+        //pugi::xml_node settingsnode=settings.select_single_node("settings").node();
+        //settingsnode.remove_child("searchFolders");
+        //pugi::xml_node searchfolders=settingsnode.append_child("searchFolders");
+        //for(int i=0;i<records.size();i++) {
+        //    //if(&records[i] == r)
+        //    searchfolders.append_child("folder").append_child(pugi::node_pcdata).set_value(UTF16toUTF8(records[i].values[L"path"]));
+        //}
+        //settings.save_file("settings.xml");
     }
 
     void save(Record &r) {
-        saveBut(0);
+        //saveBut(0);
     }
     bool del(Record &r) {
-        saveBut(&r);
+        //saveBut(&r);
         return true;
     }
-    SearchFoldersDlg() {
+
+    LRESULT OnNew(SHORT id, SHORT code, HWND lParam, BOOL& bHandled) {
+        saveEdition(); // save current
+
+        pugi::xml_node rule = settings.select_single_node("/settings/searchFolders").node().append_child("folder");
+
+        LVITEM lvi;
+        memset(&lvi, 0, sizeof(lvi));
+        lvi.pszText=L"";
+        lvi.mask=LVFIF_TEXT|LVIF_NORECOMPUTE;
+        lvi.iItem=foldersLVC.GetItemCount();
+        int r=foldersLVC.InsertItem(&lvi);
+
+        foldersLVC.SetItemText(r, 0, L"");
+        foldersLVC.SetItemText(r, 1, L"3");
+        foldersLVC.SetItemText(r, 2, L"0");
+
+        foldersLVC.SelectItem( r );
+        foldersLVC.SetFocus();
+
+        enableEdition(true);
+        return S_OK;
+    }
+
+    LRESULT OnDel(SHORT id, SHORT code, HWND lParam, BOOL& bHandled) {
+        pugi::xpath_node_set ns=settings.select_nodes("/settings/searchFolders/folder");
+        int sel=foldersLVC.GetSelectedIndex();
+        foldersLVC.DeleteItem(sel);
+        if(sel==-1)
+            return S_OK;
+        settings.select_single_node("/settings/searchFolders").node().remove_child(ns[sel].node());
+        
+        if(foldersLVC.GetItemCount()>0) {
+            if(sel-1>=0)
+                sel--;
+            foldersLVC.SelectItem( sel );
+            foldersLVC.SetFocus();
+        } else {
+            //clearEdition();
+            enableEdition(false);
+        }
+
+        return S_OK;
+    }
+
+    LRESULT OnSave(SHORT id, SHORT code, HWND lParam, BOOL& bHandled) {
+        saveEdition(); 
+        return S_OK;
+    }
+
+    LRESULT OnPickFolder(SHORT id, SHORT code, HWND lParam, BOOL& bHandled) {
+        CFolderDialog dlg(*this);
+        dlg.DoModal();
+        pathEdit.SetWindowTextW(dlg.m_szFolderPath);
+        return S_OK;
+    }
+
+    void saveEdition() {
+        int sel=foldersLVC.GetSelectedIndex();
+        if(sel==-1)
+            return;
+
+        CString path;
+        pathEdit.GetWindowTextW(path);
+
+        foldersLVC.SetItemText(sel, 0, path);
+        foldersLVC.SetItemText(sel, 1, L"3");
+        foldersLVC.SetItemText(sel, 2, L"0");
+
+        pugi::xpath_node_set ns=settings.select_nodes("/settings/searchFolders/folder");
+        pugi::xml_node r=ns[sel].node();
+        while(r.first_child()) {
+            r.remove_child(r.first_child());
+        }
+
+        r.append_child("path").append_child(pugi::node_pcdata).set_value(UTF16toUTF8(path));
+        r.append_child("depth").append_child(pugi::node_pcdata).set_value("3");
+        r.append_child("bonus").append_child(pugi::node_pcdata).set_value("0");
     }
 
     LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
     { 
-        SimpleOptDialog::OnInitDialog(uMsg,wParam,lParam,bHandled);
-
-        RECT rcClient;                       // The parent window's client area.
-        GetClientRect(&rcClient); 
+        Layout l(*this);
 
         int x=0;
         int y=0;
 
-        addLabel(L"Path",  0, y, 50, 20); addEdit(L"path",  55, y, rcClient.right-55, 20); y+=25;
-        addLabel(L"Depth", 0, y, 50, 20); addEdit(L"depth", 55, y, 50, 20);   y+=25;
-        addLabel(L"Bonus", 0, y, 50, 20); addEdit(L"bonus", 55, y, 50, 20);   y+=25;
+        folderLbl.Create(*this, l.getSpace(80,25), L"Folders : ", WS_CHILD|WS_VISIBLE);
 
-        x=rcClient.right-320;        
-        addButton(L"New",   0, x, y, 100, 25); x+=110;
-        addButton(L"Delete",1, x, y, 100, 25); x+=110;
-        addButton(L"Save",  2, x, y, 100, 25); x+=110;
-
-        y+=30;
-        hListView=addListView(rcClient.left, y, rcClient.right - rcClient.left, rcClient.bottom - y);
-        addColumn(L"Path",0,rcClient.right-100);
-        addColumn(L"Depth",1,50);
-        addColumn(L"Bonus",2,50);
-
-        columns=Array(CString(L"path"),CString(L"depth"),CString(L"bonus"));
+        newBtn.Create(*this, l.getSpace(100,25), L"New", WS_CHILD|WS_VISIBLE, 0, ID_NEW);
+        delBtn.Create(*this, l.getSpace(100,25), L"Delete", WS_CHILD|WS_VISIBLE, 0, ID_DEL);
+        //saveBtn.Create(*this, l.getSpace(100,25), L"Save", WS_CHILD|WS_VISIBLE, 0, ID_SAVE);
         
+        l.clearRow();
+        l.pos.x+=85;
+        int uiWidth=l.r.right-l.pos.x;
+        foldersLVC.Create(*this, l.getSpace(uiWidth, 275), L"", WS_CHILD|WS_VISIBLE|LVS_REPORT|LVS_SINGLESEL|LVS_SHOWSELALWAYS,WS_EX_CLIENTEDGE,ID_FOLDERLIST);        
+        foldersLVC.SetExtendedListViewStyle(LVS_EX_FULLROWSELECT);
+        foldersLVC.AddColumn(L"Path",1);
+        foldersLVC.SetColumnWidth(0, uiWidth*0.79);
+        foldersLVC.AddColumn(L"Depth",1);
+        foldersLVC.SetColumnWidth(1, uiWidth*0.09);
+        foldersLVC.AddColumn(L"Bonus",1);
+        foldersLVC.SetColumnWidth(1, uiWidth*0.09);
+        
+
         pugi::xpath_node_set ns=settings.select_nodes("settings/searchFolders/folder");
         for(pugi::xpath_node_set::const_iterator it=ns.begin(); it!=ns.end(); it++) {
-            CStringW path=UTF8toUTF16(it->node().child_value());
-            if(path==L"")
-                break;
+            LVITEM lvi;
+            memset(&lvi, 0, sizeof(lvi));
+            lvi.pszText=L"";
+            lvi.mask=LVFIF_TEXT|LVIF_NORECOMPUTE;
+            lvi.iItem=foldersLVC.GetItemCount();
+            int r=foldersLVC.InsertItem(&lvi);
 
-            Record r;
-            r.values[L"path"]=path;
-            r.values[L"depth"]=L"3";
-            r.values[L"bonus"]=L"0";
-            records.push_back(r);
-            //addItem(r,columns);
+            foldersLVC.SetItemText(r, 0, UTF8toUTF16(it->node().child_value("path")));
+            foldersLVC.SetItemText(r, 1, UTF8toUTF16(it->node().child_value("depth")));
+            foldersLVC.SetItemText(r, 2, UTF8toUTF16(it->node().child_value("bonus")));
         }
 
-        int i=0;
-        for(std::vector<Record>::iterator it=records.begin(); it!=records.end(); it++) {
-            addItem(*it, columns );
-        }
+        l.clearRow();
 
-        if(records.size()==0) {
-            enableEdition(false);
-        } else {
-            selectLVItem(0);
-        }
+        pathLbl.Create(*this, l.getSpace(80,25), L"Path : ", WS_CHILD|WS_VISIBLE);
+        pathEdit.Create(*this, l.getSpace(uiWidth-28,25), L"", WS_CHILD|WS_VISIBLE, WS_EX_CLIENTEDGE, ID_PATH);
+        pickFolderBtn.Create(*this, l.getSpace(25,25), L"...", WS_CHILD|WS_VISIBLE, 0, ID_PICKFOLDER);
 
+        l.clearRow();
+
+        enableEdition(false);
+        
+        SetStdFontOfDescendants(*this);
         return TRUE;
+    }
+
+
+    LRESULT OnRuleSelecting(int wParam, LPNMHDR lParam, BOOL& bHandled) {
+        //saveEdition();
+        return S_OK;
+    }
+
+    LRESULT OnRuleSelected(int wParam, LPNMHDR lParam, BOOL& bHandled) {
+
+        LPNMLISTVIEW pnmv = (LPNMLISTVIEW) lParam;
+
+        if((pnmv->uChanged & LVIF_STATE) && (pnmv->uNewState & LVIS_SELECTED) != (pnmv->uOldState & LVIS_SELECTED))
+        {
+            if (pnmv->uNewState & LVIS_SELECTED) {
+                pugi::xpath_node_set ns=settings.select_nodes("/settings/searchFolders/folder");                
+                if(pnmv->iItem>=ns.size())
+                    return S_OK;
+                
+                pathEdit.SetWindowTextW(UTF8toUTF16(ns[pnmv->iItem].node().child_value("path")));
+                enableEdition(true);
+            } else {
+                pathEdit.SetWindowTextW(L"");
+                //clearEdition();
+                enableEdition(false);
+            }
+        }
+
+        Invalidate(TRUE);
+        return S_OK;
+    }
+    
+    void enableEdition(bool b) {
+        delBtn.EnableWindow(b);
+        pathEdit.EnableWindow(b);
+        pickFolderBtn.EnableWindow(b);
+    }
+    
+    LRESULT OnSaveSettings(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
+        saveEdition();
+        return S_OK;
     }
 };

@@ -32,6 +32,7 @@ struct UI {
     // plugins
     virtual int getFocus() = 0;
     virtual CString getQuery(int p) = 0;
+    virtual void onQueryChange(const CString &q, bool select) = 0;
     // settings dialog    
     virtual void invalidateIndex() = 0;
     virtual void reload() = 0;
@@ -46,7 +47,7 @@ struct UI {
 #define DE_COLOR 1
 // this is probably very inefficient as as way to draw highlighted text because it handle proper hyphen in all cases
 // gdiplus doesn't draw hyphen if the bbox is smaller than 2 hyphen => this is a workaround
-void drawEmphased(Graphics &g, CString text, CString query, RectF &rect, int flags=DE_UNDERLINE, StringAlignment align=StringAlignmentCenter, float fontSize=10.0f, DWORD color=0xFFFFFFFF);
+void drawEmphased(Graphics &g, CString text, CString query, RectF &rect, int flags=DE_UNDERLINE, int from=0, StringAlignment align=StringAlignmentCenter, float fontSize=10.0f, DWORD color=0xFFFFFFFF);
 
 extern UI *g_pUI; // very lazy way to give access to the ui to the ui window proc
 extern CString g_fontfamily;
@@ -92,56 +93,35 @@ inline float evalMatch(const CString &w_,const CString &q_) {
 
 struct Source {
     Source(const TCHAR* t) {
-        def=false;
         m_refreshPeriod=0;
         m_name=t;
-        type=t;
         m_ignoreemptyquery=false;
         m_prefix=0;
         sfitemlist.SetTrimming(StringTrimmingEllipsisCharacter);
     }
     Source(const TCHAR* t, const TCHAR *n) {
-        def=false;
+        //def=false;
         m_refreshPeriod=0;
         m_name=n;
-        type=t;
         m_ignoreemptyquery=false;
         m_prefix=0;
         sfitemlist.SetTrimming(StringTrimmingEllipsisCharacter);
     }
 
     virtual ~Source() {
-        //itemlistFont;
-        //itemscoreFont;
     }
-    virtual void drawItem(Graphics &g, SourceResult *sr, RectF &r) {
-        // empty result may not have an object
-        if(sr->object())
-            sr->object()->drawItem(g,sr,r);
-    }
+
     // get results
     // fuse index and bonus from the db
-    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
-        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
-            return;
-
-        CString q(query); q.MakeUpper();
-        for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
-            if(FuzzyMatch(it->second.display(),q)) {
-                results.push_back(it->second);
-                Object *o=new Object(it->first,type,this,it->second.display());
-                o->values[L"expand"]=it->second.expand();
-                o->values[L"iconname"]=it->second.iconname();
-                results.back().object().reset(o);
-            }
-        }
-    }    
+    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {}
     virtual void validate(SourceResult *r)  {}
     virtual void crawl() {}
 
     // unused yet
     // get named data of various types
-    virtual Source *getSource(SourceResult &sr, CString &q) { return 0; }
+    virtual Source *getSubSource(SourceResult &sr, CString &q) {         
+        return sr.m_object->subsource;
+    }
     virtual int getInt(const TCHAR *itemquery) { return false; }
 
     virtual void rate(const CString &q, SourceResult *r) {
@@ -153,12 +133,11 @@ struct Source {
         r->rank()=min(100.0f,r->uses()*5.0f) + r->bonus() + r->rank()+100.0f*evalMatch(T,q);
     }
     
-    int                             def;
+    //int                             def;
     TCHAR                           m_prefix;
     StringFormat                    sfitemlist;
     bool                            m_ignoreemptyquery;
     CString                         m_name;
-    CString                         type;
     std::map<CString, SourceResult> m_index;
     std::vector<SourceResult>      *m_pArgs;
     UI                             *m_pUI;

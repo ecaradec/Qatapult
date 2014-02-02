@@ -20,7 +20,7 @@ inline int getNextHigherIconSize(int v) {
 #define ICON_SIZE_SMALL 0
 #define ICON_SIZE_LARGE 1
 
-inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh, long flags) {      
+inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh, long flags) {
     IImageList *pil=0;
     CLSID clsid;
     CLSIDFromString(L"{46EB5926-582E-4017-9FDF-E8998DAA0950}", &clsid);
@@ -76,7 +76,7 @@ inline Gdiplus::Bitmap *getIcon(SHFILEINFO &sh, long flags) {
         for(int x=0;x<cy;x++) {
             DWORD pixel=pixels[x+y*bmColor.bmWidth];
             icon->SetPixel(x,y,pixel);
-            //CString tmp; tmp.Format(L"%2x",pixel>>24);
+            //CString tmp; tmp.Format(L"%2x",(pixel&0xFF));
             //OutputDebugString(tmp);
         }
         //OutputDebugString(L"\n");

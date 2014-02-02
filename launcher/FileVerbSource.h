@@ -1,7 +1,7 @@
 #pragma once
 #include "Source.h"
 #include "getItemVerbs.h"
-
+/*
 struct FileVerbSource : Source {
     sqlite3 *db;
     sqlite3_stmt *getusesstmt;
@@ -40,13 +40,13 @@ struct FileVerbSource : Source {
     }
     void conditionalAddObject(std::vector<SourceResult> &results, const CString &name, const CString &q) {
         if(FuzzyMatch(name,q)) {
-            results.push_back(SourceResult(new Object(name,L"FILEVERB",this,name)));
+            results.push_back(new Object(name,L"FILEVERB",this,name));
             results.back().uses()=getItemUses(name);
             results.back().bonus()=20;
         }        
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
-        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+        if(activetypes.size()>0 && activetypes.find(L"FILEVERB")==activetypes.end())
             return;
 
         CString q(query); q.MakeUpper();
@@ -71,3 +71,4 @@ struct FileVerbSource : Source {
     };
     std::map<CString, Extra> m_extras;
 };
+*/

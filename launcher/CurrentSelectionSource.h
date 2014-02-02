@@ -29,17 +29,17 @@ struct CurrentSelectionSource : Source {
     ~CurrentSelectionSource() {
     }
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
-        if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
+        if(activetypes.size()>0 && activetypes.find(L"FILE")==activetypes.end())
             return;
 
         CString q(query); q.MakeUpper();
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
             if(FuzzyMatch(it->second.display(),q)) {
-                results.push_back(SourceResult(new FileObject(it->second.display(),
-                                                             this,
-                                                             it->second.display(),
-                                                             it->second.display(),
-                                                             getExplorerSelection(g_foregroundWnd))));
+                results.push_back(new FileObject(it->second.display(),
+                                                 this,
+                                                 it->second.display(),
+                                                 it->second.display(),
+                                                 getExplorerSelection(g_foregroundWnd)));
             }
         }
     }

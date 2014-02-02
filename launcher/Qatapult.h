@@ -84,7 +84,6 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     HANDLE m_workerthread;
     
     bool isSourceEnabled(const char *name);
-    bool isSourceByDefault(const char *name);
     void init();
     void reset();
     void loadRules(pugi::xml_document &settings);
@@ -140,7 +139,7 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     void drawText(const TCHAR *text, INT x, INT y, INT w, INT h);
     void drawItem(INT c, INT e, INT x, INT y, INT w, INT h);
     void drawResItem(INT i, INT x, INT y, INT w, INT h);
-    void drawEmphased(const TCHAR *text, const TCHAR *highlight, int flag, INT x, INT y, INT w, INT h);
+    void drawEmphased(const TCHAR *text, const TCHAR *highlight, int flag, int from, INT x, INT y, INT w, INT h);
     void drawResults(INT x, INT y, INT w, INT h);
     void fillRectangle(INT x, INT y, INT w, INT h, DWORD c);
 
@@ -161,6 +160,8 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     }
 
     BOOL isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+    Type Keyword(const TCHAR *text, const TCHAR *icon, bool def=false);
 
     // drag&drop
 	STDMETHOD_(ULONG, AddRef)() {
@@ -187,7 +188,6 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     int                        m_editmode;
     WindowlessInput            m_input; 
     HWND                       m_hwnd;
-    HWND                       m_hwndsettings;
 
     // sources and rules    
     SourceOfSources           *sourceofsources;
