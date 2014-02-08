@@ -8,9 +8,6 @@
 struct FileSource : Source {
     FileSource() : Source(L"FILE",L"Filesystem (Catalog )") {
         int rc = sqlite3_open("databases\\files.db", &db);
-        
-
-
         char *zErrMsg = 0;
         sqlite3_exec(db, "CREATE TABLE files(key TEXT PRIMARY KEY ASC, display TEXT, expand TEXT, path TEXT, verb TEXT, bonus INTEGER, mark INTEGER)", 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);

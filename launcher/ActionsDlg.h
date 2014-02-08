@@ -84,7 +84,6 @@ struct ArgCtrl : CWindowImpl<ArgCtrl, CTabCtrl> {
     CContainedWindow  m_tabtype;    
 	CContainedWindow  m_tabkeyword;    
     ImageBtn          m_kwIcon;
-    ImageCtrl         m_typeIcon;
     
     enum {
         ID_MAP_TYPE=1,
@@ -107,7 +106,6 @@ struct ArgCtrl : CWindowImpl<ArgCtrl, CTabCtrl> {
     END_MSG_MAP()
     
     void OnFinalMessage(HWND hwnd) {
-        m_typeIcon.Detach();
         m_kwIcon.Detach();
     }
     void Create(HWND hwnd, CRect &r, int id) {
@@ -116,7 +114,7 @@ struct ArgCtrl : CWindowImpl<ArgCtrl, CTabCtrl> {
         
         CWindowImpl<ArgCtrl, CTabCtrl>::Create(hwnd, r, L"", WS_CHILD|WS_VISIBLE,0,id);        
 
-		AddItem(L"Type");
+		AddItem(L"Selector");
 		AddItem(L"Keyword");
 
 		// content of arguments
@@ -126,11 +124,11 @@ struct ArgCtrl : CWindowImpl<ArgCtrl, CTabCtrl> {
         // create type tab
         m_tabtype.Create(L"#32770", this, ID_MAP_TYPE, *this, rc, L"", WS_CHILD|WS_VISIBLE);
             Layout l(m_tabtype, 0);
-            m_typeIcon.Create(m_tabtype, l.getSpace(32, 32), L"Icon", WS_CHILD|WS_VISIBLE|SS_OWNERDRAW, 0, ID_ARG_ICON);
             
             l.pos.y+=6;
+            l.pos.x+=5;
             CEdit ed1;
-            ed1.Create(m_tabtype, l.getSpace(l.r.Width()-32-10, 20), L"", WS_CHILD|WS_VISIBLE|ES_CENTER|ES_AUTOHSCROLL|WS_BORDER, 0, ID_ARG_TEXT);
+            ed1.Create(m_tabtype, l.getSpace(l.r.Width()-10, 20), L"", WS_CHILD|WS_VISIBLE|ES_CENTER|ES_AUTOHSCROLL|WS_BORDER, 0, ID_ARG_TEXT);
             l.pos.y-=6;
 
         // create keyword tab
@@ -150,7 +148,6 @@ struct ArgCtrl : CWindowImpl<ArgCtrl, CTabCtrl> {
         clear();
         SetCurSel(0);
         m_tabtype.SetDlgItemText(ID_ARG_TEXT, text);
-        m_typeIcon.setImage( L"icons\\"+text+".png" );
         updateTabVisibility();
     }
     void setKeyword(const CString &text, const CString &ico) {
@@ -165,8 +162,6 @@ struct ArgCtrl : CWindowImpl<ArgCtrl, CTabCtrl> {
         m_tabkeyword.SetDlgItemText(ID_ARG_TEXT, L"");        
         delete m_kwIcon.bmp;
         m_kwIcon.bmp=0;
-        delete m_typeIcon.bmp;
-        m_typeIcon.bmp=0;
     }
 	LRESULT OnClick(WORD hiWord, WORD loWord, HWND lParam, BOOL& bHandled) {
         CFileDialog dlg(true, L"", L"", OFN_NOCHANGEDIR, L"*.*", *this);
@@ -249,7 +244,6 @@ struct ActionsDlg : CDialogImpl<ActionsDlg>/*,
             m_argsctrl[i].m_tabtype.Detach();
             m_argsctrl[i].m_tabkeyword.Detach();
             m_argsctrl[i].m_kwIcon.Detach();
-            m_argsctrl[i].m_typeIcon.Detach();
         }
         if(m_largefont)
             m_largefont.DeleteObject();
@@ -383,7 +377,6 @@ struct ActionsDlg : CDialogImpl<ActionsDlg>/*,
             m_argsctrl[i].m_tabkeyword.GetDlgItem(ArgCtrl::ID_ARG_TEXT).EnableWindow(b);
             m_argsctrl[i].m_tabkeyword.GetDlgItem(ArgCtrl::ID_ARG_ICON).EnableWindow(b);
             m_argsctrl[i].m_tabtype.GetDlgItem(ArgCtrl::ID_ARG_TEXT).EnableWindow(b);
-            m_argsctrl[i].m_tabtype.GetDlgItem(ArgCtrl::ID_ARG_ICON).EnableWindow(b);
         }
 
         m_actiontab.EnableWindow(b);

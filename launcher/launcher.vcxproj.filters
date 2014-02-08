@@ -200,9 +200,6 @@
     <ClInclude Include="ContactSource.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="ClockSource.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="WebsitePlugin.h">
       <Filter>sources</Filter>
     </ClInclude>

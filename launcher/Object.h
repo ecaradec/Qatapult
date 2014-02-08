@@ -4,31 +4,6 @@ struct Source;
 struct SourceResult;
 struct Record;
 
-// draw
-inline RectF getStdIconPos(RectF &r, bool h, float textheight=0) {
-    if(h)
-        return RectF(r.X, r.Y, r.Height, r.Height);
-    return RectF(r.X+textheight/2, r.Y, r.Width-textheight, r.Width-textheight);
-}
-inline RectF getStdTextPos(RectF &r, bool h, float textheight) {
-    if(h)
-        return RectF(r.X+r.Height+r.Height/4, r.Y+r.Height/2-textheight/2, r.Width-r.Height, r.Height);
-    return RectF(r.X, r.Y+r.Height-textheight, r.Width, 0);
-}
-inline RectF getStdTitlePos(RectF &r, bool h, float textheight) {
-    if(h)
-        return RectF(r.X+r.Height+r.Height/4, r.Y+0.1f*textheight, r.Width-r.Height-r.Height/4, r.Height);
-    return RectF(r.X, r.Y+r.Height-textheight, r.Width, 0);
-}
-inline RectF getStdSubTitlePos(RectF &r, bool h, float textheight) {
-    if(h)
-        return RectF(r.X+r.Height+r.Height/4, r.Y+r.Height-1.1f*textheight, r.Width-r.Height-r.Height/4, r.Height);
-    return RectF(r.X, r.Y+r.Height-textheight, r.Width, 0);
-}
-inline StringAlignment getStdAlignment(bool h) {
-    return h?StringAlignmentNear:StringAlignmentCenter;
-}
-
 // only stores object specifics into the object, then store sources commons in source
 // derive and gives an correctly typed pointer if in need for extra data
 struct Object {
