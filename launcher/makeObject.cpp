@@ -3,6 +3,7 @@
 #include "Object.h"
 #include "ContactSource.h"
 #include "TextObject.h"
+#include "FileObject.h"
 
 SourceResult getResultFromIDispatch(const CString &type_, const CString &key_, IDispatch *args,Source *src) {
     SourceResult sr;

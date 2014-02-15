@@ -36,7 +36,7 @@ task :upload do
     end
 end
 
-desc 'make release'
+desc 'rebuild everything in a releasable package'
 task :release => [:engine, :setup]
 
 task :inc_version do

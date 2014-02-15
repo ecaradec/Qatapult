@@ -5,6 +5,7 @@
 #include "sqlite3/sqlite3.h"
 #include "Utility.h"
 #include "resource.h"
+#include "FileObject.h"
 
 CString GetSpecialFolder(int csidl);
 int SaveSearchFolders(HWND hListView);

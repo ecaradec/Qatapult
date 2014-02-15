@@ -332,6 +332,9 @@
     <ClCompile Include="Layout.cpp">
       <Filter>settings</Filter>
     </ClCompile>
+    <ClCompile Include="FileObject.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="launcher.rc">

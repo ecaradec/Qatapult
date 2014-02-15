@@ -2,6 +2,7 @@
 #include "Source.h"
 #include "Utility.h"
 #include "Record.h"
+#include "FileObject.h"
 
 BOOL WINAPI EnumerateFunc(LPNETRESOURCE lpnr, std::vector<CString> &lnks);
 

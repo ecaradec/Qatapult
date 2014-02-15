@@ -19,18 +19,15 @@ struct FileSource : Source {
     }
     void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && 
-           activetypes.find(L"FILE")==activetypes.end() &&
-           activetypes.find(L"FILE/NEW")==activetypes.end() /*&&
-           activetypes.find(L"FOLDER")==activetypes.end() &&
-           activetypes.find(L"FOLDER/NEW")==activetypes.end()*/)
+           activetypes.find(L"FILE")==activetypes.end())
             return;
         
         bool fileExpected=activetypes.find(L"FILE")!=activetypes.end();
-        bool newFileExpected=activetypes.find(L"FILE/NEW")!=activetypes.end();
+        //bool newFileExpected=activetypes.find(L"FILE/NEW")!=activetypes.end();
         
         CString q(query);
 
-        if(q.GetLength()==0) {
+        /*if(q.GetLength()==0) {
             if(newFileExpected) {
                 FileObject *f=new FileObject(L"...",this,L"...",L"...",L"...");
                 f->m_iconname=L"icons\\emptyfile.png";
@@ -47,7 +44,7 @@ struct FileSource : Source {
                 results.push_back(f);
             }
             return;
-        }
+        }*/
 
         CString Q(q); Q.MakeUpper();
 
@@ -101,13 +98,13 @@ struct FileSource : Source {
         }
         FindClose(h);
 
-        if(newFileExpected && !fileFound) {
+        /*if(newFileExpected && !fileFound) {
             CString q(query);
             CString filename=q.Mid(q.ReverseFind(L'\\')+1);
             FileObject *f=new FileObject(query,this,filename,query,query);
             f->m_iconname=L"icons\\emptyfile.png";
             results.push_back(f);
-        }
+        }*/
     }
     void validate(SourceResult *r) {
 
