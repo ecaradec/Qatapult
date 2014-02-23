@@ -333,16 +333,12 @@ void Qatapult::init() {
     addSource(L"Filesystem",new FileSource);
     addSource(L"IndexedFiles",new StartMenuSource(m_hwnd));
     addSource(L"Network",new NetworkSource);
-    //addSource(L"Contacts",new ContactSource);
-    addSource(L"Websites",new WebsiteSource);
     addSource(L"FileHistory",new FileHistorySource);
     addSource(L"ExplorerSelection",new CurrentSelectionSource);
     addSource(L"Windows", new WindowSource);
 
     Source *tt=addSource(new TextSource);
 
-    //addRule(L"CLOCK", new ClockRule);    
-    
     // file rules
     addRule(Type(L"FILE",true), Keyword(L"Open",L"icons\\open.png"), new OpenFileRule);
     addRule(Type(L"FILE",true), Keyword(L"Edit",L"icons\\edit.png"), new EditFileRule);
@@ -354,17 +350,6 @@ void Qatapult::init() {
     addRule(qatapultExeType, Keyword(L"Quit",L"icons\\exit.png"), new QuitQatapultRule);
     addRule(qatapultExeType, Keyword(L"Reload",L"icons\\reload.png"), new ReloadQatapultRule);
     addRule(qatapultExeType, Keyword(L"Options",L"icons\\options.png"), new OptionsQatapultRule);    
-    
-    // mail rule
-    addRule(Type(L"FILE"), Keyword(L"Email to",L"icons\\emailto.png"), Type(L"CONTACT"),new EmailFileVerbRule);
-    addRule(Type(L"TEXT"), Keyword(L"Email to",L"icons\\emailto.png"), Type(L"CONTACT"),new EmailVerbRule);    
-    
-    // website rule
-    addRule(Type(L"TEXT"), Keyword(L"Search With",L"icons\\searchwith.png"), Type(L"WEBSITE"),new WebSearchRule);        
-
-    // sources
-    addRule(Type(L"TEXT"),Keyword(L"Open",L"icons\\open.png"),Type(L"WEBSITE"),new SourceRule(this));
-    
     // empty
     TextItemSource *t;
     m_emptysource=t=new TextItemSource(L"EMPTY");
