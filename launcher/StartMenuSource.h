@@ -7,6 +7,17 @@
 #include "resource.h"
 #include "FileObject.h"
 
+struct xml_string_writer: pugi::xml_writer
+{
+    std::string result;
+
+    virtual void write(const void* data, size_t size)
+    {
+        result += std::string(static_cast<const char*>(data), size);
+    }
+};
+
+
 CString GetSpecialFolder(int csidl);
 int SaveSearchFolders(HWND hListView);
 
@@ -185,6 +196,7 @@ while(pEIDL->Next(1, &pidl2, &fetched)==S_OK) {
 
 //#include "SimpleOptDialog.h"
 //#include "Qatapult.h"
+
 #include "Layout.h"
 #define WM_SAVESETTINGS (WM_USER+10)
 class SearchFoldersDlg : public CDialogImpl<SearchFoldersDlg>
@@ -234,48 +246,33 @@ public:
         foldersLVC.Detach();
     }
 
-    void saveBut(Record *r) {
-        //WCHAR curDir[MAX_PATH];
-        //GetCurrentDirectory(MAX_PATH, curDir);
-
-        //pugi::xml_node settingsnode=settings.select_single_node("settings").node();
-        //settingsnode.remove_child("searchFolders");
-        //pugi::xml_node searchfolders=settingsnode.append_child("searchFolders");
-        //for(int i=0;i<records.size();i++) {
-        //    //if(&records[i] == r)
-        //    searchfolders.append_child("folder").append_child(pugi::node_pcdata).set_value(UTF16toUTF8(records[i].values[L"path"]));
-        //}
-        //settings.save_file("settings.xml");
-    }
-
-    void save(Record &r) {
-        //saveBut(0);
-    }
-    bool del(Record &r) {
-        //saveBut(&r);
-        return true;
-    }
-
     LRESULT OnNew(SHORT id, SHORT code, HWND lParam, BOOL& bHandled) {
-        saveEdition(); // save current
+        saveEdition(); // save current        
 
-        pugi::xml_node rule = settings.select_single_node("/settings/searchFolders").node().append_child("folder");
+        CFolderDialog dlg(*this);
+        dlg.DoModal();
+        
+        // save to xml
+        addItem(dlg.m_szFolderPath);
 
+        // show in view
         LVITEM lvi;
         memset(&lvi, 0, sizeof(lvi));
         lvi.pszText=L"";
         lvi.mask=LVFIF_TEXT|LVIF_NORECOMPUTE;
         lvi.iItem=foldersLVC.GetItemCount();
-        int r=foldersLVC.InsertItem(&lvi);
+        int i=foldersLVC.InsertItem(&lvi);
 
-        foldersLVC.SetItemText(r, 0, L"");
-        foldersLVC.SetItemText(r, 1, L"3");
-        foldersLVC.SetItemText(r, 2, L"0");
+        pathEdit.SetWindowTextW(dlg.m_szFolderPath);
+        foldersLVC.SetItemText(i, 0, dlg.m_szFolderPath);
+        foldersLVC.SetItemText(i, 1, L"3");
+        foldersLVC.SetItemText(i, 2, L"0");
 
-        foldersLVC.SelectItem( r );
+        foldersLVC.SelectItem( i );
         foldersLVC.SetFocus();
 
         enableEdition(true);
+        
         return S_OK;
     }
 
@@ -324,6 +321,28 @@ public:
         foldersLVC.SetItemText(sel, 1, L"3");
         foldersLVC.SetItemText(sel, 2, L"0");
 
+        saveItem(sel,path);
+    }
+
+    void addItem(const CString &path) {
+        // ensure the searchfolders node exists
+        if(settings.select_single_node("/settings/searchFolders").node().empty()) {
+            settings.select_single_node("/settings").node().append_child("searchFolders");
+        }
+        
+        pugi::xml_node r = settings.select_single_node("/settings/searchFolders").node().append_child("folder");
+        r.append_child("path").append_child(pugi::node_pcdata).set_value(UTF16toUTF8(path));
+        r.append_child("depth").append_child(pugi::node_pcdata).set_value("3");
+        r.append_child("bonus").append_child(pugi::node_pcdata).set_value("0");
+    }
+
+    void saveItem(int sel, const CString &path) {
+        // ensure the searchfolders node exists
+        if(settings.select_single_node("/settings/searchFolders").node().empty()) {
+            settings.select_single_node("/settings").node().append_child("searchFolders");
+        }
+
+        // find the selected node and empty it
         pugi::xpath_node_set ns=settings.select_nodes("/settings/searchFolders/folder");
         pugi::xml_node r=ns[sel].node();
         while(r.first_child()) {
@@ -378,7 +397,8 @@ public:
         l.clearRow();
 
         pathLbl.Create(*this, l.getSpace(80,25), L"Path : ", WS_CHILD|WS_VISIBLE);
-        pathEdit.Create(*this, l.getSpace(uiWidth-28,25), L"", WS_CHILD|WS_VISIBLE, WS_EX_CLIENTEDGE, ID_PATH);
+        pathEdit.Create(*this, l.getSpace(uiWidth-28,25), L"XX", WS_CHILD|WS_VISIBLE, WS_EX_CLIENTEDGE, ID_PATH);        
+
         pickFolderBtn.Create(*this, l.getSpace(25,25), L"...", WS_CHILD|WS_VISIBLE, 0, ID_PICKFOLDER);
 
         l.clearRow();
@@ -406,7 +426,8 @@ public:
                 if(pnmv->iItem>=ns.size())
                     return S_OK;
                 
-                pathEdit.SetWindowTextW(UTF8toUTF16(ns[pnmv->iItem].node().child_value("path")));
+                CString path=UTF8toUTF16(ns[pnmv->iItem].node().child_value("path"));
+                pathEdit.SetWindowTextW(path);
                 enableEdition(true);
             } else {
                 pathEdit.SetWindowTextW(L"");

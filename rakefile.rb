@@ -1,7 +1,16 @@
-class String
-  def naturalized
-    scan(/[^\d\.]+|[\d\.]+/).collect { |f| f.match(/\d+(\.\d+)?/) ? f.to_f : f }
-  end
+
+require 'pp'
+
+def natcmp a,b
+    a=a.split(/(\d+)/)
+    b=b.split(/(\d+)/)
+
+    c=0
+    a.zip(b).each do |a| 
+        c = (a[0]=~/^\d/ && a[1]=~/^\d/) ? (a[0].to_i<=>a[1].to_i) : (a[0]<=>a[1])
+        break if c!=0
+    end
+    c
 end
 
 desc 'make engine'
@@ -20,13 +29,16 @@ task :setup => [:inc_version] do
     FileUtils.cp("setup\\#{version}\\QatapultSetup.exe","QatapultSetup.exe")
 end
 
+require 'pp'
 require 'net/ssh'
 require 'net/scp'
 desc 'upload the latest release of qatapult and enable it'
 task :upload do
     versions=Dir.glob('setup/*/')
     versions.delete('setup/old/')
-    last_version=versions.sort_by! { |file| file.to_s.naturalized }.last
+    last_version=versions.sort { |a,b| natcmp(a,b) }.last
+
+    puts "Uploading version "+last_version
 
     Net::SCP.start('sd-27268.dedibox.fr', 'ecaradec') do |scp|
         scp.upload! last_version, '/var/www/emmanuelcaradec/qatapult/bin/', :recursive=>true
