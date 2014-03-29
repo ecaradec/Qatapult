@@ -78,7 +78,10 @@ struct StartMenuSource : Source {
 
         pugi::xpath_node_set ns=settingsWT.select_nodes("/settings/searchFolders");
         for(pugi::xpath_node_set::const_iterator it=ns.begin(); it!=ns.end(); it++) {
-            lnks.push_back(UTF8toUTF16(it->node().child_value("folder")));
+            CString folder=UTF8toUTF16(it->node().child("folder").child_value("path"));
+            if(folder==L"")
+                continue;
+            lnks.push_back(folder);
             FindFilesRecursively(lnks.back(), L"*.*", lnks, 3);
         }
 
@@ -167,10 +170,10 @@ struct StartMenuSource : Source {
 SHGetDesktopFolder(&pSF);
 ULONG eaten=0;
 LPITEMIDLIST pidl=0;
-DWORD attr=0;
+DWORD attr=0;,
 pSF->ParseDisplayName(0, 0, L"::{26EE0668-A00A-44D7-9371-BEB064C98683}", &eaten, &pidl, &attr);
 CComPtr<IShellFolder> pCPSF;
-//pSF->GetUIObjectOf(0, 1, (LPCITEMIDLIST*)&pidl, IID_IShellFolder, 0, (void**)&pCPSF);
+//pSF->GetUIObjectOf(0, 1, (LPCITEMIDLIST*)&pidl, IID_IShellFolder 0, (void**)&pCPSF);
 pSF->BindToObject(pidl, 0, IID_IShellFolder, (void**)&pCPSF);
 
 CComPtr<IEnumIDList> pEIDL;
