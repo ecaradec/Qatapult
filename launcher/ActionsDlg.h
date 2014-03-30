@@ -84,7 +84,7 @@ struct ArgCtrl : CWindowImpl<ArgCtrl, CTabCtrl> {
     CContainedWindow  m_tabtype;    
 	CContainedWindow  m_tabkeyword;    
     ImageBtn          m_kwIcon;
-    
+    CComboBox cb1;
     enum {
         ID_MAP_TYPE=1,
         ID_MAP_KEYWORD
@@ -98,7 +98,8 @@ struct ArgCtrl : CWindowImpl<ArgCtrl, CTabCtrl> {
     BEGIN_MSG_MAP(ArgCtrl)
         REFLECTED_NOTIFY_CODE_HANDLER(TCN_SELCHANGE, OnSelChangingArg)
         REFLECT_NOTIFICATIONS()
-	ALT_MSG_MAP(ID_MAP_TYPE)        
+	ALT_MSG_MAP(ID_MAP_TYPE)
+        if (GetFocus() != cb1)
         REFLECT_NOTIFICATIONS()
     ALT_MSG_MAP(ID_MAP_KEYWORD)
         COMMAND_HANDLER(ID_ARG_ICON, BN_CLICKED, OnClick)
@@ -127,8 +128,10 @@ struct ArgCtrl : CWindowImpl<ArgCtrl, CTabCtrl> {
             
             l.pos.y+=6;
             l.pos.x+=5;
-            CEdit ed1;
-            ed1.Create(m_tabtype, l.getSpace(l.r.Width()-10, 20), L"", WS_CHILD|WS_VISIBLE|ES_CENTER|ES_AUTOHSCROLL|WS_BORDER, 0, ID_ARG_TEXT);
+            cb1.Create(m_tabtype, l.getSpace(l.r.Width()-10, 20), L"", WS_CHILD|WS_VISIBLE|WS_BORDER|CBS_DROPDOWNLIST|CBS_HASSTRINGS|WS_CLIPCHILDREN|WS_CLIPSIBLINGS, 0, ID_ARG_TEXT);
+            for(int i=0;i<m_pTypes->size(); i++)
+                cb1.AddString((*m_pTypes)[i]);
+
             l.pos.y-=6;
 
         // create keyword tab
@@ -147,7 +150,9 @@ struct ArgCtrl : CWindowImpl<ArgCtrl, CTabCtrl> {
     void setType(const CString &text) {
         clear();
         SetCurSel(0);
-        m_tabtype.SetDlgItemText(ID_ARG_TEXT, text);
+        cb1.SelectString(0,text);
+
+        //m_tabtype.SetDlgItemText(ID_ARG_TEXT, text);
         updateTabVisibility();
     }
     void setKeyword(const CString &text, const CString &ico) {
@@ -178,6 +183,8 @@ struct ArgCtrl : CWindowImpl<ArgCtrl, CTabCtrl> {
         m_tabtype.ShowWindow(GetCurSel()==0?SW_SHOW:SW_HIDE);
 		m_tabkeyword.ShowWindow(GetCurSel()==1?SW_SHOW:SW_HIDE);        
     }
+
+    std::vector<CString> *m_pTypes;
 };
 
 //class ActionsDlg : public SimpleOptDialog
@@ -405,7 +412,7 @@ struct ActionsDlg : CDialogImpl<ActionsDlg>/*,
         m_listview.Create(*this, l.getSpace(l.r.right-l.pos.x, 112), L"", WS_CHILD|WS_VISIBLE|LVS_REPORT|LVS_SINGLESEL|LVS_SHOWSELALWAYS,WS_EX_CLIENTEDGE,ID_LISTVIEW);        
         CRect lvRect;
         m_listview.GetClientRect(&lvRect);
-        m_listview.SetExtendedListViewStyle(LVS_EX_FULLROWSELECT);
+        m_listview.SetExtendedListViewStyle(LVS_EX_FULLROWSELECT|LVS_EX_CHECKBOXES);        
         m_listview.AddColumn(L"Command",1);
         m_listview.SetColumnWidth(0, 0.2*lvRect.Width());
         m_listview.AddColumn(L"Action",1);
@@ -497,6 +504,7 @@ struct ActionsDlg : CDialogImpl<ActionsDlg>/*,
         lvi.mask=LVFIF_TEXT|LVIF_NORECOMPUTE;
         lvi.iItem=m_listview.GetItemCount();
         int r=m_listview.InsertItem(&lvi);
+        m_listview.SetCheckState(r,TRUE);
 
         updateRule(r, rule);
         return r;

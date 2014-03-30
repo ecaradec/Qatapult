@@ -9,7 +9,7 @@
 		<toggleModifier>4</toggleModifier>
 	</hotKeys>
 	<rules>
-		<rule>
+		<rule id='explore_here'>
 			<arg>FILE</arg>
 			<arg>
                 <lbl>Explore here</lbl>
@@ -18,7 +18,7 @@
 			<cmd>explorer.exe</cmd>
 			<args>/e,/root,"$0.rdirectory"</args>
 		</rule>
-		<rule>
+		<rule id='cmd_here'>
 			<arg>FILE</arg>
 			<arg>
                 <lbl>Cmd here</lbl>

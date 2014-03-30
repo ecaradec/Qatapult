@@ -201,6 +201,7 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     std::vector<Source*>       m_sources;
     std::vector<Rule*>         m_rules;
     std::vector<RuleArg>       m_args;     // validated results
+    std::vector<CString>       m_types;
 
     //History                    m_history;
     //std::vector<std::shared_ptr<CommandObject> > m_commandhistory;

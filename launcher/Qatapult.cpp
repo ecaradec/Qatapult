@@ -292,9 +292,17 @@ void Qatapult::init() {
     addSource(L"Network",new NetworkSource);
     addSource(L"FileHistory",new FileHistorySource);
     addSource(L"ExplorerSelection",new CurrentSelectionSource);
-    addSource(L"Windows", new WindowSource);
+    addSource(L"Windows", new WindowSource);    
 
     Source *tt=addSource(new TextSource);
+
+    // should be populated from sources
+    m_types.push_back(L"");
+    m_types.push_back(L"FILE");
+    m_types.push_back(L"TEXT");
+    m_types.push_back(L"WINDOW");
+    m_types.push_back(L"COMMAND");
+    m_types.push_back(L"WEBSITE");
 
     // file rules
     addRule(Type(L"FILE",true), Keyword(L"Open",L"icons\\open.png"), new OpenFileRule);
@@ -638,7 +646,10 @@ void Qatapult::destroySettingsDlg() {
 extern BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 void Qatapult::createSettingsDlg() {    
     settingsdlg=new SettingsDlg;
-    settingsdlg->Create(0);
+    settingsdlg->m_actionsDlg.m_argsctrl[0].m_pTypes = &m_types;
+    settingsdlg->m_actionsDlg.m_argsctrl[1].m_pTypes = &m_types;
+    settingsdlg->m_actionsDlg.m_argsctrl[2].m_pTypes = &m_types;
+    settingsdlg->Create(0);    
 }
 
 int Qatapult::getActiveRules(int pane, std::vector<RuleArg> &args, std::vector<Rule*> &activerules) {
