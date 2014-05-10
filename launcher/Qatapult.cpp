@@ -311,10 +311,10 @@ void Qatapult::init() {
     addRule(Type(L"FILE",true), Keyword(L"Properties",L"icons\\properties.png"), new PropertiesFileRule);    
     
     // qatapult rule
-    Type qatapultExeType=Type(L"FILE", false, Array(Type::Predicat(L"rfilename", L"=", L"QATAPULT.EXE")));
-    addRule(qatapultExeType, Keyword(L"Quit",L"icons\\exit.png"), new QuitQatapultRule);
-    addRule(qatapultExeType, Keyword(L"Reload",L"icons\\reload.png"), new ReloadQatapultRule);
-    addRule(qatapultExeType, Keyword(L"Options",L"icons\\options.png"), new OptionsQatapultRule);    
+    addRule(Keyword(L"Qatapult (app)",L"icons\\qatapult.png"), Keyword(L"Quit",L"icons\\exit.png"), new QuitQatapultRule);
+    addRule(Keyword(L"Qatapult (app)",L"icons\\qatapult.png"), Keyword(L"Reload",L"icons\\reload.png"), new ReloadQatapultRule);
+    addRule(Keyword(L"Qatapult (app)",L"icons\\qatapult.png"), Keyword(L"Options",L"icons\\options.png"), new OptionsQatapultRule);    
+
     // empty
     TextItemSource *t;
     m_emptysource=t=new TextItemSource(L"EMPTY");

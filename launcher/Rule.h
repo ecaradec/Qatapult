@@ -50,29 +50,6 @@ struct Type {
         if(type != m_type)
             return false;
 
-        // no match if a property predicate fail
-        for(std::vector<Predicat>::iterator it=m_predicates.begin(); it!=m_predicates.end(); it++) {
-            CString n(o->object()->getString(it->m_name));
-            CString N(n); N.MakeUpper();
-            switch(it->m_operator) {
-            case 0: {
-                //CString txt; txt.Format(L"Testing equal predicate : %s = %s => %s", N, it->m_value, (N == it->m_value)?L"true":L"false");
-                //OutputDebugString(txt);
-                if(N != it->m_value ) {
-                    return false;
-                }
-                break;
-            }
-            case 1:
-                CAtlRegExp<>    re;
-                CAtlREMatchContext<> m;
-                BOOL b=re.Parse( it->m_value ); 
-                if( !re.Match(n, &m) )
-                    return false;
-                break;
-            }
-        }
-
         // match
         return true;
     }
