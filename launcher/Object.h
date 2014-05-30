@@ -13,7 +13,6 @@ struct Object {
         m_bonus=0;
         m_uses=0;
         m_rank=0;
-        subsource=0;
         m_pObj=0;
         m_ownData=false;
 
@@ -25,7 +24,6 @@ struct Object {
         m_bonus=0;
         m_uses=0;
         m_rank=0;
-        subsource=0;
         m_pObj=0;
         m_ownData=ownData;
 
@@ -45,7 +43,6 @@ struct Object {
         m_bonus=0;
         m_uses=0;
         m_rank=0;
-        subsource=0;
         type=t;
         key=k;
         source=s;        
@@ -88,7 +85,6 @@ struct Object {
 
     CString                          type;
     Source                          *source;
-    Source                          *subsource;
     CString                          key;
     std::map<CString,CString>        values;
     std::map<CString,__int64>        ivalues;

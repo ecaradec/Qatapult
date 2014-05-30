@@ -25,7 +25,6 @@ struct TextItemSource : Source {
         m_index[str]=SourceResult(new Object(str,str,this,str));
         m_index[str].iconname()=iconname;
     }
-    //virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
     virtual void collect(const TCHAR *query, KVPack &pack, int def, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
             return;

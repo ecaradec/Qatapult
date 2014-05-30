@@ -18,7 +18,6 @@ struct FileSource : Source {
     ~FileSource() {
         sqlite3_close(db);
     }
-    //void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags, std::map<CString,bool> &activetypes) {
     void collect(const TCHAR *query, KVPack &pack, int flags, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && 
            activetypes.find(L"FILE")==activetypes.end())

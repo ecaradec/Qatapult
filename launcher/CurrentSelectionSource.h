@@ -35,8 +35,7 @@ struct CurrentSelectionSource : Source {
 
         CString q(query); q.MakeUpper();
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
-            if(FuzzyMatch(it->second.display(),q)) {
-            //results.back().object()->values[L"icon"]=L"icons\\networklocal.png";
+            if(FuzzyMatch(it->second.display(),q)) {            
                 uint8 *pobj=pack.beginBlock();
                 pack.pack(L"type",L"FILE");
                 pack.pack(L"source",(uint32)this);

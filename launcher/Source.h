@@ -114,14 +114,13 @@ struct Source {
     // get results
     // fuse index and bonus from the db
     virtual void collect(const TCHAR *query, KVPack &results, int def, std::map<CString,bool> &activetypes) {}
-    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {}
     virtual void validate(SourceResult *r)  {}
     virtual void crawl() {}
 
     // unused yet
     // get named data of various types
     virtual Source *getSubSource(Object *o, CString &q) {         
-        return o->subsource;
+        return (Source*)_ttoi(o->getString(L"subsource"));
     }
     virtual int getInt(const TCHAR *itemquery) { return false; }
 
