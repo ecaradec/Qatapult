@@ -347,6 +347,12 @@
     <ClCompile Include="FileObject.cpp">
       <Filter>sources</Filter>
     </ClCompile>
+    <ClCompile Include="Collecter.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="JScriptSource.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="launcher.rc">

@@ -138,7 +138,9 @@ void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSiz
     sfpath.SetTrimming(StringTrimmingEllipsisPath);
     CString path(sr->object()->getString(L"path"));
     path.TrimRight(L'\\');
-    g.DrawString(path.Left(path.ReverseFind(L'\\')), -1, &pathfont, RectF(r.X+r.Height+40, r.Y+25, r.Width-(r.X+r.Height+40), 14), &sfpath, &SolidBrush(Color(textcolor)));
+
+    g.DrawString(path, -1, &pathfont, RectF(r.X+r.Height+40, r.Y+25, r.Width-(r.X+r.Height+40), 14), &sfpath, &SolidBrush(Color(textcolor)));
+    //g.DrawString(path.Left(path.ReverseFind(L'\\')), -1, &pathfont, RectF(r.X+r.Height+40, r.Y+25, r.Width-(r.X+r.Height+40), 14), &sfpath, &SolidBrush(Color(textcolor)));
 }
 
 //

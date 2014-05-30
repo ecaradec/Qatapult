@@ -8,6 +8,7 @@
 #include <shlwapi.h>
 #pragma comment(lib, "Shlwapi.lib")
 #include <exdisp.h>
+#include "KVPack.h"
 
 #pragma comment(lib, "Mpr.lib")
 
@@ -28,18 +29,25 @@ struct CurrentSelectionSource : Source {
     }
     ~CurrentSelectionSource() {
     }
-    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+    virtual void collect(const TCHAR *query, KVPack &pack, int def, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && activetypes.find(L"FILE")==activetypes.end())
             return;
 
         CString q(query); q.MakeUpper();
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
             if(FuzzyMatch(it->second.display(),q)) {
-                results.push_back(new FileObject(it->second.display(),
-                                                 this,
-                                                 it->second.display(),
-                                                 it->second.display(),
-                                                 getExplorerSelection(g_foregroundWnd)));
+            //results.back().object()->values[L"icon"]=L"icons\\networklocal.png";
+                uint8 *pobj=pack.beginBlock();
+                pack.pack(L"type",L"FILE");
+                pack.pack(L"source",(uint32)this);
+                pack.pack(L"key",it->second.display());
+                pack.pack(L"path",getExplorerSelection(g_foregroundWnd));
+                pack.pack(L"expand",it->second.display());
+                pack.pack(L"filename",it->second.display());
+                pack.pack(L"text",it->second.display());
+                pack.pack(L"bonus",(uint32)0);
+                pack.pack(L"uses",(uint32)0);
+                pack.endBlock(pobj);
             }
         }
     }

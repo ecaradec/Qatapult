@@ -2,7 +2,7 @@
 #include "Source.h"
 #include "Utility.h"
 #include "Record.h"
-#include "FileObject.h"
+#include "KVPack.h"
 
 BOOL WINAPI EnumerateFunc(LPNETRESOURCE lpnr, std::vector<CString> &lnks);
 
@@ -28,7 +28,7 @@ struct NetworkSource : Source {
     ~NetworkSource() {
         //sqlite3_close(db);
     }
-    void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags, std::map<CString,bool> &activetypes) {
+    void collect(const TCHAR *query, KVPack &pack, int flags, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && activetypes.find(L"FILE")==activetypes.end())
             return;
 
@@ -39,8 +39,20 @@ struct NetworkSource : Source {
         networkshares.findBy(records, "text", UTF16toUTF8(fuzzyfyArg(q)));
         
         for(int i=0;i<records.size();i++) {
-            results.push_back(new FileObject(records[i],this));
-            results.back().object()->values[L"icon"]=L"icons\\networklocal.png";
+
+            uint8 *pobj=pack.beginBlock();
+            pack.pack(L"type",L"FILE");
+            pack.pack(L"source",(uint32)this);
+            pack.pack(L"icon",L"icons\\networklocal.png");
+            
+            for(std::map<CString, CString>::iterator it=records[i].values.begin(); it!=records[i].values.end(); it++) {
+                pack.pack(it->first, it->second);
+            }
+            for(std::map<CString, __int64>::iterator it=records[i].ivalues.begin(); it!=records[i].ivalues.end(); it++) {
+                pack.pack(it->first, (uint32)it->second);
+            }
+
+            pack.endBlock(pobj);
         }
     }
     void crawl() {

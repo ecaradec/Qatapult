@@ -1,5 +1,4 @@
 #pragma once
-
 #include "PredicateParser.h"
 
 struct KVObject {
@@ -11,7 +10,6 @@ struct KVObject {
         m_pObj=pObj;
     }
     TCHAR *getString(const TCHAR *k) {
-
         uint8 *endOfObject = m_pObj+*(uint32*)m_pObj;
         uint8 *firstKV     = m_pObj+sizeof(uint32);
 
@@ -28,7 +26,9 @@ struct KVObject {
         return 0;
     }
     int getInt(const TCHAR *k) {
-        return _ttoi(getString(k));
+        TCHAR *v=getString(k);
+        if(v==0) return 0;
+        return _ttoi(v);
     }
 };
 

@@ -34,12 +34,12 @@ struct Object {
 
         m_pObj=pObj;
         KVObject o(m_pObj);
-        //CString text=o.getString(L"text");
+        CString text=o.getString(L"text");
         type=o.getString(L"type");
         key=o.getString(L"key");
         m_uses=o.getInt(L"uses");
         m_bonus=o.getInt(L"bonus");
-        source=(Source*)_ttoi(o.getString(L"source"));
+        source=(Source*)o.getInt(L"source");
     }
     Object(const CString &k, const CString &t, Source *s, const CString &text) {
         m_bonus=0;
