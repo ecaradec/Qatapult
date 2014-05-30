@@ -15,6 +15,6 @@ struct ContactSource : DBSource {
     ContactSource();
     void parseGmailContacts(const char *xml) ;
     void crawl();    
-    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes);
+    void collect(const TCHAR *query, KVPack &pack, int def, std::map<CString,bool> &activetypes);
     Gdiplus::Bitmap *getIcon(SourceResult *r, long flags);
 };

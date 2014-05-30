@@ -46,9 +46,6 @@ struct SourceResult {
     int &uses() {
         return m_object->m_uses;
     }
-    int &rank() {
-        return m_object->m_rank;
-    }
     // add all new values to Object class
     std::shared_ptr<Object>          m_object;
 };
@@ -80,9 +77,6 @@ struct RuleArg {
     }
     int &uses(int i=0) {
         return item(i).uses();
-    }
-    int &rank(int i=0) {
-        return item(i).rank();
     }
     bool isEmpty() {
         return m_results.size()==0;

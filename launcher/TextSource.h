@@ -24,7 +24,7 @@ struct TextSource : Source {
         if(query[0]==_T('\''))
             r.back().bonus()=1000;
     }
-    void rate(const CString &q, SourceResult *r) {
+    void rate(const CString &q, Object *r) {
         //if(r->display())
         //    r->rank()=0;
     }

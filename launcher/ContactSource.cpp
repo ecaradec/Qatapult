@@ -2,6 +2,7 @@
 #include "ContactSource.h"
 #include "resource.h"
 #include "json/json.h"
+#include "KVPack.h"
 
 //get the key from the developer console https://code.google.com/apis/console/b/0/?pli=1#project:152444811162:access
 CStringA clientId="152444811162-mhjnj3csgt4km2icp0uni71d3n3assln.apps.googleusercontent.com";
@@ -170,7 +171,7 @@ void ContactSource::crawl() {
         parseGmailContacts(res);
     }
 }
-void ContactSource::collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+void ContactSource::collect(const TCHAR *query, KVPack &pack, int def, std::map<CString,bool> &activetypes) {
     if(activetypes.size()>0 && activetypes.find(L"CONTACT")==activetypes.end())
         return;
 
@@ -184,11 +185,17 @@ void ContactSource::collect(const TCHAR *query, std::vector<SourceResult> &resul
     int i=0;
     while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
 
-        results.push_back(new ContactObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
-                                                          this,
-                                                          UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
-                                                          UTF8toUTF16((char*)sqlite3_column_text(stmt,2))) );
-        results.back().uses()=sqlite3_column_int(stmt,3);
+        uint8 *pobj=pack.beginBlock();
+        pack.pack(L"type",L"CONTACT");
+        pack.pack(L"source",(uint32)this);
+        pack.pack(L"key",UTF8toUTF16((char*)sqlite3_column_text(stmt,0)));
+        pack.pack(L"text",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
+        pack.pack(L"status",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
+        pack.pack(L"expand",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
+        pack.pack(L"email",UTF8toUTF16((char*)sqlite3_column_text(stmt,2)));
+        pack.pack(L"bonus",(uint32)0);
+        pack.pack(L"uses",(uint32)sqlite3_column_int(stmt,3));
+        pack.endBlock(pobj);                  
     }
 
     const char *errmsg=sqlite3_errmsg(db) ;

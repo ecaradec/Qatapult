@@ -178,20 +178,20 @@ struct FileSource : Source {
     void crawl() {
         // should scan the history and remove non available items
     }
-    void rate(const CString &q, SourceResult *r) {
+    void rate(const CString &q, Object *r) {
         CString Q(q);
 
         Q=Q.Mid(Q.ReverseFind(L'\\')+1);
 
-        r->rank()=0;
-        if(m_prefix!=0 && r->display()[0]==m_prefix)
-            r->rank()+=100;
+        r->m_rank=0;
+        if(m_prefix!=0 && r->getString(L"text")[0]==m_prefix)
+            r->m_rank+=100;
 
-        CString P(r->object()->getString(L"path"));
+        CString P(r->getString(L"path"));
 
         P.TrimRight(L"\\");
         P=P.Mid(P.ReverseFind(L'\\')+1);        
-        r->rank()=min(100,r->uses()*5) + r->bonus() + r->rank()+100*evalMatch(P,Q);
+        r->m_rank=min(100,r->m_uses*5) + r->m_bonus + r->m_rank+100*evalMatch(P,Q);
     }
     sqlite3 *db;
 };
@@ -210,7 +210,7 @@ struct FileHistorySource : Source {
     ~FileHistorySource() {
         sqlite3_close(db);
     }
-    void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags, std::map<CString,bool> &activetypes) {        
+    void collect(const TCHAR *query, KVPack &pack, int flags, std::map<CString,bool> &activetypes) {        
         if(activetypes.size()>0 && activetypes.find(L"FILE")==activetypes.end()) {
             return;
         }
@@ -254,12 +254,17 @@ struct FileHistorySource : Source {
                     continue;
                 }
 
-                results.push_back(new FileObject(key,
-                                                 this,
-                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
-                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
-                                                 path));
-                results.back().uses()=sqlite3_column_int(stmt,4);
+                uint8 *pobj=pack.beginBlock();
+                pack.pack(L"type",L"FILE");
+                pack.pack(L"source",(uint32)this);
+                pack.pack(L"key",key);
+                pack.pack(L"path",path);
+                pack.pack(L"expand",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));                
+                pack.pack(L"text",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
+                pack.pack(L"status",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
+                pack.pack(L"bonus",(uint32)0);
+                pack.pack(L"uses",(uint32)sqlite3_column_int(stmt,4));
+                pack.endBlock(pobj);  
             }
 
             const char *errmsg=sqlite3_errmsg(db) ;
