@@ -105,7 +105,7 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     bool allowType(const CString &type);
     void collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, KVPack &pack, int def);
     //void collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, std::vector<SourceResult> &results, int def);
-    static int resultSourceCmp(SourceResult &r1, SourceResult &r2);
+    static int resultSourceCmp(Object &o1, Object &o2);
     void onQueryChange(const CString &q, bool select=true);
     void showNextArg() ;
     void clearPanes();
@@ -150,8 +150,8 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     void update();
     CString getQuery(int pane);
     int getFocus() { return m_pane; }
-    SourceResult *getSelectedItem();
-    void clearResults(std::vector<SourceResult> &results);
+    Object *getSelectedItem();
+    void clearResults(std::vector<Object> &results);
     void setCurrentSource(int pane,Source *s,CString &q);
     void show();
     void hide();
@@ -218,7 +218,8 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     int                        m_request;       // request index
     
     KVPack                     m_resultsPack;
-    std::vector<SourceResult>  m_results;       // currently displayed results
+    std::vector<Object>        m_results;
+    //std::vector<SourceResult>  m_results;       // currently displayed results
     std::vector<CString>       m_queries;
     std::vector<CString>       m_status;
     CString                    m_indexing;

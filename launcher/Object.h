@@ -102,6 +102,6 @@ struct Object {
     int m_jumboDrawMethod;
 
 private:
-    Object(const Object& c); // disable copy constructor
+    //Object(const Object& c); // disable copy constructor
 };
 

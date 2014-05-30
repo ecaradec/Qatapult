@@ -120,18 +120,18 @@ struct Source {
 
     // unused yet
     // get named data of various types
-    virtual Source *getSubSource(SourceResult &sr, CString &q) {         
-        return sr.m_object->subsource;
+    virtual Source *getSubSource(Object *o, CString &q) {         
+        return o->subsource;
     }
     virtual int getInt(const TCHAR *itemquery) { return false; }
 
-    virtual void rate(const CString &q, SourceResult *r) {
-        r->rank()=0;
-        if(m_prefix!=0 && r->display()[0]==m_prefix)
-            r->rank()+=100;
+    virtual void rate(const CString &q, Object *r) {
+        r->m_rank=0;
+        if(m_prefix!=0 && r->getString(L"text")[0]==m_prefix)
+            r->m_rank+=100;
 
-        CString T(r->object()->getString(L"text"));
-        r->rank()=min(100.0f,r->uses()*5.0f) + r->bonus() + r->rank()+100.0f*evalMatch(T,q);
+        CString T(r->getString(L"text"));
+        r->m_rank=min(100.0f,r->m_uses*5.0f) + r->m_bonus + r->m_rank+100.0f*evalMatch(T,q);
     }
     
     //int                             def;

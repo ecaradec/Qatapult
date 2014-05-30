@@ -797,8 +797,8 @@ end:
     time(&currentTime);
 }
 
-int Qatapult::resultSourceCmp(SourceResult &r1, SourceResult &r2) {
-    return r1.rank() > r2.rank();
+int Qatapult::resultSourceCmp(Object &o1, Object &o2) {
+    return o1.m_rank > o2.m_rank;
 }
 
 struct Results {
@@ -892,9 +892,9 @@ CString Qatapult::getResString(int i, const TCHAR *name) {
     if(i>=m_results.size())
         return L"";
     if(CString(name)==L"rank")
-        return ItoS(m_results[i].rank());
+        return ItoS(m_results[i].m_rank);
     // ask object if it contains subitems ???
-    return m_results[i].object()->getString(name);
+    return m_results[i].getString(name);
 }
 
 void Qatapult::setVisibleResCount(int i) {
@@ -913,7 +913,7 @@ Object *Qatapult::getResObject(int i) {
     if(i>=m_results.size())
         return 0;
 
-    return m_results[i].object().get();
+    return &m_results[i];
 }
 
 void Qatapult::onSelChange(Object *o) {
@@ -1090,12 +1090,12 @@ CString Qatapult::getQuery(int p) {
         return L"";
     return m_queries[p];
 }
-SourceResult *Qatapult::getSelectedItem() {
+Object *Qatapult::getSelectedItem() {
     if(m_results.size()==0)
         return 0;
     return &m_results[m_focusedresult];
 }
-void Qatapult::clearResults(std::vector<SourceResult> &results) {
+void Qatapult::clearResults(std::vector<Object> &results) {
     results.clear();
 }
 void Qatapult::setCurrentSource(int pane,Source *s,CString &q) {
@@ -1361,16 +1361,16 @@ BOOL Qatapult::isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
     }
     else if(msg == WM_KEYDOWN && hotkeys[HK_EXPANDSOURCE].match(mod,wParam))
     {
-        SourceResult *r=getSelectedItem();
+        Object *r=getSelectedItem();
         if(!r)
             return FALSE;
         CString q;
-        Source *s=r->source()->getSubSource(*r,q);
+        Source *s=r->source->getSubSource(r,q);
         if(s!=0) {
             setCurrentSource(m_pane,s,q);
             m_input.setText(L"");
         } else {
-            m_input.setText(r->object()->getString(L"expand"));
+            m_input.setText(r->getString(L"expand"));
         }
         onQueryChange(m_input.m_text);
         invalidate();
@@ -1403,7 +1403,7 @@ BOOL Qatapult::isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             m_resultspos=m_focusedresult-m_visibleresultscount+1;
     
         if(m_results.size()>0)
-            onSelChange(m_results[m_focusedresult].m_object.get());
+            onSelChange(&m_results[m_focusedresult]);
         invalidate();
 
         return FALSE;
@@ -1422,7 +1422,7 @@ BOOL Qatapult::isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             m_resultspos=m_focusedresult;
 
         if(m_results.size()>m_focusedresult)
-            onSelChange(m_results[m_focusedresult].m_object.get());
+            onSelChange(&m_results[m_focusedresult]);
         invalidate();
         return FALSE;
     }
@@ -1567,8 +1567,8 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
             m_results.clear();
             for(uint8 *pobj=p->pack.begin(); pobj<p->pack.end(); pobj+=*(uint32*)pobj) {
-                m_results.push_back(new Object(pobj));
-                m_results.back().source()->rate(p->query,&m_results.back());
+                m_results.push_back(Object(pobj));
+                m_results.back().source->rate(p->query,&m_results.back());
             }
 
             std::sort(m_results.begin(), m_results.end(), resultSourceCmp);
@@ -1578,7 +1578,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             // but in that case the object must delete the pointer to data as it own it
             // unlike in the large block case
             if(lParam==0)
-                onSelChange(m_results.size()>0?m_results.front().object().get():0);
+                onSelChange(m_results.size()>0?&m_results.front():0);
 
             invalidate();
         }
@@ -1594,19 +1594,19 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             //m_nextResultsPack.clear();
             //m_nextResultsPack=p->pack;
 
-            std::vector<SourceResult>  nextresults;
+            std::vector<Object>  nextresults;
 
             nextresults.clear();
             for(uint8 *pobj=p->pack.begin(); pobj<p->pack.end(); pobj+=*(uint32*)pobj) {
-                nextresults.push_back(new Object(pobj));
-                nextresults.back().source()->rate(p->query,&nextresults.back());
+                nextresults.push_back(Object(pobj));
+                nextresults.back().source->rate(p->query,&nextresults.back());
             }
 
             std::sort(nextresults.begin(), nextresults.end(), resultSourceCmp);
 
             // initialize the second result, let empty if nothing match to prevent tabbing to it
             if(nextresults.size()>0)
-                setResult(m_pane+1,nextresults.front().object().get());
+                setResult(m_pane+1, &nextresults.front());
 
             p->pack.clear();
 
@@ -1617,16 +1617,16 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     }    
     else if(msg == WM_CHAR)
     {
-        if((wParam == L'/' || wParam == L'\\') && getSelectedItem() && getSelectedItem()->object() && getSelectedItem()->object()->type==L"FILE")
+        if((wParam == L'/' || wParam == L'\\') && getSelectedItem() && getSelectedItem() && getSelectedItem()->type==L"FILE")
         {
-            SourceResult *r=getSelectedItem();
-            CString path=r->object()->getString(L"expand");
+            Object *r=getSelectedItem();
+            CString path=r->getString(L"expand");
             m_input.setText(path);
         }
-        else if((wParam == L'?') && getSelectedItem() && getSelectedItem()->object() && getSelectedItem()->object()->type==L"FILE")
+        else if((wParam == L'?') && getSelectedItem() && getSelectedItem() && getSelectedItem()->type==L"FILE")
         {
-            SourceResult *r=getSelectedItem();
-            CString t(r->object()->getString(L"expand"));
+            Object *r=getSelectedItem();
+            CString t(r->getString(L"expand"));
             t.TrimRight(L'\\');
             CString d=t.Left(t.ReverseFind(L'\\'));
             if(d==L"")

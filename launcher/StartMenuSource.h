@@ -152,11 +152,11 @@ struct StartMenuSource : Source {
     virtual int getInt(const TCHAR *itemquery) {
         return false; 
     }
-    void rate(const CString &q, SourceResult *r) {
+    void rate(const CString &q, Object *r) {
         Source::rate(q,r);
-        CString P(r->object()->getString(L"path"));
+        CString P(r->getString(L"path"));
         if(P.Right(4)==L".lnk")
-            r->rank()+=25;
+            r->m_rank+=25;
     }
 
     HWND m_hwnd;
