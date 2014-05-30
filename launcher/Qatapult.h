@@ -72,6 +72,7 @@ extern HWND g_foregroundWnd;
 struct QatapultScript;
 struct PainterScript;
 struct SourceOfSources;
+struct KVPack;
 
 #define EA_NO_REMOVE_EXTRA 0
 #define EA_REMOVE_EXTRA 1
@@ -102,7 +103,8 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     void createSettingsDlg();
     int  getActiveRules(int pane, std::vector<RuleArg> &args, std::vector<Rule*> &activerules);
     bool allowType(const CString &type);
-    void collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, std::vector<SourceResult> &results, int def);
+    void collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, KVPack &pack, int def);
+    //void collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, std::vector<SourceResult> &results, int def);
     static int resultSourceCmp(SourceResult &r1, SourceResult &r2);
     void onQueryChange(const CString &q, bool select=true);
     void showNextArg() ;
@@ -214,8 +216,11 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     int                        m_visibleresultscount;
     int                        m_resultspos;
     int                        m_request;       // request index
+    
+    KVPack                     m_resultsPack;
+    //KVPack                     m_nextResultsPack;
     std::vector<SourceResult>  m_results;       // currently displayed results
-    std::vector<SourceResult>  m_nextresults;   // currently displayed results
+    //std::vector<SourceResult>  m_nextresults;   // currently displayed results
     std::vector<CString>       m_queries;
     std::vector<CString>       m_status;
     CString                    m_indexing;

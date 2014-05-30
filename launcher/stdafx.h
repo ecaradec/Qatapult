@@ -162,3 +162,11 @@ std::vector<T> Array(T &t0,T &t1, T &t2, T &t3, T &t4, T &t5, T &t6) {
     v.push_back(t6);
     return v;
 }
+
+typedef unsigned char uint8;
+typedef unsigned long uint32;
+
+inline CString ItoS(int i) {
+    CString tmp; tmp.Format(L"%d",i);
+    return tmp;
+}

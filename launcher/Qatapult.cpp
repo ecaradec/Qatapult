@@ -1,3 +1,77 @@
+/*
+Dans un premier temps utiliser map est suffisant. Inutile de créer un deuxieme type d'objet plus complexe. Une fois 
+que cela sera fait, il y aurra moins besoin de creer des milliers d'objets
+
+Est ce que toutes ces créations d'objets est toujours embetante ? Surtout maintenant que j'ai supprimé les predicats
+qui rendaient le filtrage compliqué ?
+
+Les sauvegardes de commandes seraient encore assez pratiques
+
+Se focaliser sur des trucs simples à utiliser
+
+Remarque : pour le javascript je dois déjà créer des objets à partir d'un object idispatch (like a map )
+
+Tous les objets pourraient être insérés dans la même base avec 2-3 colonnes ? ID TEXT JSON ??
+
+Trucs que je veux pouvoir faire :
+- envoyer un email à quelqu'un : 
+    - Email > CONTACT > TEXT
+    - TEXT > Email > CONTACT
+    - TEXT (emmanuel.caradec@gmail.com) > Email > TEXT ?
+- tuer un processus
+    - PROCESS > Kill
+- manipuler les fenetres
+    - WINDOW > Switch
+    - WINDOW > Maximize
+    - WINDOW > Minimize
+- sauvegarder une commande
+    - Ctrl+Enter should change anything into a command
+    - Ctrl+S (Show command on the first pane, Save on the second and text on the third )
+    - COMMAND > Save > TEXT => Save command in a file or a DB (DB are not for commands )
+    - COMMAND > Open 
+- uninstall that always works
+
+- actions uniquements sur les images (sans predicats ???? ) => FILE > Resize > TEXT
+    - Cette regle s'active uniquement si : $0.ext=='.png' || $0.ext=='.jpg' || $0.ext=='.bmp'
+- actions uniquements sur les zip (sans predicats ???? )
+
+
+Autorecognized types : emmanuel.caradec@gmail.com could be handled via the default text source. It already works
+the issue is that I don't know how to match the rule then since the rule will ask for CONTACT it can't match TEXT.
+
+The solution is that sources could produce somthing that they are asked : Contact source product CONTACT when contact is 
+asked or when TEXT is asked and it match something interesting.
+
+
+Utiliser la source donne plus de flexibilité mais moins de réutilisation à moins de passer par des objets supplémentaires
+
+Object o(uint8 *store, std::map<Type*> &types);
+o.source=this;
+o.type=types["FILE"]; // we need to register types somewhere
+o.addString("filename","test");
+o.addString("expand","c:\\test");
+results.push_back(o);
+
+Then all the methods are on the type ?
+
+o.type->drawItem(o);
+
+or 
+
+o.source->drawItem(o)
+
+
+extra values could be handled inside the shell command ? like extra arguments are.
+
+command could have a "only show when" option
+
+putty > connect > server
+
+would be better handled as a custom application with a keyword putty 
+instead of having to look for the putty.exe file which is way too complex
+
+*/
+
 #include "stdafx.h"
 #include "Qatapult.h"
 #include "PainterScript.h"
@@ -473,7 +547,7 @@ void Qatapult::reset() {
     UnregisterHotKey(m_hwnd,1);
 
     clearResults(m_results);
-    clearResults(m_nextresults);
+//    clearResults(m_nextresults);
 
     for(std::vector<Rule*>::iterator it=m_rules.begin(); it!=m_rules.end(); it++) {
         delete *it;
@@ -678,17 +752,17 @@ bool Qatapult::allowType(const CString &type) {
     return false;
 }
 
-void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, std::vector<SourceResult> &results, int def) {
-    clearResults(results);
-
+#include "KVPack.h"
+void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, KVPack &pack, int def) {
     // collect all active rules (match could have an args that tell how much to match )
-    // i should probably ignore the current pane for the match or just match until pane-1  
+    // i should probably ignore the current pane for the match or just match until pane-1      
+    uint8 *start=pack.beginBlock();
 
     // collect displayable items
     if(pane>=m_customsources.size() || m_customsources[pane]==0) {
         std::vector<Rule *> activerules;
         if(getActiveRules(pane,args,activerules)==0) {
-            return;
+            goto end;
         }
 
         // collect all active types           
@@ -698,7 +772,7 @@ void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleA
                 activetypes[activerules[i]->m_types[pane].m_type]=true;
 
         if(activetypes.size()==0) {
-            return;
+            goto end;
         }
 
         // get results for each sources
@@ -706,24 +780,21 @@ void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleA
         for(std::vector<Source*>::iterator it=m_sources.begin();it!=m_sources.end();it++) {                
             if(pane==0 && q==L"")
                 continue;            
-            (*it)->collect(q, results, def, activetypes);
+            (*it)->collect(q, pack, def, activetypes);
+            //(*it)->collect(q, results, def, activetypes);
         }
         
     } else {
         std::map<CString,bool> activetypes;
-        m_customsources[pane]->collect(q,results,def,activetypes);
+        m_customsources[pane]->collect(q,pack,def,activetypes);
+        //m_customsources[pane]->collect(q,results,def,activetypes);
     }
+end:
+    pack.endBlock(start);
 
+    // Everything is collected into one source.
     time_t currentTime;
     time(&currentTime);
-
-    uselev=0;
-    CString Q(q); Q.MakeUpper();
-    int qlen=max(1, Q.GetLength());
-    for(uint i=0;i<results.size();i++) {
-        // pourcentage de chaine correspondante ?
-        results[i].source()->rate(q,&results[i]);
-    }
 }
 
 int Qatapult::resultSourceCmp(SourceResult &r1, SourceResult &r2) {
@@ -733,7 +804,8 @@ int Qatapult::resultSourceCmp(SourceResult &r1, SourceResult &r2) {
 struct Results {
     int                        request;
     int                        pane;
-    std::vector<SourceResult>  results;
+    CString                    query;
+    KVPack                     pack;
 };
 
 void Qatapult::onQueryChange(const CString &q, bool select) {
@@ -747,8 +819,9 @@ void Qatapult::onQueryChange(const CString &q, bool select) {
     Results *presults=new Results;
     presults->request=m_request;
     presults->pane=m_pane;
-
-    collectItems(q, m_pane, m_args, presults->results, 0);
+    presults->query=q;
+    
+    collectItems(q, m_pane, m_args, presults->pack, 0);
 
     PostMessage(getHWND(), WM_PUSHRESULT,(WPARAM)presults,!select);
 }
@@ -758,8 +831,9 @@ void Qatapult::showNextArg() {
         Results *presults=new Results;
         presults->request=m_request;
         presults->pane=m_pane+1;
+        presults->query=L"";
 
-        collectItems(L"", m_pane+1, m_args, presults->results, 1);
+        collectItems(L"", m_pane+1, m_args, presults->pack, 1);
 
         PostMessage(getHWND(), WM_PUSHRESULT2,(WPARAM)presults,0);
     }
@@ -1063,7 +1137,7 @@ void Qatapult::clearPanes() {
     //m_customsources.clear();
 
     clearResults(m_results);
-    clearResults(m_nextresults);
+//    clearResults(m_nextresults);
     invalidate();
 }
 
@@ -1170,23 +1244,20 @@ BOOL Qatapult::isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
 
         m_input.setText(L"");
         clearResults(m_results);
-        clearResults(m_nextresults);
+//        clearResults(m_nextresults);
         invalidate();            
         return FALSE;
     }
     else if(msg == WM_KEYDOWN && hotkeys[HK_MKCOMMAND].match(mod,wParam) )
     {
-        /*saveCommand(new CommandObject(m_args, m_inputsource));
+        // FIXME : command object : must copy 3 data objects ?
+        // data format must be improved to allow arrays, etc...
+        // this would allow great flexibility in data usage as it will be possible to get data with
+        // $0.path or $0[0].path, etc...
 
-        clearPanes();
-
-        SourceResult sr;
-        sr.object() = m_commandhistory.back();
-        onSelChange(&sr);
-        */
-        CommandObject *c=new CommandObject(m_args, m_inputsource);
-        clearPanes();
-        onSelChange(&SourceResult(c));
+        //CommandObject *c=new CommandObject(m_args, m_inputsource);
+        //clearPanes();
+        //onSelChange(&SourceResult(c));
         return FALSE;
     }
     else if(msg == WM_KEYDOWN && hotkeys[HK_EXECUTE].match(mod,wParam))
@@ -1332,7 +1403,7 @@ BOOL Qatapult::isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             m_resultspos=m_focusedresult-m_visibleresultscount+1;
     
         if(m_results.size()>0)
-            onSelChange(&m_results[m_focusedresult]);
+            onSelChange(&SourceResult(m_results[m_focusedresult].m_object->clone()));
         invalidate();
 
         return FALSE;
@@ -1351,7 +1422,7 @@ BOOL Qatapult::isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             m_resultspos=m_focusedresult;
 
         if(m_results.size()>m_focusedresult)
-            onSelChange(&m_results[m_focusedresult]);
+            onSelChange(&SourceResult(m_results[m_focusedresult].m_object->clone()));
         invalidate();
         return FALSE;
     }
@@ -1491,16 +1562,23 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     {
         Results *p=(Results*)wParam;
         if(m_request==p->request) {
-            // remove all results and add new ones
-            clearResults(m_results);
-            for(int i=0;i<p->results.size();i++) {
-                m_results.push_back(p->results[i]);
+            m_resultsPack.clear();
+            m_resultsPack=p->pack;
+
+            m_results.clear();
+            for(uint8 *pobj=p->pack.begin(); pobj<p->pack.end(); pobj+=*(uint32*)pobj) {
+                m_results.push_back(new Object(pobj));
+                m_results.back().source()->rate(p->query,&m_results.back());
             }
+
             std::sort(m_results.begin(), m_results.end(), resultSourceCmp);
 
             // select the first result if any
+            // it must probably be copied and extracted ? Malloc and memcpy are probably enough
+            // but in that case the object must delete the pointer to data as it own it
+            // unlike in the large block case
             if(lParam==0)
-                onSelChange(m_results.size()>0?&m_results.front():&SourceResult());
+                onSelChange(m_results.size()>0?&SourceResult(m_results.front().object()->clone()):&SourceResult());
 
             invalidate();
         }
@@ -1513,17 +1591,24 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         if(m_request==p->request) {
             // remove all args beyond next pane
             ensureArgsCount(m_args,m_pane+1);
+            //m_nextResultsPack.clear();
+            //m_nextResultsPack=p->pack;
 
-            // remove all results and add new ones
-            clearResults(m_nextresults);
-            for(int i=0;i<p->results.size();i++) {
-                m_nextresults.push_back(p->results[i]);
+            std::vector<SourceResult>  nextresults;
+
+            nextresults.clear();
+            for(uint8 *pobj=p->pack.begin(); pobj<p->pack.end(); pobj+=*(uint32*)pobj) {
+                nextresults.push_back(new Object(pobj));
+                nextresults.back().source()->rate(p->query,&nextresults.back());
             }
-            std::sort(m_nextresults.begin(), m_nextresults.end(), resultSourceCmp);
+
+            std::sort(nextresults.begin(), nextresults.end(), resultSourceCmp);
 
             // initialize the second result, let empty if nothing match to prevent tabbing to it
-            if(m_nextresults.size()>0)
-                setResult(m_pane+1,m_nextresults.front());
+            if(nextresults.size()>0)
+                setResult(m_pane+1,SourceResult(nextresults.front().object()->clone()));
+
+            p->pack.clear();
 
             invalidate();
         }

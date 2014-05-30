@@ -42,7 +42,7 @@ struct StartMenuSource : Source {
     ~StartMenuSource() {
         sqlite3_close(db);
     }
-    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+    virtual void collect(const TCHAR *query, KVPack &pack, int def, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && activetypes.find(L"FILE")==activetypes.end())
             return;
 
@@ -56,21 +56,16 @@ struct StartMenuSource : Source {
         rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q), -1, SQLITE_STATIC);
         int i=0;
         while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
-            //Object *o=new Object;
-            //o->source=this;
-            //o->type=L"FILE";
-            //o->values["key"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,0));
-            //o->values["text"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,1));
-            //o->values["expand"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,2));
-            //o->values["path"]=UTF8toUTF16((char*)sqlite3_column_text(stmt,3));
-            //results.push_back(o);
-
-            results.push_back(new FileObject(UTF8toUTF16((char*)sqlite3_column_text(stmt,0)),
-                                                 this,
-                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,1)),
-                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,2)),
-                                                 UTF8toUTF16((char*)sqlite3_column_text(stmt,3))));                       // Use
-            results.back().uses()=sqlite3_column_int(stmt,4);
+            uint8 *p=pack.beginBlock();
+            pack.pack(L"type",L"FILE");
+            pack.pack(L"source",(uint32)this);
+            pack.pack(L"key",UTF8toUTF16((char*)sqlite3_column_text(stmt,0)));
+            pack.pack(L"text",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
+            pack.pack(L"expand",UTF8toUTF16((char*)sqlite3_column_text(stmt,2)));
+            pack.pack(L"path",UTF8toUTF16((char*)sqlite3_column_text(stmt,3)));
+            pack.pack(L"uses",sqlite3_column_int(stmt,4));
+            pack.pack(L"bonus",(uint32)0);
+            pack.endBlock(p);
         }
 
         const char *errmsg=sqlite3_errmsg(db) ;

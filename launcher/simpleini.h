@@ -2,11 +2,6 @@
 #include "utf8.h"
 #include "pugixml.hpp"
     
-inline CString ItoS(int i) {
-    CString tmp; tmp.Format(L"%d",i);
-    return tmp;
-}
-
 extern CString settingsini;
 extern pugi::xml_document settings;
 extern pugi::xml_document settingsWT; // settings for the working thread

@@ -4,6 +4,7 @@
 #include "FileVerbSource.h"
 #include "ShellLink.h"
 #include "TextObject.h"
+#include "KVPack.h"
 
 struct FileSource : Source {
     FileSource() : Source(L"FILE",L"Filesystem (Catalog )") {
@@ -17,7 +18,8 @@ struct FileSource : Source {
     ~FileSource() {
         sqlite3_close(db);
     }
-    void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags, std::map<CString,bool> &activetypes) {
+    //void collect(const TCHAR *query, std::vector<SourceResult> &results, int flags, std::map<CString,bool> &activetypes) {
+    void collect(const TCHAR *query, KVPack &pack, int flags, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && 
            activetypes.find(L"FILE")==activetypes.end())
             return;
@@ -58,8 +60,18 @@ struct FileSource : Source {
 
         // if we are matching exactly a directory without a ending slash add it
         if((q.Right(1)==L":" || q.Right(2)==L":\\") && q.GetLength()<=3) {
-            results.push_back(new FileObject(d+L"\\",this,d,d+L"\\",d+L"\\"));
-            results.back().bonus()=100;
+            uint8 *pobj=pack.beginBlock();
+            pack.pack(L"type",L"FILE");
+            pack.pack(L"source",(uint32)this);
+            pack.pack(L"path",d+L"\\");
+            pack.pack(L"expand",d+L"\\");
+            pack.pack(L"filename",d);
+            pack.pack(L"text",d);
+            pack.pack(L"bonus",100);
+            pack.pack(L"uses",(uint32)0);
+            pack.endBlock(pobj);
+            //results.push_back(new FileObject(d+L"\\",this,d,d+L"\\",d+L"\\"));
+            //results.back().bonus()=100;
         }
 
         bool fileFound=false;
@@ -76,8 +88,20 @@ struct FileSource : Source {
 
                 if(FuzzyMatch(foldername,f) && f==L"") {
                     fileFound=true;
-                    results.push_back(new FileObject(noslash+L"\\",this,foldername,noslash+L"\\",noslash+L"\\"));
-                    results.back().bonus()=100;
+
+                    uint8 *pobj=pack.beginBlock();
+                    pack.pack(L"type",L"FILE");
+                    pack.pack(L"source",(uint32)this);
+                    pack.pack(L"path",noslash+L"\\");
+                    pack.pack(L"expand",noslash+L"\\");
+                    pack.pack(L"filename",foldername);
+                    pack.pack(L"text",foldername);
+                    pack.pack(L"bonus",100);
+                    pack.pack(L"uses",(uint32)0);
+                    pack.endBlock(pobj);
+
+                    //results.push_back(new FileObject(noslash+L"\\",this,foldername,noslash+L"\\",noslash+L"\\"));
+                    //results.back().bonus()=100;
                 }
             } else if(CString(w32fd.cFileName)==L"..") {
             } else {
@@ -90,8 +114,21 @@ struct FileSource : Source {
 
                 if(FuzzyMatch(w32fd.cFileName,f)) {
                     fileFound=true;
-                    results.push_back(new FileObject(expand,this,w32fd.cFileName,expand,expand));
-                    results.back().rank()=10;
+                    
+                    uint8 *pobj=pack.beginBlock();
+                    pack.pack(L"type",L"FILE");
+                    pack.pack(L"source",(uint32)this);
+                    pack.pack(L"path",expand);
+                    pack.pack(L"expand",expand);
+                    pack.pack(L"filename",w32fd.cFileName);
+                    pack.pack(L"text",w32fd.cFileName);
+                    pack.pack(L"status",expand);
+                    pack.pack(L"bonus",(uint32)0);
+                    pack.pack(L"uses",(uint32)0);
+                    pack.endBlock(pobj);                    
+                    
+                    //results.push_back(new FileObject(expand,this,w32fd.cFileName,expand,expand));
+                    //results.back().rank()=10;
                 }
             }
             b=!!FindNextFile(h, &w32fd);

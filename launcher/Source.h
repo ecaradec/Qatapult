@@ -90,7 +90,7 @@ inline float evalMatch(const CString &w_,const CString &q_) {
     return float( W.GetLength() - d ) / W.GetLength();*/
 }
 
-
+struct KVPack;
 struct Source {
     Source(const TCHAR* t) {
         m_refreshPeriod=0;
@@ -113,6 +113,7 @@ struct Source {
 
     // get results
     // fuse index and bonus from the db
+    virtual void collect(const TCHAR *query, KVPack &results, int def, std::map<CString,bool> &activetypes) {}
     virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {}
     virtual void validate(SourceResult *r)  {}
     virtual void crawl() {}

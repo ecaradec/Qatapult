@@ -1,4 +1,5 @@
 #pragma once
+#include "KVPack.h"
 
 struct Source;
 struct SourceResult;
@@ -13,6 +14,30 @@ struct Object {
         m_uses=0;
         m_rank=0;
         subsource=0;
+        m_pObj=0;
+
+        // File object
+        m_jumboDrawMethod=0;
+    } 
+    Object(uint8 *pObj) {
+        source=0; 
+        m_bonus=0;
+        m_uses=0;
+        m_rank=0;
+        subsource=0;
+        m_pObj=0;
+
+        // File object
+        m_jumboDrawMethod=0;
+
+        m_pObj=pObj;
+        KVObject o(m_pObj);
+        //CString text=o.getString(L"text");
+        type=o.getString(L"type");
+        key=o.getString(L"key");
+        m_uses=o.getInt(L"uses");
+        m_bonus=o.getInt(L"bonus");
+        source=(Source*)_ttoi(o.getString(L"source"));
     }
     Object(const CString &k, const CString &t, Source *s, const CString &text) {
         m_bonus=0;
@@ -23,19 +48,38 @@ struct Object {
         key=k;
         source=s;        
         values[L"text"]=text;
+        m_pObj=0;
+
+        // File object
+        m_jumboDrawMethod=0;
     }    
+
+    // clone only works with m_Obj type object
+    Object *clone() {
+        uint8 *pObj=0;
+        if(m_pObj) {
+            pObj=(uint8*)malloc(*(uint32*)m_pObj);
+            memcpy(pObj, m_pObj, *(uint32*)m_pObj);
+        }
+        return new Object(pObj);
+    }
     
     virtual ~Object();
     virtual CString toJSON();
     virtual CString toXML();
     virtual CString getString(const TCHAR *val_);
+    CString getStdString(const TCHAR *val_);
+    CString getFileString(const TCHAR *val_);
     //virtual Gdiplus::Bitmap *getIcon(long flags);
     virtual void drawIcon(Graphics &g, RectF &r);
+    virtual void drawFileIcon(Graphics &g, RectF &r);
     virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontsize, bool b, DWORD textcolor, DWORD bgcolor, DWORD focuscolor);
+    
+    uint8                           *m_pObj;
 
     std::shared_ptr<Gdiplus::Bitmap> m_icon;
     std::shared_ptr<Gdiplus::Bitmap> m_smallicon;
-    
+
     CString                          type;
     Source                          *source;
     Source                          *subsource;
@@ -48,32 +92,10 @@ struct Object {
     CString                          m_iconname;
     int                              m_rank;
 
+    // File object
+    int m_jumboDrawMethod;
+
 private:
     Object(const Object& c); // disable copy constructor
 };
 
-/*
-Object o(uint8 *store, std::map<Type*> &types);
-o.source=this;
-o.type=types["FILE"]; // we need to register types somewhere
-o.addString("filename","test");
-o.addString("expand","c:\\test");
-results.push_back(o);
-
-Then all the methods are on the type ?
-
-o.type->drawItem(o);
-
-or 
-
-o.source->drawItem(o)
-
-
-extra values could be handled inside the shell command ? like extra arguments are.
-
-command could have a "only show when" option
-
-putty > connect > server
-
-would be better handled as a custom application with a keyword putty instead of having to look for the putty.exe file which is way too complex
-*/

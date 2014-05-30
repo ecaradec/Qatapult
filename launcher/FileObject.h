@@ -6,8 +6,6 @@ struct FileObject : Object {
     FileObject(const FileObject& f);
     FileObject(Record &r,Source *s);
     FileObject *clone();
-    CString getString(const TCHAR *val_);
-    void drawIcon(Graphics &g, RectF &r);
 
     int m_jumboDrawMethod;
 };

@@ -25,24 +25,29 @@ struct TextItemSource : Source {
         m_index[str]=SourceResult(new Object(str,str,this,str));
         m_index[str].iconname()=iconname;
     }
-    virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+    //virtual void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+    virtual void collect(const TCHAR *query, KVPack &pack, int def, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
             return;
 
         CString q(query); q.MakeUpper();
         for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
             if(FuzzyMatch(it->second.display(),q)) {
-                results.push_back(it->second);
-                Object *o=new Object(it->second.expand(), type, this, it->second.expand());
-                o->m_iconname=it->second.iconname();
-                results.back().object().reset(o);
-                results.back().bonus()=20; // special bonus for helping keywords
 
-                int rc = sqlite3_bind_text16(getusesstmt, 1, o->key, -1, SQLITE_STATIC);                       
+                uint8 *obj=pack.beginBlock();
+                pack.pack(L"type",type);
+                pack.pack(L"source",(uint32)this);
+                pack.pack(L"text",it->second.expand());
+                pack.pack(L"icon",it->second.iconname());                
+                pack.pack(L"bonus",20);
+                int rc = sqlite3_bind_text16(getusesstmt, 1, it->second.expand(), -1, SQLITE_STATIC);                       
                 if(sqlite3_step(getusesstmt)==SQLITE_ROW) {
-                    results.back().uses()=sqlite3_column_int(getusesstmt,0);                
+                    pack.pack(L"uses",sqlite3_column_int(getusesstmt,0));
+                } else {
+                    pack.pack(L"uses",(uint32)0);
                 }
                 sqlite3_reset(getusesstmt);
+                pack.endBlock(obj);
             }
         }
     }
