@@ -36,8 +36,8 @@ struct CommandObject : Object {
     void drawIcon(Graphics &g, RectF &r) {
         m_args[0].object()->drawIcon(g, r);
     }
-    void drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontsize, bool b, DWORD textcolor, DWORD bgcolor, DWORD focuscolor) {
-        m_args[0].object()->drawListItem(g, 0, r, fontsize, b, textcolor, bgcolor, focuscolor);
+    void drawListItem(Graphics &g, RectF &r, float fontsize, bool b, DWORD textcolor, DWORD bgcolor, DWORD focuscolor) {
+        m_args[0].object()->drawListItem(g, r, fontsize, b, textcolor, bgcolor, focuscolor);
     }
     std::vector<RuleArg> m_args;
 };

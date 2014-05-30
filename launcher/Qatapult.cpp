@@ -1029,7 +1029,7 @@ void Qatapult::drawResults(INT x, INT y, INT w, INT h){
     for(int i=m_resultspos;i<m_resultspos+m_visibleresultscount;i++) {
         int p=i-m_resultspos;
         if(getResObject(i))
-            getResObject(i)->drawListItem(g,&m_results[i],RectF(float(x),float(y+40*p),float(rw),float(40)),m_fontsize,m_focusedresult==i,g_textcolor,m_resultbgcolor,m_resultfocuscolor);
+            getResObject(i)->drawListItem(g,RectF(float(x),float(y+40*p),float(rw),float(40)),m_fontsize,m_focusedresult==i,g_textcolor,m_resultbgcolor,m_resultfocuscolor);
     }
     
     if(m_visibleresultscount<m_results.size()) {        

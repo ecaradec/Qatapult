@@ -110,7 +110,7 @@ void Object::drawIcon(Graphics &g, RectF &r) {
         g.DrawImage(m_icon.get(), r);
 }
 
-void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSize, bool selected, DWORD textcolor, DWORD bgcolor, DWORD focuscolor) {    
+void Object::drawListItem(Graphics &g, RectF &r, float fontSize, bool selected, DWORD textcolor, DWORD bgcolor, DWORD focuscolor) {    
     Gdiplus::Font itemlistFont(g_fontfamily, fontSize, FontStyleBold, UnitPoint);
     Gdiplus::Font itemscoreFont(g_fontfamily, fontSize);
 
@@ -123,7 +123,7 @@ void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSiz
         
     REAL x=r.X+r.Height+5+10;
         
-    CString str(sr->object()->getString(L"text"));
+    CString str(getString(L"text"));
     if(str[0]==source->m_prefix)
         str=str.Mid(1);
 
@@ -131,12 +131,12 @@ void Object::drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontSiz
         
     StringFormat sfscore;
     sfscore.SetAlignment(StringAlignmentNear);
-    g.DrawString(ItoS(sr->rank()), -1, &itemscoreFont, RectF(r.X+r.Height+5+10, r.Y+25, r.Width, r.Height), &sfscore, &SolidBrush(Color(textcolor)));
+    g.DrawString(ItoS(m_rank), -1, &itemscoreFont, RectF(r.X+r.Height+5+10, r.Y+25, r.Width, r.Height), &sfscore, &SolidBrush(Color(textcolor)));
 
     Font pathfont(g_fontfamily, fontSize);
     StringFormat sfpath;
     sfpath.SetTrimming(StringTrimmingEllipsisPath);
-    CString path(sr->object()->getString(L"path"));
+    CString path(getString(L"path"));
     path.TrimRight(L'\\');
 
     g.DrawString(path, -1, &pathfont, RectF(r.X+r.Height+40, r.Y+25, r.Width-(r.X+r.Height+40), 14), &sfpath, &SolidBrush(Color(textcolor)));

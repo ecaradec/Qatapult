@@ -78,7 +78,7 @@ struct Object {
     //virtual Gdiplus::Bitmap *getIcon(long flags);
     virtual void drawIcon(Graphics &g, RectF &r);
     virtual void drawFileIcon(Graphics &g, RectF &r);
-    virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontsize, bool b, DWORD textcolor, DWORD bgcolor, DWORD focuscolor);
+    virtual void drawListItem(Graphics &g, RectF &r, float fontsize, bool b, DWORD textcolor, DWORD bgcolor, DWORD focuscolor);
     
     bool                             m_ownData;
     uint8                           *m_pObj;
