@@ -15,17 +15,19 @@ struct Object {
         m_rank=0;
         subsource=0;
         m_pObj=0;
+        m_ownData=false;
 
         // File object
         m_jumboDrawMethod=0;
     } 
-    Object(uint8 *pObj) {
+    Object(uint8 *pObj, bool ownData=false) {
         source=0; 
         m_bonus=0;
         m_uses=0;
         m_rank=0;
         subsource=0;
         m_pObj=0;
+        m_ownData=ownData;
 
         // File object
         m_jumboDrawMethod=0;
@@ -49,19 +51,22 @@ struct Object {
         source=s;        
         values[L"text"]=text;
         m_pObj=0;
+        m_ownData=false;
 
         // File object
         m_jumboDrawMethod=0;
     }    
 
     // clone only works with m_Obj type object
+    // it's purpose is to disassociate the object from the big data pack
     Object *clone() {
         uint8 *pObj=0;
         if(m_pObj) {
             pObj=(uint8*)malloc(*(uint32*)m_pObj);
-            memcpy(pObj, m_pObj, *(uint32*)m_pObj);
+            memcpy(pObj, m_pObj, *(uint32*)m_pObj);            
         }
-        return new Object(pObj);
+       
+        return new Object(pObj,true);
     }
     
     virtual ~Object();
@@ -75,8 +80,9 @@ struct Object {
     virtual void drawFileIcon(Graphics &g, RectF &r);
     virtual void drawListItem(Graphics &g, SourceResult *sr, RectF &r, float fontsize, bool b, DWORD textcolor, DWORD bgcolor, DWORD focuscolor);
     
+    bool                             m_ownData;
     uint8                           *m_pObj;
-
+    
     std::shared_ptr<Gdiplus::Bitmap> m_icon;
     std::shared_ptr<Gdiplus::Bitmap> m_smallicon;
 

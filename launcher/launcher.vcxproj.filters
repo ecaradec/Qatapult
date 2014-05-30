@@ -251,6 +251,15 @@
     <ClInclude Include="Layout.h">
       <Filter>settings</Filter>
     </ClInclude>
+    <ClInclude Include="KVPack.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="PredicateParser.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="FileObject.h">
+      <Filter>sources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="json\block_allocator.cpp">
@@ -331,6 +340,9 @@
     </ClCompile>
     <ClCompile Include="Layout.cpp">
       <Filter>settings</Filter>
+    </ClCompile>
+    <ClCompile Include="PredicateParser.cpp">
+      <Filter>helpers</Filter>
     </ClCompile>
     <ClCompile Include="FileObject.cpp">
       <Filter>sources</Filter>

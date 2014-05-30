@@ -6,6 +6,10 @@
 #include "KVPack.h"
 
 Object::~Object() {
+    if(m_ownData && m_pObj) {
+        free(m_pObj);
+        m_pObj=0;
+    }
 }
 /*void Object::persists(pugi::xml_node &xml) {
     pugi::xml_node obj=xml.append_child("object");

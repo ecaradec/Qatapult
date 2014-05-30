@@ -133,14 +133,17 @@
     <ClInclude Include="DllSource.h" />
     <ClInclude Include="DYNACALL.H" />
     <ClInclude Include="EmailDlg.h" />
+    <ClInclude Include="FileObject.h" />
     <ClInclude Include="GeneralDlg.h" />
     <ClInclude Include="HotKeyEditProc.h" />
     <ClInclude Include="json\block_allocator.h" />
     <ClInclude Include="json\json.h" />
+    <ClInclude Include="KVPack.h" />
     <ClInclude Include="Layout.h" />
     <ClInclude Include="makeObject.h" />
     <ClInclude Include="PluginDlg.h" />
     <ClInclude Include="PluginList.h" />
+    <ClInclude Include="PredicateParser.h" />
     <ClInclude Include="Qatapult.h" />
     <ClInclude Include="Collecter.h" />
     <ClInclude Include="ContactSource.h" />
@@ -223,6 +226,7 @@
     <ClCompile Include="Layout.cpp" />
     <ClCompile Include="levenshtein_distance.cpp" />
     <ClCompile Include="makeObject.cpp" />
+    <ClCompile Include="PredicateParser.cpp" />
     <ClCompile Include="Qatapult.cpp" />
     <ClCompile Include="ContactSource.cpp" />
     <ClCompile Include="CurrentSelectionSource.cpp" />
