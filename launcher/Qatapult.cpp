@@ -880,12 +880,12 @@ void Qatapult::cancelResult() {
 }
 
 // setarg should not be used for appending objects
-void Qatapult::setResult(uint pane, SourceResult &r) {
+void Qatapult::setResult(uint pane, Object *o) {
     ensureArgsCount(m_args,pane+1,EA_NO_REMOVE_EXTRA);
     if(m_args[pane].m_results.size()==0)
-        m_args[pane].m_results.push_back(r);
+        m_args[pane].m_results.push_back(SourceResult(o?o->clone():0));
     else
-        m_args[pane].m_results.back()=r;
+        m_args[pane].m_results.back()=SourceResult(o?o->clone():0);
 }
 
 CString Qatapult::getResString(int i, const TCHAR *name) {
@@ -916,8 +916,8 @@ Object *Qatapult::getResObject(int i) {
     return m_results[i].object().get();
 }
 
-void Qatapult::onSelChange(SourceResult *r) {
-    setResult(m_pane,*r);
+void Qatapult::onSelChange(Object *o) {
+    setResult(m_pane,o);
     showNextArg();
     invalidate();
 }
@@ -1403,7 +1403,7 @@ BOOL Qatapult::isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             m_resultspos=m_focusedresult-m_visibleresultscount+1;
     
         if(m_results.size()>0)
-            onSelChange(&SourceResult(m_results[m_focusedresult].m_object->clone()));
+            onSelChange(m_results[m_focusedresult].m_object.get());
         invalidate();
 
         return FALSE;
@@ -1422,7 +1422,7 @@ BOOL Qatapult::isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
             m_resultspos=m_focusedresult;
 
         if(m_results.size()>m_focusedresult)
-            onSelChange(&SourceResult(m_results[m_focusedresult].m_object->clone()));
+            onSelChange(m_results[m_focusedresult].m_object.get());
         invalidate();
         return FALSE;
     }
@@ -1578,7 +1578,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             // but in that case the object must delete the pointer to data as it own it
             // unlike in the large block case
             if(lParam==0)
-                onSelChange(m_results.size()>0?&SourceResult(m_results.front().object()->clone()):&SourceResult());
+                onSelChange(m_results.size()>0?m_results.front().object().get():0);
 
             invalidate();
         }
@@ -1606,7 +1606,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
             // initialize the second result, let empty if nothing match to prevent tabbing to it
             if(nextresults.size()>0)
-                setResult(m_pane+1,SourceResult(nextresults.front().object()->clone()));
+                setResult(m_pane+1,nextresults.front().object().get());
 
             p->pack.clear();
 
@@ -1761,7 +1761,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             exec();
         else {
             show();
-            onSelChange(&m_args[m_pane].m_results.front());
+            onSelChange(m_args[m_pane].m_results.front().m_object.get());
         }
     }
 

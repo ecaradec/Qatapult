@@ -147,8 +147,6 @@ void Object::drawListItem(Graphics &g, RectF &r, float fontSize, bool selected, 
 // File methods
 //
 
-
-
 CString Object::getFileString(const TCHAR *val_) {
     CString val(val_);
 

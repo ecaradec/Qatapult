@@ -113,10 +113,10 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     //void saveCommand(CommandObject *c);
     //void selectHistory(int historyindex);
     
-    void onSelChange(SourceResult *r);
+    void onSelChange(Object *o);
 
     // stack modification function
-    void setResult(uint pane, SourceResult &r);
+    void setResult(uint pane, Object *o);
     void addEmptyResult(uint pane);
     void cancelResult();
     
@@ -218,9 +218,7 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     int                        m_request;       // request index
     
     KVPack                     m_resultsPack;
-    //KVPack                     m_nextResultsPack;
     std::vector<SourceResult>  m_results;       // currently displayed results
-    //std::vector<SourceResult>  m_nextresults;   // currently displayed results
     std::vector<CString>       m_queries;
     std::vector<CString>       m_status;
     CString                    m_indexing;
