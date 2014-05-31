@@ -50,9 +50,9 @@ struct TextItemSource : Source {
             }
         }
     }
-    void validate(SourceResult *r) {        
-        int rc = sqlite3_bind_text16(validatestmt, 1, r->object()->key, -1, SQLITE_STATIC);
-        rc = sqlite3_bind_text16(validatestmt, 2, r->object()->key, -1, SQLITE_STATIC);
+    void validate(Object *o) {
+        int rc = sqlite3_bind_text16(validatestmt, 1, o->key, -1, SQLITE_STATIC);
+        rc = sqlite3_bind_text16(validatestmt, 2, o->key, -1, SQLITE_STATIC);
         sqlite3_step(validatestmt);
         sqlite3_reset(validatestmt);
         const char *err=sqlite3_errmsg(db);

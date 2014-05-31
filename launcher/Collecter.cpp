@@ -3,11 +3,7 @@
 #include "JScriptSource.h"
 
 HRESULT CollecterScript::addObject(BSTR type, BSTR key, IDispatch *args) {
-
-    SourceResult sr;
-    
     CComQIPtr<IDispatch> pdispArgs(args);
-
     CComQIPtr<IDispatchEx> pargs(args);
 
     uint8 *pobj=m_pPack->beginBlock();

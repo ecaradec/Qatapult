@@ -104,7 +104,6 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     int  getActiveRules(int pane, std::vector<RuleArg> &args, std::vector<Rule*> &activerules);
     bool allowType(const CString &type);
     void collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, KVPack &pack, int def);
-    //void collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, std::vector<SourceResult> &results, int def);
     static int resultSourceCmp(Object &o1, Object &o2);
     void onQueryChange(const CString &q, bool select=true);
     void showNextArg() ;
@@ -131,9 +130,6 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     int getArgsCount();
     CString getResString(INT c, const TCHAR* name);
     void setVisibleResCount(INT i);
-
-    // collecter
-    void addResults(std::vector<SourceResult> *results);
 
     // public drawing functions
     void drawBitmap(const TCHAR *text, INT x, INT y, INT w, INT h);
@@ -219,7 +215,6 @@ struct Qatapult : IWindowlessGUI, UI, IDropTarget {
     
     KVPack                     m_resultsPack;
     std::vector<Object>        m_results;
-    //std::vector<SourceResult>  m_results;       // currently displayed results
     std::vector<CString>       m_queries;
     std::vector<CString>       m_status;
     CString                    m_indexing;

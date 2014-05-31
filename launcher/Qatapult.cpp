@@ -87,6 +87,44 @@ instead of having to look for the putty.exe file which is way too complex
 #include "CommandRule.h"
 #include "Record.h"
 
+#include "resource.h"
+//#include <atlrx.h>
+#include "premultAlpha.h"
+#include "md5.h"
+#include "utf8.h"
+#include "CriticalSection.h"
+#include "simpleini.h"
+#include "geticon.h"
+#include "ShellLink.h"
+#include "Utility.h"
+#include "SourceResult.h"
+#include "FileObject.h"
+
+#include "Source.h"
+#include "DBSource.h"
+#include "Rule.h"
+#include "FileSource.h"
+#include "NetworkSource.h"
+#include "StartMenuSource.h"
+#include "CurrentSelectionSource.h"
+#include "FileVerbSource.h"
+#include "FileVerbRule.h"
+#include "EmailVerbSource.h"
+#include "WindowlessInput.h"
+#include "TextSource.h"
+#include "SystemTraySDK.h"
+
+#include "ContactSource.h"
+#include "SendEmail.h"
+#include "EmailVerbRule.h"
+#include "EmailFileVerbRule.h"
+#include "WebsitePlugin.h"
+#include "LevhensteinDistance.h"
+#include "ActiveScriptHost.h"
+#include "qatapult_h.h"
+#include "CommandObject.h"
+#include "History.h"
+
 UI       *g_pUI; // very lazy way to give access to the ui to the ui window proc
 Qatapult *g_pQatapult;
 
@@ -1154,7 +1192,7 @@ void Qatapult::exec() {
                 for(uint a=0;a<m_args.size(); a++) {
                     for(uint r=0;r<m_args[a].m_results.size(); r++) {
                         if(m_args[a].source())
-                            m_args[a].source()->validate(&m_args[a].item(r));
+                            m_args[a].source()->validate(m_args[a].item(r).m_object.get());
                     }
                 }
                     
@@ -1316,8 +1354,8 @@ BOOL Qatapult::isAccelerator(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) 
                 m_queries.resize(m_pane+1);
 
             m_input.setText(m_queries[m_pane]);
-        }
-        onQueryChange(m_queries[m_pane],true);
+        }        
+        onQueryChange(m_queries[m_pane],false/*true*/);
 
         return FALSE;
     }

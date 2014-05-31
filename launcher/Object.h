@@ -95,7 +95,7 @@ struct Object {
     int                              m_rank;
 
     // File object
-    int m_jumboDrawMethod;
+    int                              m_jumboDrawMethod;
 
 private:
     //Object(const Object& c); // disable copy constructor

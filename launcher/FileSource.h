@@ -142,13 +142,12 @@ struct FileSource : Source {
             results.push_back(f);
         }*/
     }
-    void validate(SourceResult *r) {
-
+    void validate(Object *o) {
         sqlite3_stmt *stmt=0;
         const char *unused=0;
         int rc;
 
-        CString path=r->object()->getString(L"path");
+        CString path=o->getString(L"path");
         path.TrimRight(L"\\");
         if((GetFileAttributes(path)&FILE_ATTRIBUTE_DIRECTORY)!=0)
             path+="\\";
@@ -272,12 +271,12 @@ struct FileHistorySource : Source {
             return;
         }
     }
-    void validate(SourceResult *r) {
+    void validate(Object *o) {
         sqlite3_stmt *stmt=0;
         const char *unused=0;
         int rc;
 
-        CString path=r->object()->getString(L"path");
+        CString path=o->getString(L"path");
         path.TrimRight(L"\\");
         
         CString key=md5(path);            

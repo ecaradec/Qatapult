@@ -9,12 +9,6 @@
 
 struct Source;
 
-struct Info {
-    Source                    *source;
-    std::vector<SourceResult> *results;
-};
-
-
 int getResultsCB(void *NotUsed, int argc, char **argv, char **azColName);
 int getStringCB(void *NotUsed, int argc, char **argv, char **azColName);
 int getIntCB(void *NotUsed, int argc, char **argv, char **azColName);
@@ -114,7 +108,7 @@ struct Source {
     // get results
     // fuse index and bonus from the db
     virtual void collect(const TCHAR *query, KVPack &results, int def, std::map<CString,bool> &activetypes) {}
-    virtual void validate(SourceResult *r)  {}
+    virtual void validate(Object *o)  {}
     virtual void crawl() {}
 
     // unused yet
@@ -139,7 +133,6 @@ struct Source {
     bool                            m_ignoreemptyquery;
     CString                         m_name;
     std::map<CString, SourceResult> m_index;
-    std::vector<SourceResult>      *m_pArgs;
     UI                             *m_pUI;
     int                             m_refreshPeriod;
     CString                         m_icon;

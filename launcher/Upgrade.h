@@ -1,3 +1,5 @@
+#include <sqlite3/sqlite3.h>
+
 inline void UpgradeTable(sqlite3 *db, const char *table) {
     char *zErrMsg = 0;
 

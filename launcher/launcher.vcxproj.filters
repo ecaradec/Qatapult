@@ -335,9 +335,6 @@
       <Filter>helpers</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="launcher.cpp">
-      <Filter>core</Filter>
-    </ClCompile>
     <ClCompile Include="Layout.cpp">
       <Filter>settings</Filter>
     </ClCompile>
@@ -351,6 +348,9 @@
       <Filter>script</Filter>
     </ClCompile>
     <ClCompile Include="JScriptSource.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="launcher.cpp">
       <Filter>sources</Filter>
     </ClCompile>
   </ItemGroup>

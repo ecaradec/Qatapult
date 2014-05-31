@@ -78,8 +78,8 @@ struct NetworkSource : Source {
 
         networkshares.sqlExec((char*)(CStringA("DELETE FROM networkshares WHERE mark=")+CStringA(ItoS(mark))).GetString());
     }
-    void validate(SourceResult *r)  {
-        networkshares.sqlExec((char*)(CStringA("UPDATE networkshares SET uses=uses+1 WHERE key=")+CStringA(r->object()->key)).GetString());
+    void validate(Object *o)  {
+        networkshares.sqlExec((char*)(CStringA("UPDATE networkshares SET uses=uses+1 WHERE key=")+CStringA(o->key)).GetString());
     }
     sqlite3 *db;
 };

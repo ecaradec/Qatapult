@@ -12,10 +12,10 @@ struct DBSource : Source {
     ~DBSource() {        
         sqlite3_close(db);
     }
-    void validate(SourceResult *r) {
+    void validate(Object *o) {
         WCHAR buff[4096];
         char *zErrMsg = 0;
-        wsprintf(buff, L"UPDATE %s SET uses = uses+1 WHERE key=\"%s\"\n", CStringW(m_dbname).GetString(), r->object()->key);        
+        wsprintf(buff, L"UPDATE %s SET uses = uses+1 WHERE key=\"%s\"\n", CStringW(m_dbname).GetString(), o->key);
         int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
     }
 };

@@ -1,5 +1,5 @@
 #pragma once
-#include <atlrx.h>
+//#include <atlrx.h>
 
 struct Type {
     // only equality first

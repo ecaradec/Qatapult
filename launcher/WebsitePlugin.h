@@ -32,7 +32,7 @@ struct WebsiteSource : DBSource {
     WebsiteSource() : DBSource(L"WEBSITE",L"Websites (Catalog )", L"websites") {
         m_icon=L"icons\\website.png";
     }
-    void collect(const TCHAR *query, std::vector<SourceResult> &results, int def, std::map<CString,bool> &activetypes) {
+    void collect(const TCHAR *query, KVPack &pack, int def, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && activetypes.find(L"WEBSITE")==activetypes.end())
             return;
 
@@ -44,33 +44,20 @@ struct WebsiteSource : DBSource {
         websites.findBy(records, "text", UTF16toUTF8(fuzzyfyArg(q)) );
         for(int i=0;i<records.size();i++) {
             Record &r=records[i];
-            results.push_back(new Object(ItoS(r.ivalues[L"key"]),
-                                                      L"WEBSITE",
-                                                      this,
-                                                      r.values[L"text"]));
-            results.back().uses()=r.ivalues[L"uses"];
 
-            results.back().object()->values=records[i].values;
-            results.back().object()->values[L"icon"]=L"icons\\"+results.back().object()->values[L"text"]+L".png";
+            uint8 *pobj=pack.beginBlock();
+            pack.pack(L"type",L"WEBSITE");
+            pack.pack(L"source",(uint32)this);
+            
+            for(std::map<CString, CString>::iterator it=records[i].values.begin(); it!=records[i].values.end(); it++) {                
+                pack.pack(it->first, it->second);
+                if(it->first==L"text")
+                    pack.pack(L"icon",L"icons\\"+it->second+L".png");
+            }
+            for(std::map<CString, __int64>::iterator it=records[i].ivalues.begin(); it!=records[i].ivalues.end(); it++) {
+                pack.pack(it->first, (uint32)it->second);
+            }
+            pack.endBlock(pobj);
         }
     }
 };
-
-struct SearchWithVerbSource : Source {
-    SearchWithVerbSource() : Source(L"SEARCHWITHVERB") {        
-        m_index[L"Search With"]=SourceResult(new Object(L"Search With", L"Search With", this, L"Search With"));
-        m_index[L"Search With"].bonus()=m_index[L"Search With"].bonus();
-    }
-};
-
-struct WebSearchRule : Rule {
-    WebSearchRule() /*: Rule(Type(L"TEXT"), Type(L"Search With",L"icons\\searchwith.png"), Type(L"WEBSITE"))*/ {}
-    virtual bool execute(std::vector<RuleArg> &args) {
-        CString searchURL=args[2].object()->getString(L"searchHref");        
-        searchURL.Replace(L"%q", args[0].object()->getString(L"text"));            
-        ShellExecute(0, 0, searchURL, 0, 0, SW_SHOWDEFAULT);
-        return true;
-    }
-};
-
-

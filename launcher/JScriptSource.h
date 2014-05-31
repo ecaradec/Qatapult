@@ -5,7 +5,7 @@
 struct JScriptSource : Source {
     JScriptSource(Qatapult *pUI, const TCHAR *pluginname, const TCHAR *scriptpath);
     ~JScriptSource();
-    void validate(SourceResult *r);
+    void validate(Object *o);
     void collect(const TCHAR *query, KVPack &pack, int def, std::map<CString,bool> &activetypes);
     int getUses(const CString &key);
 

@@ -142,10 +142,10 @@ struct StartMenuSource : Source {
         sqlite3_finalize(stmt);
     }
     // validate
-    void validate(SourceResult *r) {
+    void validate(Object *o) {
         WCHAR buff[4096];
         char *zErrMsg = 0;
-        wsprintf(buff, L"UPDATE startmenu SET uses = uses + 1 WHERE key=\"%s\"\n", r->object()->key);        
+        wsprintf(buff, L"UPDATE startmenu SET uses = uses + 1 WHERE key=\"%s\"\n", o->key);
         int z=sqlite3_exec(db, CStringA(buff), 0, 0, &zErrMsg);
         sqlite3_free(zErrMsg);
     }

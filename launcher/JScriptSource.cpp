@@ -31,14 +31,14 @@ JScriptSource::~JScriptSource() {
     m_pQatapultScript->Release();
     sqlite3_close(db);
 }
-void JScriptSource::validate(SourceResult *r) {
+void JScriptSource::validate(Object *o) {
     // increase the rating of this result
     sqlite3_stmt *stmt=0;
     const char *unused=0;
     int rc;        
-    rc = sqlite3_bind_text16(validatestmt, 1, r->object()->key, -1, SQLITE_STATIC);
-    rc = sqlite3_bind_text16(validatestmt, 2, r->object()->key, -1, SQLITE_STATIC);
-    rc = sqlite3_bind_text16(validatestmt, 3, r->object()->key, -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text16(validatestmt, 1, o->key, -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text16(validatestmt, 2, o->key, -1, SQLITE_STATIC);
+    rc = sqlite3_bind_text16(validatestmt, 3, o->key, -1, SQLITE_STATIC);
     sqlite3_step(validatestmt);
     const char *errmsg=sqlite3_errmsg(db);
     sqlite3_reset(validatestmt);
