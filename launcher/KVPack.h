@@ -1,6 +1,11 @@
 #pragma once
 #include "PredicateParser.h"
 
+enum KVTypes {
+    KVT_String,
+    KVT_Integer
+};
+
 struct KVObject {
     uint8 *m_pObj;
     KVObject() {
@@ -16,9 +21,10 @@ struct KVObject {
         for(uint8 *pk=firstKV; pk<endOfObject; pk+=*(uint32*)pk) {
 
             uint32 koffset = sizeof(uint32)+sizeof(uint32);
-            uint32 voffset = sizeof(uint32)+*(uint32*)(pk+sizeof(uint32));
+            uint32 toffset = sizeof(uint32)+*(uint32*)(pk+sizeof(uint32));
+            uint32 voffset = toffset+1;
 
-            if(_tcscmp(k, (TCHAR*)(pk+koffset))==0) {
+            if(*(pk+toffset)==KVT_String && _tcscmp(k, (TCHAR*)(pk+koffset))==0) {
                 return (TCHAR*)(pk+voffset);
             }
             //_tprintf("%s=>%s\n",pk+koffset, pk+voffset);
@@ -26,10 +32,28 @@ struct KVObject {
         return 0;
     }
     int getInt(const TCHAR *k) {
+        uint8 *endOfObject = m_pObj+*(uint32*)m_pObj;
+        uint8 *firstKV     = m_pObj+sizeof(uint32);
+
+        for(uint8 *pk=firstKV; pk<endOfObject; pk+=*(uint32*)pk) {
+
+            uint32 koffset = sizeof(uint32)+sizeof(uint32);
+            uint32 toffset = sizeof(uint32)+*(uint32*)(pk+sizeof(uint32));
+            uint32 voffset = toffset+1;
+
+            if(*(pk+toffset)==KVT_Integer && _tcscmp(k, (TCHAR*)(pk+koffset))==0) {
+                return *(uint32*)(pk+voffset);
+            }
+            //_tprintf("%s=>%s\n",pk+koffset, pk+voffset);
+        }
+        return 0;
+    }
+
+    /*int getInt(const TCHAR *k) {
         TCHAR *v=getString(k);
         if(v==0) return 0;
         return _ttoi(v);
-    }
+    }*/
 };
 
 // type[this_is_the_key6=5]
@@ -52,14 +76,28 @@ struct KVPack {
             uint8 *pkvk=beginBlock();
                 pack(k);
             endBlock(pkvk);
+            pack((uint8)KVT_String);
             pack(v);
         
         endBlock(pkv);
 
         return p;
     }
-    uint8 *pack(const TCHAR *k, uint32 i) {
-        return pack(k,ItoS(i));
+    uint8 *pack(const TCHAR *k, uint32 v) {
+        
+        uint8 *p=pos;
+        uint8 *pkv=beginBlock();
+
+            uint8 *pkvk=beginBlock();
+                pack(k);
+            endBlock(pkvk);
+            pack((uint8)KVT_Integer);
+            pack(v);
+        
+        endBlock(pkv);
+
+        return p;
+        //return pack(k,ItoS(i));
     }
     uint8 *pack(const TCHAR *str) {
         uint8 *p=pos;
@@ -81,7 +119,7 @@ struct KVPack {
         return p;
     }
 
-    TCHAR *getString(uint8 *pobj, const TCHAR *k) {
+    /*TCHAR *getString(uint8 *pobj, const TCHAR *k) {
 
         uint8 *endOfObject = pobj+*(uint32*)pobj;
         uint8 *firstKV     = pobj+sizeof(uint32);
@@ -89,7 +127,8 @@ struct KVPack {
         for(uint8 *pk=firstKV; pk<endOfObject; pk+=*(uint32*)pk) {
 
             uint32 koffset = sizeof(uint32)+sizeof(uint32);
-            uint32 voffset = sizeof(uint32)+*(uint32*)(pk+sizeof(uint32));
+            uint32 toffset = sizeof(uint32)+*(uint32*)(pk+sizeof(uint32));
+            uint32 voffset = toffset+1;
 
             if(_tcscmp(k, (TCHAR*)(pk+koffset))==0) {
                 return (TCHAR*)(pk+voffset);
@@ -97,7 +136,7 @@ struct KVPack {
             //_tprintf("%s=>%s\n",pk+koffset, pk+voffset);
         }
         return 0;
-    }
+    }*/
 
     uint8 *beginBlock() {        
         return (uint8*)pack(uint32(0));
@@ -139,7 +178,8 @@ struct KVPack {
             for(uint8 *pk=firstKV; pk<endOfObject; pk+=*pk) {
 
                 uint32 koffset = sizeof(uint32)+sizeof(uint32);
-                uint32 voffset = sizeof(uint32)+*(uint32*)(pk+sizeof(uint32));
+                uint32 toffset = sizeof(uint32)+*(uint32*)(pk+sizeof(uint32));
+                uint32 voffset = toffset+1;
 
                 if(_tcscmp(key, (TCHAR*)(pk+koffset))==0 && _tcscmp(val, (TCHAR*)(pk+voffset))==0) {
                     //_tprintf("%s=>%s\n",pk+koffset, pk+voffset);

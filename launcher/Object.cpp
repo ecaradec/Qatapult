@@ -60,14 +60,17 @@ CString Object::toJSON() {
     tmp+=L"}";
     return tmp;
 }
+int Object::getInt(const TCHAR *val_) {
+    if(m_pObj) {
+        return KVObject(m_pObj).getInt(val_);
+    }
+    return 0;
+}
 
 CString Object::getString(const TCHAR *val_) {
     if(m_pObj) {
         return KVObject(m_pObj).getString(val_);
     }
-    if(type==L"FILE")
-        return getFileString(val_);
-    
     return getStdString(val_);
 }
 

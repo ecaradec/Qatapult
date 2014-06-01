@@ -33,7 +33,7 @@ PredicateParser::PredicateParser(const TCHAR *expr) {
 
 bool PredicateParser::match(KVPack &pack, uint8 *o) {
     for(std::vector<std::pair<CString,CString> >::iterator it=conds.begin(); it!=conds.end(); it++) {
-        const TCHAR *v=pack.getString(o, it->first);
+        const TCHAR *v=KVObject(o).getString(it->first);
         if(v && v != it->second)
             return false;
     }

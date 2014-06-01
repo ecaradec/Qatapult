@@ -69,6 +69,7 @@ struct Object {
     virtual ~Object();
     virtual CString toJSON();
     virtual CString toXML();
+    virtual int getInt(const TCHAR *val_);
     virtual CString getString(const TCHAR *val_);
     CString getStdString(const TCHAR *val_);
     CString getFileString(const TCHAR *val_);

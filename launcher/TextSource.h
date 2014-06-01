@@ -30,7 +30,7 @@ struct TextSource : Source {
         pack.endBlock(pobj);     
     }
     void rate(const CString &q, Object *r) {
-        if(r->getString(L"prefixed")==L"0")
+        if(r->getInt(L"prefixed")==0)
             r->m_rank=0;
         else
             r->m_rank=1000;
