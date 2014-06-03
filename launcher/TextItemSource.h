@@ -22,24 +22,23 @@ struct TextItemSource : Source {
         sqlite3_close(db);
     }
     void addItem(const TCHAR *str,const TCHAR *iconname) {
-        m_index[str]=SourceResult(new Object(str,str,this,str));
-        m_index[str].iconname()=iconname;
+        m_index.push_back(std::pair<CString,CString>(str,iconname));
     }
     virtual void collect(const TCHAR *query, KVPack &pack, int def, std::map<CString,bool> &activetypes) {
         if(activetypes.size()>0 && activetypes.find(type)==activetypes.end())
             return;
 
         CString q(query); q.MakeUpper();
-        for(std::map<CString, SourceResult>::iterator it=m_index.begin(); it!=m_index.end();it++) {
-            if(FuzzyMatch(it->second.display(),q)) {
+        for(std::vector<std::pair<CString,CString> >::iterator it=m_index.begin(); it!=m_index.end();it++) {
+            if(FuzzyMatch(it->first,q)) {
 
                 uint8 *obj=pack.beginBlock();
                 pack.pack(L"type",type);
                 pack.pack(L"source",(uint32)this);
-                pack.pack(L"text",it->second.expand());
-                pack.pack(L"icon",it->second.iconname());                
+                pack.pack(L"text",it->first);
+                pack.pack(L"icon",it->second);                
                 pack.pack(L"bonus",20);
-                int rc = sqlite3_bind_text16(getusesstmt, 1, it->second.expand(), -1, SQLITE_STATIC);                       
+                int rc = sqlite3_bind_text16(getusesstmt, 1, it->first, -1, SQLITE_STATIC);                       
                 if(sqlite3_step(getusesstmt)==SQLITE_ROW) {
                     pack.pack(L"uses",sqlite3_column_int(getusesstmt,0));
                 } else {
@@ -58,6 +57,6 @@ struct TextItemSource : Source {
         const char *err=sqlite3_errmsg(db);
     }
 
-    CString                         type;
-    std::map<CString, SourceResult> m_index;
+    CString                                  type;
+    std::vector<std::pair<CString,CString> > m_index;
 };
