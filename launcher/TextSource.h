@@ -18,16 +18,16 @@ struct TextSource : Source {
             text.Mid(1);
         }
 
-        uint8 *pobj=pack.beginBlock();
-        pack.pack(L"type",L"TEXT");
-        pack.pack(L"source",(uint32)this);
-        pack.pack(L"key",text);
-        pack.pack(L"text",text);
-        pack.pack(L"status",text);
-        pack.pack(L"expand",query);
-        pack.pack(L"prefixed",prefixed?1:0);
-        pack.pack(L"uses",(uint32)0);
-        pack.endBlock(pobj);     
+        pack.begin(KV_Map);
+            pack.writePairString(L"type",L"TEXT");
+            pack.writePairUint32(L"source",(uint32)this);
+            pack.writePairString(L"key",text);
+            pack.writePairString(L"text",text);
+            pack.writePairString(L"status",text);
+            pack.writePairString(L"expand",query);
+            pack.writePairUint32(L"prefixed",prefixed?1:0);
+            pack.writePairUint32(L"uses",(uint32)0);
+        pack.end();  
     }
     void rate(const CString &q, Object *r) {
         if(r->getInt(L"prefixed")==0)

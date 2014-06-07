@@ -614,7 +614,8 @@ void Qatapult::loadRules(pugi::xml_document &settings) {
         if(script!=L"") {
             r=new ScriptRule(&m_commandsHost,UTF8toUTF16(it->node().child_value("script")));
         } else {
-            r=new ShellExecuteRule(UTF8toUTF16(it->node().child_value("cmd")),
+            r=new ShellExecuteRule(UTF8toUTF16(it->node().child_value("verb")),
+                                   UTF8toUTF16(it->node().child_value("cmd")),
                                    UTF8toUTF16(it->node().child_value("args")),
                                    UTF8toUTF16(it->node().child_value("workdir")));
         }
@@ -794,7 +795,7 @@ bool Qatapult::allowType(const CString &type) {
 void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleArg> &args, KVPack &pack, int def) {
     // collect all active rules (match could have an args that tell how much to match )
     // i should probably ignore the current pane for the match or just match until pane-1      
-    uint8 *start=pack.beginBlock();
+    pack.begin(KV_Array);
 
     // collect displayable items
     if(pane>=m_customsources.size() || m_customsources[pane]==0) {
@@ -828,7 +829,7 @@ void Qatapult::collectItems(const CString &q, const uint pane, std::vector<RuleA
         //m_customsources[pane]->collect(q,results,def,activetypes);
     }
 end:
-    pack.endBlock(start);
+    pack.end();  
 
     // Everything is collected into one source.
     time_t currentTime;
@@ -1604,8 +1605,8 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             m_resultsPack=p->pack;
 
             m_results.clear();
-            for(uint8 *pobj=p->pack.begin(); pobj<p->pack.end(); pobj+=*(uint32*)pobj) {
-                m_results.push_back(Object(pobj));
+            for(KVObject o=p->pack.root().first(); o!=p->pack.root().end(); o=o.next()) {
+                m_results.push_back(Object(o.pobj));
                 m_results.back().source->rate(p->query,&m_results.back());
             }
 
@@ -1635,8 +1636,8 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             std::vector<Object>  nextresults;
 
             nextresults.clear();
-            for(uint8 *pobj=p->pack.begin(); pobj<p->pack.end(); pobj+=*(uint32*)pobj) {
-                nextresults.push_back(Object(pobj));
+            for(KVObject o=p->pack.root().first(); o!=p->pack.root().end(); o=o.next()) {
+                nextresults.push_back(Object(o.pobj));
                 nextresults.back().source->rate(p->query,&nextresults.back());
             }
 
@@ -1781,11 +1782,17 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     }
     else if(msg == WM_RUNRULE || msg == WM_SHOWRULE)
     {
-        std::vector<RuleArg> *ruleargs=(std::vector<RuleArg>*)wParam;
         clearPanes();
-        m_args=*ruleargs;
-        delete ruleargs;
         
+        KVObject ary((uint8*)wParam);
+        for(KVObject o=ary.first(); o!=ary.end(); o=o.next()) {
+            m_args.push_back(RuleArg());
+            // the extra copy with clone is required as object may be unselected individually
+            m_args.back().m_results.push_back(SourceResult(Object(o.pobj).clone()));
+        }        
+        
+        free((void*)wParam);
+
         if(m_args.size()==0) {
             if(msg == WM_SHOWRULE)
                 show();
@@ -1793,6 +1800,7 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         }
 
         m_pane=m_args.size()-1;
+        
         m_queries.resize(m_args.size());        
 
         if(msg == WM_RUNRULE)

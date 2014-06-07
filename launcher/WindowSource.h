@@ -15,18 +15,18 @@ struct WindowSource : Source {
                 continue;
             TCHAR title[MAX_PATH]={0};
             GetWindowText(*it,title,sizeof(title));
-            if(FuzzyMatch(title,q)) {                
-                uint8 *pobj=pack.beginBlock();
-                pack.pack(L"type",L"WINDOW");
-                pack.pack(L"source",(uint32)this);
-                pack.pack(L"key",title);
-                pack.pack(L"text",title);
-                pack.pack(L"status",title);
-                pack.pack(L"expand",title);
-                pack.pack(L"hwnd",(uint32)*it);
-                pack.pack(L"bonus",(uint32)0);
-                pack.pack(L"uses",(uint32)0);
-                pack.endBlock(pobj);     
+            if(FuzzyMatch(title,q)) {
+                pack.begin(KV_Map);
+                    pack.writePairString(L"type",L"WINDOW");
+                    pack.writePairUint32(L"source",(uint32)this);
+                    pack.writePairString(L"key",title);
+                    pack.writePairString(L"text",title);
+                    pack.writePairString(L"status",title);
+                    pack.writePairString(L"expand",title);
+                    pack.writePairUint32(L"hwnd",(uint32)*it);
+                    pack.writePairUint32(L"bonus",(uint32)0);
+                    pack.writePairUint32(L"uses",(uint32)0);
+                pack.end();  
             }
         }
     }

@@ -185,17 +185,17 @@ void ContactSource::collect(const TCHAR *query, KVPack &pack, int def, std::map<
     int i=0;
     while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
 
-        uint8 *pobj=pack.beginBlock();
-        pack.pack(L"type",L"CONTACT");
-        pack.pack(L"source",(uint32)this);
-        pack.pack(L"key",UTF8toUTF16((char*)sqlite3_column_text(stmt,0)));
-        pack.pack(L"text",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
-        pack.pack(L"status",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
-        pack.pack(L"expand",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
-        pack.pack(L"email",UTF8toUTF16((char*)sqlite3_column_text(stmt,2)));
-        pack.pack(L"bonus",(uint32)0);
-        pack.pack(L"uses",(uint32)sqlite3_column_int(stmt,3));
-        pack.endBlock(pobj);                  
+        pack.begin(KV_Map);
+            pack.writePairString(L"type",L"CONTACT");
+            pack.writePairUint32(L"source",(uint32)this);
+            pack.writePairString(L"key",UTF8toUTF16((char*)sqlite3_column_text(stmt,0)));
+            pack.writePairString(L"text",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
+            pack.writePairString(L"status",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
+            pack.writePairString(L"expand",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
+            pack.writePairString(L"email",UTF8toUTF16((char*)sqlite3_column_text(stmt,2)));
+            pack.writePairUint32(L"bonus",(uint32)0);
+            pack.writePairUint32(L"uses",(uint32)sqlite3_column_int(stmt,3));
+        pack.end();
     }
 
     const char *errmsg=sqlite3_errmsg(db) ;

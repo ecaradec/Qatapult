@@ -40,19 +40,18 @@ struct NetworkSource : Source {
         
         for(int i=0;i<records.size();i++) {
 
-            uint8 *pobj=pack.beginBlock();
-            pack.pack(L"type",L"FILE");
-            pack.pack(L"source",(uint32)this);
-            pack.pack(L"icon",L"icons\\networklocal.png");
+            pack.begin(KV_Map);
+            pack.writePairString(L"type",L"FILE");
+                pack.writePairUint32(L"source",(uint32)this);
+                pack.writePairString(L"icon",L"icons\\networklocal.png");
             
-            for(std::map<CString, CString>::iterator it=records[i].values.begin(); it!=records[i].values.end(); it++) {
-                pack.pack(it->first, it->second);
-            }
-            for(std::map<CString, __int64>::iterator it=records[i].ivalues.begin(); it!=records[i].ivalues.end(); it++) {
-                pack.pack(it->first, (uint32)it->second);
-            }
-
-            pack.endBlock(pobj);
+                for(std::map<CString, CString>::iterator it=records[i].values.begin(); it!=records[i].values.end(); it++) {
+                    pack.writePairString(it->first, it->second);
+                }
+                for(std::map<CString, __int64>::iterator it=records[i].ivalues.begin(); it!=records[i].ivalues.end(); it++) {
+                    pack.writePairUint32(it->first, (uint32)it->second);
+                }
+            pack.end();
         }
     }
     void crawl() {

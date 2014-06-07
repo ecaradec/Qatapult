@@ -6,10 +6,10 @@ HRESULT CollecterScript::addObject(BSTR type, BSTR key, IDispatch *args) {
     CComQIPtr<IDispatch> pdispArgs(args);
     CComQIPtr<IDispatchEx> pargs(args);
 
-    uint8 *pobj=m_pPack->beginBlock();
-    m_pPack->pack(L"source",(uint32)m_pSrc);
-    m_pPack->pack(L"type",CString(type));
-    m_pPack->pack(L"key",CString(key));
+    m_pPack->begin(KV_Map);
+    m_pPack->writePairUint32(L"source",(uint32)m_pSrc);
+    m_pPack->writePairString(L"type",CString(type));
+    m_pPack->writePairString(L"key",CString(key));
 
     DISPID dispid=DISPID_STARTENUM;
     while(pargs->GetNextDispID(fdexEnumAll,dispid,&dispid)==S_OK) {
@@ -21,12 +21,15 @@ HRESULT CollecterScript::addObject(BSTR type, BSTR key, IDispatch *args) {
         pargs->InvokeEx(dispid,LOCALE_USER_DEFAULT,DISPATCH_PROPERTYGET,&dispparamsNoArgs,&ret,0,0);
 
         CString n(name);
-        CString r(ret);        
-            
-        m_pPack->pack(n, r);
+        if(ret.vt==VT_BSTR) {
+            CString r(ret);                    
+            m_pPack->writePairString(n, r);
+        } else if(ret.vt==VT_I4) {
+            m_pPack->writePairUint32(n, ret.intVal);
+        }
     }
-    m_pPack->pack(L"uses", (uint32)m_pSrc->getUses(CString(key)));
-    m_pPack->endBlock(pobj);
+    m_pPack->writePairUint32(L"uses", (uint32)m_pSrc->getUses(CString(key)));
+    m_pPack->end();
 
     return S_OK;
 }

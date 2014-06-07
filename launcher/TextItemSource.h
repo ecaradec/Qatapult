@@ -32,20 +32,20 @@ struct TextItemSource : Source {
         for(std::vector<std::pair<CString,CString> >::iterator it=m_index.begin(); it!=m_index.end();it++) {
             if(FuzzyMatch(it->first,q)) {
 
-                uint8 *obj=pack.beginBlock();
-                pack.pack(L"type",type);
-                pack.pack(L"source",(uint32)this);
-                pack.pack(L"text",it->first);
-                pack.pack(L"icon",it->second);                
-                pack.pack(L"bonus",20);
-                int rc = sqlite3_bind_text16(getusesstmt, 1, it->first, -1, SQLITE_STATIC);                       
-                if(sqlite3_step(getusesstmt)==SQLITE_ROW) {
-                    pack.pack(L"uses",sqlite3_column_int(getusesstmt,0));
-                } else {
-                    pack.pack(L"uses",(uint32)0);
-                }
-                sqlite3_reset(getusesstmt);
-                pack.endBlock(obj);
+                pack.begin(KV_Map);;
+                    pack.writePairString(L"type",type);
+                    pack.writePairUint32(L"source",(uint32)this);
+                    pack.writePairString(L"text",it->first);
+                    pack.writePairString(L"icon",it->second);                
+                    pack.writePairUint32(L"bonus",20);
+                    int rc = sqlite3_bind_text16(getusesstmt, 1, it->first, -1, SQLITE_STATIC);                       
+                    if(sqlite3_step(getusesstmt)==SQLITE_ROW) {
+                        pack.writePairUint32(L"uses",sqlite3_column_int(getusesstmt,0));
+                    } else {
+                        pack.writePairUint32(L"uses",(uint32)0);
+                    }
+                    sqlite3_reset(getusesstmt);
+                pack.end();
             }
         }
     }

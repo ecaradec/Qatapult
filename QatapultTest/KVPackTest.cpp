@@ -10,52 +10,67 @@ typedef unsigned long uint32;
 TEST(KVPack_getValue)
 {
     KVPack pack;
-    pack.begin(KVPack::Map);
+    pack.begin(KV_Map);
         pack.writePairString(L"value",L"b");
         pack.writePairString(L"value2",L"2");
     pack.end();
 
-    CHECK_EQUAL(CString(L"b"), pack.getString(pack.buff,L"value"));
-    CHECK_EQUAL(CString(L"2"), pack.getString(pack.buff,L"value2"));
+    CHECK_EQUAL(CString(L"b"), KVObject(pack.buff).getString(L"value"));
+    CHECK_EQUAL(CString(L"2"), KVObject(pack.buff).getString(L"value2"));
 }
 
 TEST(KVPack_getMissingValueReturnsNull)
 {
     KVPack pack;
-    pack.begin(KVPack::Map);
+    pack.begin(KV_Map);
         pack.writePairString(L"value",L"b");
     pack.end();
 
-    CHECK_EQUAL((TCHAR*)0, pack.getString(pack.buff,L"othervalue"));
+    CHECK_EQUAL((TCHAR*)0, KVObject(pack.buff).getString(L"othervalue"));
 }
 
 TEST(KVPack_intType)
 {
     KVPack pack;
-    pack.begin(KVPack::Map);
+    pack.begin(KV_Map);
         pack.writePairUint32(L"value",123);
     pack.end();
 
     //CHECK_EQUAL(CString(L"123"), KVObject(o).getString(L"value"));
-    CHECK_EQUAL(123, pack.getInt(pack.buff,L"value"));
-    CHECK_EQUAL(0, pack.getInt(pack.buff,L"value_doesnt_exists"));
+    CHECK_EQUAL(123, KVObject(pack.buff).getInt(L"value"));
+    CHECK_EQUAL(0, KVObject(pack.buff).getInt(L"value_doesnt_exists"));
 }
 
 TEST(KVPack_objectType)
 {
     KVPack pack;
-    pack.begin(KVPack::Map);    
-        pack.begin(KVPack::Pair);
+    pack.begin(KV_Map);    
+        pack.begin(KV_Pair);
             pack.writeString(L"value");
-            pack.begin(KVPack::Map);
+            pack.begin(KV_Map);
                 pack.writePairString(L"0",L"100");
                 pack.writePairString(L"1",L"101");
             pack.end();
         pack.end();
     pack.end();
 
-    uint8 *obj=pack.getObject(pack.buff,L"value"); // actually get the value of a pair (should it be called getObject ? Wouldn't getValue be better ? Or getPair ? )
-    CHECK_EQUAL(CString(L"100"), pack.getString(obj,L"0"));
+    CHECK_EQUAL(CString(L"100"), KVObject(pack.buff).getValue(L"value").getString(L"0"));
+}
+
+TEST(KVPack_writePairObject)
+{
+    KVPack obj;
+    obj.begin(KV_Map);    
+        obj.writePairString(L"key",L"value");
+    obj.end();
+
+
+    KVPack pack;
+    pack.begin(KV_Map);    
+        pack.writePairObject(L"obj",obj.root());
+    pack.end();
+
+    CHECK_EQUAL(CString(L"value"), pack.root().getValue(L"obj").getString(L"key"));
 }
 
 //

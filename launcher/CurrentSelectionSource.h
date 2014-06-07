@@ -33,19 +33,21 @@ struct CurrentSelectionSource : Source {
             return;
 
         CString q(query); q.MakeUpper();
-        
-        if(FuzzyMatch(L"Current Selection",q)) {            
-            uint8 *pobj=pack.beginBlock();
-            pack.pack(L"type",L"FILE");
-            pack.pack(L"source",(uint32)this);
-            pack.pack(L"key",L"Current Selection");
-            pack.pack(L"path",getExplorerSelection(g_foregroundWnd));
-            pack.pack(L"expand",L"Current Selection");
-            pack.pack(L"filename",L"Current Selection");
-            pack.pack(L"text",L"Current Selection");
-            pack.pack(L"bonus",(uint32)0);
-            pack.pack(L"uses",(uint32)0);
-            pack.endBlock(pobj);
+
+        if(FuzzyMatch(L"Current Selection",q)) { 
+            CString path=getExplorerSelection(g_foregroundWnd);
+
+            pack.begin(KV_Map);
+                pack.writePairString(L"type",L"FILE");
+                pack.writePairUint32(L"source",(uint32)this);
+                pack.writePairString(L"key",L"Current Selection");
+                pack.writePairString(L"path",path);
+                pack.writePairString(L"expand",L"Current Selection");
+                pack.writePairString(L"filename",path.Mid(path.ReverseFind(L'\\')+1));
+                pack.writePairString(L"text",L"Current Selection");
+                pack.writePairUint32(L"bonus",(uint32)0);
+                pack.writePairUint32(L"uses",(uint32)0);
+            pack.end(); 
         }
     }
 };

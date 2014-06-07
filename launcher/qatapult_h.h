@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 7.00.0555 */
-/* at Sun Jun 01 17:42:58 2014
+/* at Sat Jun 07 17:28:40 2014
  */
 /* Compiler settings for qatapult.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 7.00.0555 
@@ -190,6 +190,11 @@ EXTERN_C const IID IID_IQatapultScript;
         virtual HRESULT STDMETHODCALLTYPE show( 
             /* [in] */ VARIANT args) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE exec( 
+            BSTR path,
+            BSTR args,
+            BSTR dir) = 0;
+        
     };
     
 #else 	/* C style interface */
@@ -348,6 +353,12 @@ EXTERN_C const IID IID_IQatapultScript;
             IQatapultScript * This,
             /* [in] */ VARIANT args);
         
+        HRESULT ( STDMETHODCALLTYPE *exec )( 
+            IQatapultScript * This,
+            BSTR path,
+            BSTR args,
+            BSTR dir);
+        
         END_INTERFACE
     } IQatapultScriptVtbl;
 
@@ -455,6 +466,9 @@ EXTERN_C const IID IID_IQatapultScript;
 
 #define IQatapultScript_show(This,args)	\
     ( (This)->lpVtbl -> show(This,args) ) 
+
+#define IQatapultScript_exec(This,path,args,dir)	\
+    ( (This)->lpVtbl -> exec(This,path,args,dir) ) 
 
 #endif /* COBJMACROS */
 

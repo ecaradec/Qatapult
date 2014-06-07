@@ -35,6 +35,7 @@ interface IQatapultScript : IDispatch
     HRESULT setSkinSize([in] INT w, [in] INT h);
     HRESULT run([in] VARIANT args);
     HRESULT show([in] VARIANT args);
+    HRESULT exec(BSTR path, BSTR args, BSTR dir);
 };
 
 [

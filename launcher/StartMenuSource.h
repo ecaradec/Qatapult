@@ -56,16 +56,16 @@ struct StartMenuSource : Source {
         rc = sqlite3_bind_text16(stmt, 1, fuzzyfyArg(q), -1, SQLITE_STATIC);
         int i=0;
         while((rc=sqlite3_step(stmt))==SQLITE_ROW) {
-            uint8 *p=pack.beginBlock();
-            pack.pack(L"type",L"FILE");
-            pack.pack(L"source",(uint32)this);
-            pack.pack(L"key",UTF8toUTF16((char*)sqlite3_column_text(stmt,0)));
-            pack.pack(L"text",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
-            pack.pack(L"expand",UTF8toUTF16((char*)sqlite3_column_text(stmt,2)));
-            pack.pack(L"path",UTF8toUTF16((char*)sqlite3_column_text(stmt,3)));
-            pack.pack(L"uses",sqlite3_column_int(stmt,4));
-            pack.pack(L"bonus",(uint32)0);
-            pack.endBlock(p);
+            pack.begin(KV_Map);
+                pack.writePairString(L"type",L"FILE");
+                pack.writePairUint32(L"source",(uint32)this);
+                pack.writePairString(L"key",UTF8toUTF16((char*)sqlite3_column_text(stmt,0)));
+                pack.writePairString(L"text",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
+                pack.writePairString(L"expand",UTF8toUTF16((char*)sqlite3_column_text(stmt,2)));
+                pack.writePairString(L"path",UTF8toUTF16((char*)sqlite3_column_text(stmt,3)));
+                pack.writePairUint32(L"uses",sqlite3_column_int(stmt,4));
+                pack.writePairUint32(L"bonus",(uint32)0);
+            pack.end();
         }
 
         const char *errmsg=sqlite3_errmsg(db) ;

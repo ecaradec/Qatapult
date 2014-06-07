@@ -59,16 +59,16 @@ struct FileSource : Source {
 
         // if we are matching exactly a directory without a ending slash add it
         if((q.Right(1)==L":" || q.Right(2)==L":\\") && q.GetLength()<=3) {
-            uint8 *pobj=pack.beginBlock();
-            pack.pack(L"type",L"FILE");
-            pack.pack(L"source",(uint32)this);
-            pack.pack(L"path",d+L"\\");
-            pack.pack(L"expand",d+L"\\");
-            pack.pack(L"filename",d);
-            pack.pack(L"text",d);
-            pack.pack(L"bonus",100);
-            pack.pack(L"uses",(uint32)0);
-            pack.endBlock(pobj);
+            pack.begin(KV_Map);
+                pack.writePairString(L"type",L"FILE");
+                pack.writePairUint32(L"source",(uint32)this);
+                pack.writePairString(L"path",d+L"\\");
+                pack.writePairString(L"expand",d+L"\\");
+                pack.writePairString(L"filename",d);
+                pack.writePairString(L"text",d);
+                pack.writePairUint32(L"bonus",100);
+                pack.writePairUint32(L"uses",(uint32)0);
+            pack.end();
             //results.push_back(new FileObject(d+L"\\",this,d,d+L"\\",d+L"\\"));
             //results.back().bonus()=100;
         }
@@ -88,16 +88,16 @@ struct FileSource : Source {
                 if(FuzzyMatch(foldername,f) && f==L"") {
                     fileFound=true;
 
-                    uint8 *pobj=pack.beginBlock();
-                    pack.pack(L"type",L"FILE");
-                    pack.pack(L"source",(uint32)this);
-                    pack.pack(L"path",noslash+L"\\");
-                    pack.pack(L"expand",noslash+L"\\");
-                    pack.pack(L"filename",foldername);
-                    pack.pack(L"text",foldername);
-                    pack.pack(L"bonus",100);
-                    pack.pack(L"uses",(uint32)0);
-                    pack.endBlock(pobj);
+                    pack.begin(KV_Map);
+                        pack.writePairString(L"type",L"FILE");
+                        pack.writePairUint32(L"source",(uint32)this);
+                        pack.writePairString(L"path",noslash+L"\\");
+                        pack.writePairString(L"expand",noslash+L"\\");
+                        pack.writePairString(L"filename",foldername);
+                        pack.writePairString(L"text",foldername);
+                        pack.writePairUint32(L"bonus",100);
+                        pack.writePairUint32(L"uses",(uint32)0);
+                    pack.end();
 
                     //results.push_back(new FileObject(noslash+L"\\",this,foldername,noslash+L"\\",noslash+L"\\"));
                     //results.back().bonus()=100;
@@ -114,17 +114,17 @@ struct FileSource : Source {
                 if(FuzzyMatch(w32fd.cFileName,f)) {
                     fileFound=true;
                     
-                    uint8 *pobj=pack.beginBlock();
-                    pack.pack(L"type",L"FILE");
-                    pack.pack(L"source",(uint32)this);
-                    pack.pack(L"path",expand);
-                    pack.pack(L"expand",expand);
-                    pack.pack(L"filename",w32fd.cFileName);
-                    pack.pack(L"text",w32fd.cFileName);
-                    pack.pack(L"status",expand);
-                    pack.pack(L"bonus",(uint32)0);
-                    pack.pack(L"uses",(uint32)0);
-                    pack.endBlock(pobj);                    
+                    pack.begin(KV_Map);
+                        pack.writePairString(L"type",L"FILE");
+                        pack.writePairUint32(L"source",(uint32)this);
+                        pack.writePairString(L"path",expand);
+                        pack.writePairString(L"expand",expand);
+                        pack.writePairString(L"filename",w32fd.cFileName);
+                        pack.writePairString(L"text",w32fd.cFileName);
+                        pack.writePairString(L"status",expand);
+                        pack.writePairUint32(L"bonus",(uint32)0);
+                        pack.writePairUint32(L"uses",(uint32)0);
+                    pack.end();                    
                     
                     //results.push_back(new FileObject(expand,this,w32fd.cFileName,expand,expand));
                     //results.back().rank()=10;
@@ -252,17 +252,17 @@ struct FileHistorySource : Source {
                     continue;
                 }
 
-                uint8 *pobj=pack.beginBlock();
-                pack.pack(L"type",L"FILE");
-                pack.pack(L"source",(uint32)this);
-                pack.pack(L"key",key);
-                pack.pack(L"path",path);
-                pack.pack(L"expand",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));                
-                pack.pack(L"text",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
-                pack.pack(L"status",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
-                pack.pack(L"bonus",(uint32)0);
-                pack.pack(L"uses",(uint32)sqlite3_column_int(stmt,4));
-                pack.endBlock(pobj);  
+                pack.begin(KV_Map);
+                    pack.writePairString(L"type",L"FILE");
+                    pack.writePairUint32(L"source",(uint32)this);
+                    pack.writePairString(L"key",key);
+                    pack.writePairString(L"path",path);
+                    pack.writePairString(L"expand",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));                
+                    pack.writePairString(L"text",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
+                    pack.writePairString(L"status",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
+                    pack.writePairUint32(L"bonus",(uint32)0);
+                    pack.writePairUint32(L"uses",(uint32)sqlite3_column_int(stmt,4));
+                pack.end();  
             }
 
             const char *errmsg=sqlite3_errmsg(db) ;

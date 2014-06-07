@@ -106,34 +106,60 @@ struct QatapultScript : IDispatchImpl<IQatapultScript,&__uuidof(IQatapultScript)
         return S_OK;
     }
     STDMETHOD(run)(VARIANT args) {
-        PostMessage(m_pUI->m_hwnd, WM_RUNRULE, (WPARAM)getRuleFromVariant(args), 0);
+        if(args.vt!=VT_DISPATCH) return S_FALSE;
+        
+        KVPack pack;
+        kvFromVariant(pack,args.pdispVal);
+
+        PostMessage(m_pUI->m_hwnd, WM_RUNRULE, (WPARAM)pack.buff, 0);
         return S_OK;
     }
     STDMETHOD(show)(VARIANT args) {
-        PostMessage(m_pUI->m_hwnd, WM_SHOWRULE, (WPARAM)getRuleFromVariant(args), 0);
+        if(args.vt!=VT_DISPATCH) return S_FALSE;
+
+        KVPack pack;
+        kvFromVariant(pack,args.pdispVal);
+
+        PostMessage(m_pUI->m_hwnd, WM_SHOWRULE, (WPARAM)pack.buff, 0);
         return S_OK;
     }
-    std::vector<RuleArg> *getRuleFromVariant(VARIANT args) {
-        std::vector<RuleArg> *ruleargs=new std::vector<RuleArg>;
+    uint8 *kvFromVariant(KVPack &pack, IDispatch *disp) {
+        CComQIPtr<IDispatch> pdispArgs(disp);
+        CComQIPtr<IDispatchEx> pargs(disp);
+        
+        pack.begin(KV_Map);
+        DISPID dispid=DISPID_STARTENUM;
+        while(pargs->GetNextDispID(fdexEnumAll,dispid,&dispid)==S_OK) {
+            CComBSTR name;
+            pargs->GetMemberName(dispid,&name);
 
-        CComPtr<IDispatch> e(args.pdispVal);
-        CComVariant arg;
-        int index=0;
-        CString num; num.Format(L"%d", index);
-        while( e.GetPropertyByName(num, &arg) == S_OK) {
-            
-            ruleargs->push_back(RuleArg());
-            ruleargs->back().m_results.push_back(getResultFromIDispatch(L"", L"", arg.pdispVal, m_pUI->m_inputsource));
+            DISPPARAMS dispparamsNoArgs = {NULL, NULL, 0, 0};
+            CComVariant ret;
+            pargs->InvokeEx(dispid,LOCALE_USER_DEFAULT,DISPATCH_PROPERTYGET,&dispparamsNoArgs,&ret,0,0);
 
-            index++;
-            num.Format(L"%d", index);
-            arg.Clear();
-        }        
-        return ruleargs;
+            CString n(name);
+            if(ret.vt==VT_BSTR) {
+                CString r(ret);                    
+                pack.writePairString(n, r);
+            } else if(ret.vt==VT_I4) {
+                pack.writePairUint32(n, ret.intVal);
+            } else if(ret.vt==VT_DISPATCH) {
+                kvFromVariant(pack,ret.pdispVal);
+            }
+        }
+        pack.end();
+
+        return pack.buff;
     }
     STDMETHOD(setSkinSize)(INT w, INT h) {
         m_pUI->m_buffer.Destroy();
         m_pUI->m_buffer.Create(640,800,32,PixelFormat32bppARGB);
+        return S_OK;
+    }
+    STDMETHOD(exec)(BSTR path, BSTR args,BSTR dir) {
+        //TCHAR buff[4096];
+        //GetCurrentDirectory(sizeof(buff),buff);
+        ShellExecute(0, 0, CString(path), CString(args), CString(dir), SW_SHOWDEFAULT);
         return S_OK;
     }
     static QatapultScript *Make(Qatapult *pUI) {
