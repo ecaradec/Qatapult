@@ -33,7 +33,6 @@ HRESULT CollecterScript::addObject(BSTR type, BSTR key, IDispatch *args) {
 
     return S_OK;
 }
-
 HRESULT CollecterScript::expects(BSTR type, VARIANT_BOOL *b) {
     *b=(m_pActiveTypes->size()==0 || m_pActiveTypes->find(CString(type))!=m_pActiveTypes->end());
     return S_OK;

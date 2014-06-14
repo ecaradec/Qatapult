@@ -400,7 +400,7 @@ struct ActionsDlg : CDialogImpl<ActionsDlg>/*,
         Layout l(*this);
 
         CStatic rulesLbl;
-        rulesLbl.Create(*this, l.getSpace(80,25), L"Rules : ", WS_CHILD|WS_VISIBLE);
+        rulesLbl.Create(*this, l.getSpace(80,25), L"Rules : ", WS_CHILD|WS_VISIBLE|SS_RIGHT);
 
         m_newBtn.Create(*this, l.getSpace(100,25), L"New", WS_CHILD|WS_VISIBLE, 0, ID_NEW);
         m_delBtn.Create(*this, l.getSpace(100,25), L"Delete", WS_CHILD|WS_VISIBLE, 0, ID_DEL);
@@ -420,7 +420,7 @@ struct ActionsDlg : CDialogImpl<ActionsDlg>/*,
         l.clearRow();
         
         CStatic argsLbl;
-        argsLbl.Create(*this, l.getSpace(80,25), L"Arguments : ", WS_CHILD|WS_VISIBLE);
+        argsLbl.Create(*this, l.getSpace(80,25), L"Arguments : ", WS_CHILD|WS_VISIBLE|SS_RIGHT);
 
         // arguments of the rule
         int argWidth=(l.r.right-l.pos.x-5-5)/3;
@@ -431,7 +431,7 @@ struct ActionsDlg : CDialogImpl<ActionsDlg>/*,
         l.clearRow();
 
         CStatic actionLbl;
-        actionLbl.Create(*this, l.getSpace(80,25), L"Action : ", WS_CHILD|WS_VISIBLE);
+        actionLbl.Create(*this, l.getSpace(80,25), L"Action : ", WS_CHILD|WS_VISIBLE|SS_RIGHT);
         
         // action of the rule
         CRect rcActionTab=l.getSpace(l.r.right-l.pos.x, 127);

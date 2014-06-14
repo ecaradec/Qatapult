@@ -368,7 +368,7 @@ public:
         int x=0;
         int y=0;
 
-        folderLbl.Create(*this, l.getSpace(80,25), L"Folders : ", WS_CHILD|WS_VISIBLE);
+        folderLbl.Create(*this, l.getSpace(80,25), L"Folders : ", WS_CHILD|WS_VISIBLE|SS_RIGHT);
 
         newBtn.Create(*this, l.getSpace(100,25), L"New", WS_CHILD|WS_VISIBLE, 0, ID_NEW);
         delBtn.Create(*this, l.getSpace(100,25), L"Delete", WS_CHILD|WS_VISIBLE, 0, ID_DEL);
@@ -403,7 +403,7 @@ public:
 
         l.clearRow();
 
-        pathLbl.Create(*this, l.getSpace(80,25), L"Path : ", WS_CHILD|WS_VISIBLE);
+        pathLbl.Create(*this, l.getSpace(80,25), L"Path : ", WS_CHILD|WS_VISIBLE|SS_RIGHT);
         pathEdit.Create(*this, l.getSpace(uiWidth-28,25), L"", WS_CHILD|WS_VISIBLE, WS_EX_CLIENTEDGE, ID_PATH);        
 
         pickFolderBtn.Create(*this, l.getSpace(25,25), L"...", WS_CHILD|WS_VISIBLE, 0, ID_PICKFOLDER);

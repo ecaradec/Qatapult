@@ -21,14 +21,14 @@ struct GeneralDlg : CDialogImpl<GeneralDlg> {
         Layout l(*this);
 
         CStatic hkLbl;
-        hkLbl.Create(*this, l.getSpace(80,22), L"Hotkey : ", WS_VISIBLE|WS_CHILD|SS_CENTERIMAGE);                
+        hkLbl.Create(*this, l.getSpace(80,22), L"Hotkey : ", WS_VISIBLE|WS_CHILD|SS_CENTERIMAGE|SS_RIGHT);                
         m_hkedit.Create(*this, l.getSpace(150,22), L"", WS_VISIBLE|WS_CHILD, WS_EX_CLIENTEDGE);
         m_hkedit.setHotKey(hotkeys[0].mod, hotkeys[0].vk);
 
         l.clearRow();
 
         CStatic skinLbl;
-        skinLbl.Create(*this, l.getSpace(80,22), L"Skin : ", WS_VISIBLE|WS_CHILD|SS_CENTERIMAGE);
+        skinLbl.Create(*this, l.getSpace(80,22), L"Skin : ", WS_VISIBLE|WS_CHILD|SS_CENTERIMAGE|SS_RIGHT);
 
         CComboBox skinCb;
         skinCb.Create(*this, l.getSpace(150,22), L"", CBS_DROPDOWN | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE, 0, IDC_SKINCB);
@@ -44,10 +44,10 @@ struct GeneralDlg : CDialogImpl<GeneralDlg> {
         l.clearRow();
         
         CStatic pluginsLbl;
-        pluginsLbl.Create(*this, l.getSpace(80,25), L"Plugins : ", WS_VISIBLE|WS_CHILD|SS_CENTERIMAGE);
+        pluginsLbl.Create(*this, l.getSpace(80,25), L"Plugins : ", WS_VISIBLE|WS_CHILD|SS_CENTERIMAGE|SS_RIGHT);
 
         CButton pluginsBtn;
-        pluginsBtn.Create(*this, l.getSpace(150,25), L"Open plugin folder", WS_CHILD | WS_VISIBLE, 0, IDC_OPEN_PLUGIN_FOLDER);
+        pluginsBtn.Create(*this, l.getSpace(150,25), L"Open Plugin Folder", WS_CHILD | WS_VISIBLE, 0, IDC_OPEN_PLUGIN_FOLDER);
         
         SetStdFontOfDescendants(*this);
         return S_OK;
