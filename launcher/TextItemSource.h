@@ -34,6 +34,7 @@ struct TextItemSource : Source {
 
                 pack.begin(KV_Map);;
                     pack.writePairString(L"type",type);
+                    pack.writePairString(L"key",it->first);
                     pack.writePairUint32(L"source",(uint32)this);
                     pack.writePairString(L"text",it->first);
                     pack.writePairString(L"icon",it->second);                
