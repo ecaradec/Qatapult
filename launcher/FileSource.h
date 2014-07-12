@@ -127,7 +127,7 @@ struct FileSource : Source {
                         pack.writePairString(L"status",expand);
                         pack.writePairUint32(L"bonus",(uint32)0);
                         pack.writePairUint32(L"uses",(uint32)0);
-                    pack.end();                    
+                    pack.end();
                     
                     //results.push_back(new FileObject(expand,this,w32fd.cFileName,expand,expand));
                     //results.back().rank()=10;
@@ -265,7 +265,7 @@ struct FileHistorySource : Source {
                     pack.writePairString(L"status",UTF8toUTF16((char*)sqlite3_column_text(stmt,1)));
                     pack.writePairUint32(L"bonus",(uint32)0);
                     pack.writePairUint32(L"uses",(uint32)sqlite3_column_int(stmt,4));
-                pack.end();  
+                pack.end();
             }
 
             const char *errmsg=sqlite3_errmsg(db) ;

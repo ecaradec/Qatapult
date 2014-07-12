@@ -27,20 +27,7 @@ struct TextSource : Source {
             pack.writePairString(L"expand",query);
             pack.writePairUint32(L"prefixed",prefixed?1:0);
             pack.writePairUint32(L"uses",(uint32)0);
-        pack.end();  
-
-        /*if(CString(query).Find(L"@")) {
-            pack.begin(KV_Map);
-                pack.writePairString(L"type",L"EMAIL");
-                pack.writePairUint32(L"source",(uint32)this);
-                pack.writePairString(L"key",text);
-                pack.writePairString(L"text",text);
-                pack.writePairString(L"status",text);
-                pack.writePairString(L"expand",query);
-                pack.writePairUint32(L"prefixed",prefixed?1:0);
-                pack.writePairUint32(L"uses",(uint32)0);
-            pack.end();  
-        }*/
+        pack.end();
     }
     void rate(const CString &q, Object *r) {
         if(r->getInt(L"prefixed")==0)

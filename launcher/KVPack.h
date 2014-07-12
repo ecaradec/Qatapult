@@ -111,41 +111,47 @@ struct KVObject {
     uint8 *pobj;
 };
 
-// change stack to offsets
+
+#include <assert.h>
 struct KVPack {
     KVPack() {
-        len=1024;
+        len=1;
         buff=(uint8*)malloc(len);
+        //buff=(uint8*)malloc(10*1024*1024);
         offset=0;
     }
     void begin(KV_Type type) {
         reserve(sizeof(uint32)+sizeof(uint8));
+
         stack.push_back(offset);
-        *(uint32*)(buff+offset)=0x00000000; // clean
+        *(uint32*)(buff+offset)=0xAAAAAAAA; // clean        
         offset+=sizeof(uint32);
         *(buff+offset)=type;
         offset+=sizeof(uint8);
     }
     void end() {
-        *(buff+stack.back()) = offset - stack.back();
+        uint32 *bstart=(uint32*)(buff+stack.back());
+        assert(*bstart == 0xAAAAAAAA);
+
+        *(uint32*)(buff+stack.back()) = offset - stack.back();
         stack.pop_back();
     }
     void writeString(const TCHAR *str) {
-        int slen=_tcslen(str);        
         begin(KV_String);
-            reserve(sizeof(TCHAR)*(slen+1));
-            _tcsncpy((TCHAR*)(buff+offset), str, slen+1); // copy string including last 0 character
-            offset+=(slen+1)*sizeof(TCHAR);            
+            reserve((1+_tcslen(str))*sizeof(TCHAR));
+            _tcscpy((TCHAR*)(buff+offset), str);
+            offset += (1+_tcslen(str))*sizeof(TCHAR);
+            *(buff+offset-1)=0;
         end();
     }
-    void writeUint32(uint32 i) {        
+    void writeUint32(uint32 i) {
         begin(KV_Integer); 
             reserve(sizeof(uint32));
-            memcpy((buff+offset), &i, sizeof(uint32));
+            memcpy(buff+offset, &i, sizeof(uint32));
             offset+=sizeof(uint32);
         end();
     }
-    void writePairString(const TCHAR *k, const TCHAR *v) {        
+    void writePairString(const TCHAR *k, const TCHAR *v) {
         begin(KV_Pair);
             writeString(k);
             writeString(v);
@@ -171,6 +177,7 @@ struct KVPack {
     KVObject root() {
         return KVObject(buff);
     }
+
     void reserve(int s) {
         if(offset+s>len) {
             int l1=2*len;
@@ -181,8 +188,8 @@ struct KVPack {
         }
     }
 
-    int                  len;
-    int                  offset;
-    uint8               *buff;
-    std::vector<int>     stack;
+    int len;
+    int offset;
+    uint8* buff;
+    std::vector<int> stack;
 };

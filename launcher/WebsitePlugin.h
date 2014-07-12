@@ -57,7 +57,7 @@ struct WebsiteSource : DBSource {
                 for(std::map<CString, __int64>::iterator it=records[i].ivalues.begin(); it!=records[i].ivalues.end(); it++) {
                     pack.writePairUint32(it->first, (uint32)it->second);
                 }
-            pack.end();  
+            pack.end();
         }
     }
 };

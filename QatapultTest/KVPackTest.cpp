@@ -73,6 +73,27 @@ TEST(KVPack_writePairObject)
     CHECK_EQUAL(CString(L"value"), pack.root().getValue(L"obj").getString(L"key"));
 }
 
+TEST(KVPack_readArrayOfObjects)
+{
+    KVPack pack;
+    pack.begin(KV_Array);
+    for(int i=0;i<100;i++) {
+        pack.begin(KV_Map);
+            pack.writePairString(L"value",L"0");
+            pack.writePairUint32(L"nb",0);
+            pack.writePairString(L"text",L"a");
+        pack.end();
+    }
+    pack.end();
+
+//    pack.debug();
+    
+    /*for(KVObject o=pack.root().first(); o!=pack.root().end(); o=o.next()) {
+        CString s=o.getString(L"text");
+        CString v=o.getString(L"value");
+    }*/
+}
+
 //
 //
 //typedef char int8_t;

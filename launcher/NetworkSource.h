@@ -41,7 +41,7 @@ struct NetworkSource : Source {
         for(int i=0;i<records.size();i++) {
 
             pack.begin(KV_Map);
-            pack.writePairString(L"type",L"FILE");
+                pack.writePairString(L"type",L"FILE");
                 pack.writePairUint32(L"source",(uint32)this);
                 pack.writePairString(L"icon",L"icons\\networklocal.png");
             

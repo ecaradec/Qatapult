@@ -1603,9 +1603,14 @@ LRESULT Qatapult::WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         if(m_request==p->request) {
             m_resultsPack.clear();
             m_resultsPack=p->pack;
+            
+            KVObject k(p->pack.root());
+//            k.debug();
+
 
             m_results.clear();
             for(KVObject o=p->pack.root().first(); o!=p->pack.root().end(); o=o.next()) {
+                CString s=o.getString(L"text");
                 m_results.push_back(Object(o.pobj));
                 m_results.back().source->rate(p->query,&m_results.back());
             }

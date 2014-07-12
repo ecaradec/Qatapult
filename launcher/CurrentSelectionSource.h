@@ -47,7 +47,7 @@ struct CurrentSelectionSource : Source {
                 pack.writePairString(L"text",L"Current Selection");
                 pack.writePairUint32(L"bonus",(uint32)0);
                 pack.writePairUint32(L"uses",(uint32)0);
-            pack.end(); 
+            pack.end();
         }
     }
 };
