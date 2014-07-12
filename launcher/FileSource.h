@@ -61,6 +61,7 @@ struct FileSource : Source {
         if((q.Right(1)==L":" || q.Right(2)==L":\\") && q.GetLength()<=3) {
             pack.begin(KV_Map);
                 pack.writePairString(L"type",L"FILE");
+                pack.writePairString(L"key",d+L"\\");
                 pack.writePairUint32(L"source",(uint32)this);
                 pack.writePairString(L"path",d+L"\\");
                 pack.writePairString(L"expand",d+L"\\");
@@ -90,6 +91,7 @@ struct FileSource : Source {
 
                     pack.begin(KV_Map);
                         pack.writePairString(L"type",L"FILE");
+                        pack.writePairString(L"key",noslash+L"\\");
                         pack.writePairUint32(L"source",(uint32)this);
                         pack.writePairString(L"path",noslash+L"\\");
                         pack.writePairString(L"expand",noslash+L"\\");
@@ -116,6 +118,7 @@ struct FileSource : Source {
                     
                     pack.begin(KV_Map);
                         pack.writePairString(L"type",L"FILE");
+                        pack.writePairString(L"key",expand);
                         pack.writePairUint32(L"source",(uint32)this);
                         pack.writePairString(L"path",expand);
                         pack.writePairString(L"expand",expand);

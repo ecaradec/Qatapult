@@ -355,13 +355,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="launcher.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
     <Midl Include="qatapult.idl">
       <Filter>script</Filter>
     </Midl>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="launcher.rc">
+      <Filter>rules</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
