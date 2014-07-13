@@ -194,9 +194,6 @@
     <ClInclude Include="TextSource.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="TextObject.h">
-      <Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="ContactSource.h">
       <Filter>sources</Filter>
     </ClInclude>

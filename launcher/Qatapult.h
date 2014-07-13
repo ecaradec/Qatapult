@@ -30,7 +30,6 @@
 #include "CurrentSelectionSource.h"
 #include "FileVerbSource.h"
 #include "FileVerbRule.h"
-#include "EmailVerbSource.h"
 #include "IWindowlessGUI.h"
 #include "WindowlessInput.h"
 #include "TextSource.h"

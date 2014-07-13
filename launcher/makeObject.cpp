@@ -1,9 +1,7 @@
 #include "stdafx.h"
 #include "SourceResult.h"
 #include "Object.h"
-#include "ContactSource.h"
-#include "TextObject.h"
-#include "FileObject.h"
+#include "utf8.h"
 
 SourceResult getResultFromFilePath(const CString &path, Source *s) {
     CString filename=path.Right(path.GetLength() - (path.ReverseFind(L'\\')+1));

@@ -4,12 +4,6 @@
 #include "Object.h"
 #include "DBSource.h"
 
-
-struct ContactObject : Object {
-    ContactObject(const CString &k, Source *s, const CString &text, const CString &email);
-    void drawIcon(Graphics &g, RectF &r);
-};
-
 // those kind of sources could have a simplified load and save ?
 struct ContactSource : DBSource {
     ContactSource();

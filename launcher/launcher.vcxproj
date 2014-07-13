@@ -192,7 +192,6 @@
     <ClInclude Include="SystemTraySDK.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TextItemSource.h" />
-    <ClInclude Include="TextObject.h" />
     <ClInclude Include="TextSource.h" />
     <ClInclude Include="unzip.h" />
     <ClInclude Include="Upgrade.h" />

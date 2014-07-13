@@ -36,7 +36,7 @@ struct Object {
         m_bonus=m_obj.getInt(L"bonus");
         source=(Source*)m_obj.getInt(L"source");
     }
-    Object(const CString &k, const CString &t, Source *s, const CString &text) : m_obj(0) {
+    /*Object(const CString &k, const CString &t, Source *s, const CString &text) : m_obj(0) {
         m_bonus=0;
         m_uses=0;
         m_rank=0;
@@ -48,7 +48,7 @@ struct Object {
 
         // File object
         m_jumboDrawMethod=0;
-    }    
+    } */   
 
     // clone only works with m_Obj type object
     // it's purpose is to disassociate the object from the big data pack

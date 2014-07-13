@@ -11,9 +11,9 @@ FileObject::FileObject(Record &r,Source *s) {
     ivalues=r.ivalues;
     m_jumboDrawMethod=0;
 }
-
+/*
 FileObject::FileObject(const CString &k, Source *s, const CString &text, const CString &expand, const CString &path) :Object(k,L"FILE",s,text) {
     values[L"expand"]=expand;
     values[L"path"]=path;
     m_jumboDrawMethod=0;
-}
+}*/

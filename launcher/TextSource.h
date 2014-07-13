@@ -1,5 +1,4 @@
 #pragma once
-#include "TextObject.h"
 
 struct TextSource : Source {
     TextSource() : Source(L"TEXT",L"Text (Catalog )") {

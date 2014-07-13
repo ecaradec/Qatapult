@@ -49,21 +49,6 @@ BOOL CALLBACK DlgProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
     return FALSE;
 }
 
-ContactObject::ContactObject(const CString &k, Source *s, const CString &text, const CString &email):Object(k,L"CONTACT",s,text) {
-    values[L"expand"]=text;
-    values[L"email"]=email;
-}
-
-void ContactObject::drawIcon(Graphics &g, RectF &r) {    
-    if(!m_icon && GetFileAttributes("photos\\"+key+".jpg")!=INVALID_FILE_ATTRIBUTES)
-        m_icon.reset(Gdiplus::Bitmap::FromFile(L"photos\\"+key+".jpg"));
-
-    if(!m_icon)
-        m_icon.reset(Gdiplus::Bitmap::FromFile(L"icons\\contact.png"));
-    
-    if(m_icon)
-        g.DrawImage(m_icon.get(), r);
-}
 ContactSource::ContactSource() : DBSource(L"CONTACT",L"Contacts (Catalog )", L"contacts") {
     char *zErrMsg = 0;
     sqlite3_exec(db, "CREATE TABLE contacts(key TEXT PRIMARY KEY ASC, display TEXT, email TEXT, bonus INTEGER)", 0, 0, &zErrMsg);

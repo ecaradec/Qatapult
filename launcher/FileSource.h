@@ -3,7 +3,6 @@
 #include "sqlite3/sqlite3.h"
 #include "FileVerbSource.h"
 #include "ShellLink.h"
-#include "TextObject.h"
 #include "KVPack.h"
 
 struct FileSource : Source {

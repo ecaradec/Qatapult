@@ -109,7 +109,6 @@ instead of having to look for the putty.exe file which is way too complex
 #include "CurrentSelectionSource.h"
 #include "FileVerbSource.h"
 #include "FileVerbRule.h"
-#include "EmailVerbSource.h"
 #include "WindowlessInput.h"
 #include "TextSource.h"
 #include "SystemTraySDK.h"
