@@ -79,6 +79,11 @@ struct KVObject {
         }
         return KVObject(0);
     }
+    KVObject clone() {
+        uint8 *pClone=(uint8*)malloc(length());
+        memcpy(pClone, pobj, length());            
+        return KVObject(pClone);
+    }
     void pad(int space) {
         while(space--) printf(" ");
     }

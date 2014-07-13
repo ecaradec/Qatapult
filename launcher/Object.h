@@ -8,17 +8,6 @@ struct Record;
 // only stores object specifics into the object, then store sources commons in source
 // derive and gives an correctly typed pointer if in need for extra data
 struct Object {
-    Object() : m_obj(0) {
-        source=0; 
-        m_bonus=0;
-        m_uses=0;
-        m_rank=0;
-        
-        m_ownData=false;
-
-        // File object
-        m_jumboDrawMethod=0;
-    } 
     Object(uint8 *pObj, bool ownData=false) :m_obj(pObj) {
         source=0; 
         m_bonus=0;
@@ -40,13 +29,7 @@ struct Object {
     // clone only works with m_Obj type object
     // it's purpose is to disassociate the object from the big data pack
     Object *clone() {
-        uint8 *pObj=0;
-        if(m_obj.pobj) {
-            pObj=(uint8*)malloc(*(uint32*)m_obj.pobj);
-            memcpy(pObj, m_obj.pobj, *(uint32*)m_obj.pobj);            
-        }
-       
-        return new Object(pObj,true);
+        return new Object(m_obj.clone().pobj,true);
     }
     
     virtual ~Object();
@@ -61,7 +44,6 @@ struct Object {
     virtual void drawListItem(Graphics &g, RectF &r, float fontsize, bool b, DWORD textcolor, DWORD bgcolor, DWORD focuscolor);
     
     bool                             m_ownData;
-    //uint8                           *m_pObj;
     KVObject                         m_obj;
     
     std::shared_ptr<Gdiplus::Bitmap> m_icon;
