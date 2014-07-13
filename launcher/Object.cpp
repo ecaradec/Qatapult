@@ -6,9 +6,9 @@
 #include "KVPack.h"
 
 Object::~Object() {
-    if(m_ownData && m_pObj) {
-        free(m_pObj);
-        m_pObj=0;
+    if(m_ownData && m_obj.pobj) {
+        free(m_obj.pobj);
+        m_obj.pobj=0;
     }
 }
 /*void Object::persists(pugi::xml_node &xml) {
@@ -61,21 +61,25 @@ CString Object::toJSON() {
     return tmp;
 }
 int Object::getInt(const TCHAR *val_) {
-    if(m_pObj) {
-        return KVObject(m_pObj).getInt(val_);
+    if(m_obj.pobj) {
+        return m_obj.getInt(val_);
     }
     return 0;
 }
 
 CString Object::getString(const TCHAR *val_) {
-    if(m_pObj) {
-        return KVObject(m_pObj).getString(val_);
-    }
+    if(type==L"FILE")
+        return getFileString(val_);
+    
     return getStdString(val_);
 }
 
 CString Object::getStdString(const TCHAR *val_) {
     CString v(val_);
+
+    if(m_obj.pobj) {
+        return m_obj.getString(val_);
+    }
 
     if(v==L"type")
         return type;
@@ -154,31 +158,31 @@ CString Object::getFileString(const TCHAR *val_) {
     CString val(val_);
 
     if(val==L"rdirectory") {
-        CString fp(getString(L"rpath"));
+        CString fp(getFileString(L"rpath"));
         return fp.Left(fp.ReverseFind(L'\\'));
     } else if(val==L"directory") {
-        CString fp(getString(L"path"));
+        CString fp(getFileString(L"path"));
         return fp.Left(fp.ReverseFind(L'\\'));
     } else if(val==L"rfilename") {
-        CString fp(getString(L"rpath"));
+        CString fp(getFileString(L"rpath"));
         return fp.Mid(fp.ReverseFind(L'\\')+1);
     } else if(val==L"filename") {
-        CString fp(getString(L"path")); 
+        CString fp(getFileString(L"path")); 
         return fp.Mid(fp.ReverseFind(L'\\')+1);
     } else if(val==L"rpath") {
-        CString path=getString(L"path");
+        CString path=getFileString(L"path");
         if(path.Right(4)==L".lnk")
-            return getShortcutPath(getString(L"path"));
+            return getShortcutPath(getFileString(L"path"));
         else
             return path;
     } else if(val==L"status") {
-        if(getString(L"path").Right(4)==L".lnk")        
-            return Object::getString(L"text");
+        if(getFileString(L"path").Right(4)==L".lnk")        
+            return getStdString(L"text");
         else
-            return getString(L"path");
+            return getFileString(L"path");
     }
 
-    return getStdString(val);
+    return getStdString(val_);
 }
 
 

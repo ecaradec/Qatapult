@@ -40,10 +40,10 @@ task :upload do
 
     puts "Uploading version "+last_version
 
-    Net::SCP.start('sd-27268.dedibox.fr', 'ecaradec') do |scp|
+    Net::SCP.start('emmanuelcaradec.com', 'ecaradec') do |scp|
         scp.upload! last_version, '/var/www/emmanuelcaradec/qatapult/bin/', :recursive=>true
     end
-    Net::SSH.start('sd-27268.dedibox.fr', 'ecaradec') do |ssh|
+    Net::SSH.start('emmanuelcaradec.com', 'ecaradec') do |ssh|
         ssh.exec "echo #{File.basename(last_version)} > /var/www/emmanuelcaradec/qatapult/bin/currentversion"
     end
 end
