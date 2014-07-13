@@ -5,7 +5,6 @@
 #include "sqlite3/sqlite3.h"
 #include "Utility.h"
 #include "resource.h"
-#include "FileObject.h"
 
 struct xml_string_writer: pugi::xml_writer
 {

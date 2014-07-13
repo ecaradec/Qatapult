@@ -98,7 +98,6 @@ instead of having to look for the putty.exe file which is way too complex
 #include "ShellLink.h"
 #include "Utility.h"
 #include "SourceResult.h"
-#include "FileObject.h"
 
 #include "Source.h"
 #include "DBSource.h"
@@ -121,7 +120,6 @@ instead of having to look for the putty.exe file which is way too complex
 #include "LevhensteinDistance.h"
 #include "ActiveScriptHost.h"
 #include "qatapult_h.h"
-#include "CommandObject.h"
 #include "History.h"
 
 UI       *g_pUI; // very lazy way to give access to the ui to the ui window proc

@@ -19,8 +19,6 @@
 #include "ShellLink.h"
 #include "Utility.h"
 #include "SourceResult.h"
-#include "FileObject.h"
-
 #include "Source.h"
 #include "DBSource.h"
 #include "Rule.h"
@@ -43,7 +41,6 @@
 #include "LevhensteinDistance.h"
 #include "ActiveScriptHost.h"
 #include "qatapult_h.h"
-#include "CommandObject.h"
 #include "History.h"
 
 extern UI *g_pUI; // very lazy way to give access to the ui to the ui window proc

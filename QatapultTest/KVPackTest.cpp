@@ -73,6 +73,7 @@ TEST(KVPack_writePairObject)
     CHECK_EQUAL(CString(L"value"), pack.root().getValue(L"obj").getString(L"key"));
 }
 
+// write a test for object larger than 256 characters
 TEST(KVPack_readArrayOfObjects)
 {
     KVPack pack;
@@ -92,6 +93,33 @@ TEST(KVPack_readArrayOfObjects)
         CString s=o.getString(L"text");
         CString v=o.getString(L"value");
     }*/
+}
+TEST(KVPack_objectToJSON)
+{
+    KVPack pack;
+    pack.begin(KV_Map);
+        pack.writePairString(L"value",L"b");
+        pack.begin(KV_Pair);
+            pack.writeString(L"value2");
+            pack.begin(KV_Map);
+                pack.writePairString(L"0",L"100");
+                pack.writePairString(L"1",L"101");
+            pack.end();
+        pack.end();
+    pack.end();
+    //_tprintf(L"%s", pack.root().toJSON());
+    CHECK(CString(L"{\"value\":\"b\",\"value2\":{\"0\":\"100\",\"1\":\"101\"}}") == pack.root().toJSON());
+}
+
+TEST(KVPack_objectToXML)
+{
+    KVPack pack;
+    pack.begin(KV_Map);
+        pack.writePairString(L"value",L"b");
+        pack.writePairString(L"value2",L"2");
+    pack.end();
+    //_tprintf(L"%s", pack.root().toXML());
+    CHECK(CString(L"<value>b</value><value2>2</value2>") == pack.root().toXML());
 }
 
 //

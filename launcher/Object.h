@@ -36,19 +36,6 @@ struct Object {
         m_bonus=m_obj.getInt(L"bonus");
         source=(Source*)m_obj.getInt(L"source");
     }
-    /*Object(const CString &k, const CString &t, Source *s, const CString &text) : m_obj(0) {
-        m_bonus=0;
-        m_uses=0;
-        m_rank=0;
-        type=t;
-        key=k;
-        source=s;        
-        values[L"text"]=text;
-        m_ownData=false;
-
-        // File object
-        m_jumboDrawMethod=0;
-    } */   
 
     // clone only works with m_Obj type object
     // it's purpose is to disassociate the object from the big data pack
@@ -67,7 +54,6 @@ struct Object {
     virtual CString toXML();
     virtual int getInt(const TCHAR *val_);
     virtual CString getString(const TCHAR *val_);
-    CString getStdString(const TCHAR *val_);
     CString getFileString(const TCHAR *val_);
     //virtual Gdiplus::Bitmap *getIcon(long flags);
     virtual void drawIcon(Graphics &g, RectF &r);
@@ -84,8 +70,6 @@ struct Object {
     CString                          type;
     Source                          *source;
     CString                          key;
-    std::map<CString,CString>        values;
-    std::map<CString,__int64>        ivalues;
     
     int                              m_bonus;
     int                              m_uses;

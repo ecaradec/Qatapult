@@ -108,6 +108,61 @@ struct KVObject {
                 break;
         }
     }
+    CString toXML() {
+        CString str;
+        switch(type()) {
+            case KV_String:
+                str+=CString((TCHAR*)data());
+                break;
+            case KV_Integer:
+                str+=ItoS(*(uint32*)data());
+                break;
+            case KV_Map:
+                for(KVObject k=first(); k!=end(); k=k.next())
+                    str+=k.toXML();
+                break;
+            case KV_Pair:
+                str+=L"<"+first().toXML()+L">";
+                str+=first().next().toXML();
+                str+=L"</"+first().toXML()+L">";
+                break;
+            case KV_Array:
+                // not truly representable
+                for(KVObject k=first(); k!=end(); k=k.next())
+                    str+=k.toXML();
+                break;
+        }
+        return str;
+    }
+    CString toJSON() {
+        CString str;
+        switch(type()) {
+            case KV_String:
+                str+=L"\""+CString((TCHAR*)data())+L"\"";
+                break;
+            case KV_Integer:
+                str+=ItoS(*(uint32*)data());
+                break;
+            case KV_Map:
+                str+=L"{";
+                for(KVObject k=first(); k!=end(); k=k.next())
+                    str+=k.toJSON()+(k.next()!=end()?L",":L"");
+                str+=L"}";
+                break;
+            case KV_Pair:
+                str+=first().toJSON();
+                str+=L":";
+                str+=first().next().toJSON();
+                break;
+            case KV_Array:
+                str+=L"[";
+                for(KVObject k=first(); k!=end(); k=k.next())
+                    str+=k.toJSON()+(k.next()!=end()?L",":L"");
+                str+=L"]";
+                break;
+        }
+        return str;
+    }
     uint8 *pobj;
 };
 

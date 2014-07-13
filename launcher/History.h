@@ -1,6 +1,6 @@
 #pragma once
 #include "makeObject.h"
-
+/*
 struct History {        
     History() {
         int rc = sqlite3_open("databases\\commands.db", &db);
@@ -18,7 +18,7 @@ struct History {
         sqlite3_finalize(stmtSave);
         sqlite3_finalize(stmtLoad);
     }
-    void saveCommand(CommandObject *c) {
+    void saveCommand(Object *c) {
         int rc;
         rc = sqlite3_bind_text16(stmtSave, 1, c->key.GetString(), -1, SQLITE_STATIC);
         CString xml = c->toXML();            
@@ -56,3 +56,4 @@ struct History {
     sqlite3_stmt *stmtLoad;
     sqlite3 *db;
 };
+*/

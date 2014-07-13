@@ -135,7 +135,6 @@
     <ClInclude Include="DllSource.h" />
     <ClInclude Include="DYNACALL.H" />
     <ClInclude Include="EmailDlg.h" />
-    <ClInclude Include="FileObject.h" />
     <ClInclude Include="GeneralDlg.h" />
     <ClInclude Include="HotKeyEditProc.h" />
     <ClInclude Include="json\block_allocator.h" />
@@ -216,7 +215,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="FileObject.cpp" />
     <ClCompile Include="JScriptSource.cpp" />
     <ClCompile Include="json\block_allocator.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>

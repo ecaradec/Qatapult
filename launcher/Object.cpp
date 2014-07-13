@@ -38,27 +38,12 @@ CString escapeJson(const CString &xml) {
 CString Object::toXML() {
     CString tmp;
     tmp=L"<object type='"+escapeXml(type)+L"' key='"+escapeXml(key)+L"'>\n";
-    //tmp+=L"  <key>"+key+L"</key>\n";
-    for(std::map<CString,CString>::iterator it=values.begin();it!=values.end();it++)
-        tmp+=L"  <"+it->first+L">"+escapeXml(it->second)+L"</"+it->first+L">\n";
+    tmp+=m_obj.toXML();
     tmp+="</object>\n";
     return tmp;
 }
 CString Object::toJSON() {
-    CString tmp;
-    tmp=L"{";
-
-    int s=0;
-    tmp+=L"\"type\":\""+escapeJson(type)+L"\",";
-    tmp+=L"\"key\":\""+escapeJson(key)+L"\",";
-    for(std::map<CString,CString>::iterator it=values.begin();it!=values.end();it++) {
-        tmp+=L"\""+escapeJson(it->first)+L"\":\""+escapeJson(it->second)+L"\"";
-        s++;
-        if(s!=values.size())
-            tmp+=L",";        
-    }
-    tmp+=L"}";
-    return tmp;
+    return m_obj.toJSON();
 }
 int Object::getInt(const TCHAR *val_) {
     if(m_obj.pobj) {
@@ -71,26 +56,8 @@ CString Object::getString(const TCHAR *val_) {
     if(type==L"FILE")
         return getFileString(val_);
     
-    return getStdString(val_);
+    return m_obj.getString(val_);
 }
-
-CString Object::getStdString(const TCHAR *val_) {
-    CString v(val_);
-
-    if(m_obj.pobj) {
-        return m_obj.getString(val_);
-    }
-
-    if(v==L"type")
-        return type;
-    else if(v==L"status")
-        return values[L"text"];
-    else if(v==L"expand" && values.find(L"expand")==values.end())
-        return values[L"text"];
-    return values[val_];
-}
-
-
 
 void Object::drawIcon(Graphics &g, RectF &r) {
     if(type==L"FILE") {
@@ -177,12 +144,12 @@ CString Object::getFileString(const TCHAR *val_) {
             return path;
     } else if(val==L"status") {
         if(getFileString(L"path").Right(4)==L".lnk")        
-            return getStdString(L"text");
+            return m_obj.getString(L"text");
         else
             return getFileString(L"path");
     }
 
-    return getStdString(val_);
+    return m_obj.getString(val_);
 }
 
 
