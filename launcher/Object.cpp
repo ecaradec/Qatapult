@@ -136,6 +136,9 @@ CString Object::getFileString(const TCHAR *val_) {
     } else if(val==L"filename") {
         CString fp(getFileString(L"path")); 
         return fp.Mid(fp.ReverseFind(L'\\')+1);
+    } else if(val==L"fileext") {
+        CString fp(getFileString(L"path")); 
+        return fp.Mid(fp.ReverseFind(L'.')+1);        
     } else if(val==L"rpath") {
         CString path=getFileString(L"path");
         if(path.Right(4)==L".lnk")

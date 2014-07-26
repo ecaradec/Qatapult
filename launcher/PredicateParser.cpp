@@ -1,6 +1,6 @@
 #include <stdafx.h>
 #include "predicateparser.h"
-#include "KVPack.h"
+#include "Object.h"
 
 PredicateParser::PredicateParser(const TCHAR *expr) {
     TCHAR *p=(TCHAR*)expr;
@@ -12,7 +12,8 @@ PredicateParser::PredicateParser(const TCHAR *expr) {
 
     conds.push_back(std::pair<CString,CString>(_T("type"),type));
 
-    readToken(&p, L"[");
+    if(!readToken(&p, L"["))
+        return;
     while(1) {
         attr=readIdentifier(&p);
         op=readOperator(&p);
@@ -31,9 +32,9 @@ PredicateParser::PredicateParser(const TCHAR *expr) {
     readToken(&p, L"]");
 }
 
-bool PredicateParser::match(KVPack &pack, uint8 *o) {
+bool PredicateParser::match(Object *o) {
     for(std::vector<std::pair<CString,CString> >::iterator it=conds.begin(); it!=conds.end(); it++) {
-        const TCHAR *v=KVObject(o).getString(it->first);
+        CString v(o->getString(it->first));
         if(v && v != it->second)
             return false;
     }
@@ -56,11 +57,12 @@ CString PredicateParser::readIdentifier(TCHAR **str) {
     }
     return tmp;
 }
-void PredicateParser::readToken(TCHAR **str, TCHAR *m) {
+bool PredicateParser::readToken(TCHAR **str, TCHAR *m) {
     while(**str == *m && **str!=0 && *m!=0) {
         m++;
         (*str)++;
     }
+    return *m==0;
 }
 
 CString PredicateParser::readOperator(TCHAR **str) {

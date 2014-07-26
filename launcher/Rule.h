@@ -1,4 +1,5 @@
 #pragma once
+#include "PredicateParser.h"
 //#include <atlrx.h>
 
 struct Type {
@@ -15,19 +16,10 @@ struct Type {
         CString         m_name;
         CString         m_value;
     };
-    /*Type(const std::map<CString,CString> &values) {
-        
-    }*/
-    Type(const CString &type, bool multi=false, std::vector<Predicat> &predicates=std::vector<Predicat>()) {
+
+    Type(const CString &type, bool multi=false) : m_predicate(type) {
         m_type=type;
-        m_predicates=predicates;
         m_multi=multi;
-    }
-    Type(const CString &type, const CString &icon, bool multi=false, std::vector<Predicat> &predicates=std::vector<Predicat>()) {
-        m_type=type;
-        m_icon=icon;
-        m_multi=multi;
-        m_predicates=predicates;
     }
     bool match(RuleArg *o) {
         if(o->m_results.size()==0)
@@ -41,13 +33,7 @@ struct Type {
         if(!m_multi && o->m_results.size()>1)
             return false;
 
-        // there can't be multiple types in the results : the first one is the reference type and there is always at least one
-        CString type=o->m_results[0].object()->type;
-        if(type == L"")
-            return false;
-
-        // no match if the argument doesn't match this type               
-        if(type != m_type)
+        if(!m_predicate.match(o->object().get()))
             return false;
 
         // match
@@ -57,7 +43,7 @@ struct Type {
     bool                  m_multi;
     CString               m_type;
     CString               m_icon;
-    std::vector<Predicat> m_predicates;
+    PredicateParser       m_predicate;
 };
 
 extern int rulescount;

@@ -623,21 +623,6 @@ void Qatapult::loadRules(pugi::xml_document &settings) {
             CString arg=itarg->node().first_child().value();
             if(arg.GetLength()!=0) {
                 r->m_types.push_back(Type(arg));
-            } else if(CString(itarg->node().child_value("type"))!=L"") {
-                CString type(itarg->node().child_value("type"));
-
-                std::vector<Type::Predicat> preds;
-                pugi::xpath_node_set elts=itarg->node().select_nodes("pred");
-                pugi::xpath_node_set::const_iterator itelt=elts.begin();
-                CHAR name[256];
-                CHAR op[256];
-                CStringA str(itelt->node().child_value());
-                sscanf_s(str, "%[^~=]", name, sizeof(name));
-                sscanf_s(str.Mid(strlen(name)), "%[~=]", op, sizeof(op));
-                CString value(str.Mid(strlen(name)+strlen(op)));
-                preds.push_back(Type::Predicat(name,op,value));                
-                
-                r->m_types.push_back(Type(type,false,preds));
             } else {
                 pugi::xpath_node_set elts=itarg->node().select_nodes("item");                
                 
