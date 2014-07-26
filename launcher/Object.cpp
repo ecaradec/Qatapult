@@ -208,6 +208,66 @@ void detectRealJumboSize(DWORD *pixels, int w, int h, int &cx, int &cy) {
     cy=getNextHigherIconSize(bottomMax);
 }
 
+
+HRESULT GetEncoderClsid(__in LPCWSTR pwszFormat, __out GUID *pGUID)
+{
+    HRESULT hr = E_FAIL;
+    UINT  nEncoders = 0;          // number of image encoders
+    UINT  nSize = 0;              // size of the image encoder array in bytes
+    CAutoVectorPtr<BYTE> spData;
+    Gdiplus::ImageCodecInfo* pImageCodecInfo = NULL;
+    Gdiplus::Status status;
+    bool fFound = false;
+
+    // param check
+
+    if ((pwszFormat == NULL) || (pwszFormat[0] == 0) || (pGUID == NULL))
+    {
+        return E_POINTER;
+    }
+
+    *pGUID = GUID_NULL;
+
+    status = Gdiplus::GetImageEncodersSize(&nEncoders, &nSize);
+
+    if ((status != Gdiplus::Ok) || (nSize == 0))
+    {
+        return E_FAIL;
+    }
+
+
+    spData.Allocate(nSize);
+
+    if (spData == NULL)
+    {
+        return E_FAIL;
+    }
+
+    pImageCodecInfo = (Gdiplus::ImageCodecInfo*)(BYTE*)spData;
+
+    status = Gdiplus::GetImageEncoders(nEncoders, nSize, pImageCodecInfo);
+
+    if (status != Gdiplus::Ok)
+    {
+       return E_FAIL;
+    }
+
+    for(UINT j = 0; j < nEncoders; ++j)
+    {
+        if( wcscmp(pImageCodecInfo[j].MimeType, pwszFormat) == 0 )
+        {
+            *pGUID = pImageCodecInfo[j].Clsid;
+            fFound = true;
+            break;
+        }    
+    }
+
+    hr = fFound ? S_OK : E_FAIL;
+
+    return hr;
+}
+
+
 void Object::drawFileIcon(Graphics &g, RectF &r) {
     // fun but costly
     /*CString iconPath=L"icons\\"+getString(L"rfilename")+L".png";
@@ -221,7 +281,7 @@ void Object::drawFileIcon(Graphics &g, RectF &r) {
 
         return;
     }*/
-
+    
     // function is based on
     // http://blogs.msdn.com/b/oldnewthing/archive/2014/01/20/10490951.aspx
     
@@ -329,5 +389,51 @@ void Object::drawFileIcon(Graphics &g, RectF &r) {
         pil->Draw(&ildp);
 
         g.ReleaseHDC(hdc);
+    } 
+/*
+    if(m_icon.get()==0) {
+        m_icon.reset(new Gdiplus::Bitmap(256,256,&g));
+        //m_icon.reset(new Gdiplus::Bitmap(256,256,PixelFormat32bppPARGB));
+
+        Gdiplus::Graphics *gi=Gdiplus::Graphics::FromImage(m_icon.get());
+
+        HRESULT hr;
+        HDC hdc=gi->GetHDC();
+
+        CComPtr<IImageList> pil;
+
+        SHGetImageList(SHIL_JUMBO, IID_IImageList, (void**)&pil);
+        // XP support
+        if(pil==0)
+            SHGetImageList(SHIL_LARGE, IID_IImageList, (void**)&pil); 
+
+        IMAGELISTDRAWPARAMS ildp = { sizeof(ildp) };
+        ildp.himl = IImageListToHIMAGELIST(pil);
+        ildp.i = GetIconIndex(getString(L"path"));
+        ildp.hdcDst = hdc;
+        ildp.x = 0;
+        ildp.y = 0;
+        ildp.cx = 256;
+        ildp.cy = 256;
+        ildp.rgbBk = CLR_NONE;
+        ildp.fStyle = ILD_TRANSPARENT|ILD_MASK;
+        pil->Draw(&ildp);
+
+        gi->ReleaseHDC(hdc);
+
+        CLSID pngClsid;
+        GetEncoderClsid(L"image/png", &pngClsid);
+        Gdiplus::Status s=m_icon->Save(L"C:\\devel\\Qatapult\\file.png", &pngClsid);
+        
+
+        int j=0;
     }
+    
+    g.DrawImage(m_icon.get(),r.X,r.Y,r.Width,r.Height);*/
+    //g.ReleaseHDC(hdc);
+
+    //Gdiplus::Bitmap *bmp=new Gdiplus::Bitmap(256,256,PixelFormat32bppARGB);
+
+
 }
+

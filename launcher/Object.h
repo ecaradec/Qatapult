@@ -47,7 +47,7 @@ struct Object {
     KVObject                         m_obj;
     
     std::shared_ptr<Gdiplus::Bitmap> m_icon;
-    std::shared_ptr<Gdiplus::Bitmap> m_smallicon;
+    std::shared_ptr<Gdiplus::Bitmap> m_smallicon;    
 
     CString                          type;
     Source                          *source;
