@@ -532,8 +532,14 @@ void Qatapult::init() {
 }
 
 Type Qatapult::Keyword(const TCHAR *text, const TCHAR *icon, bool def) {
-    //TextItemSource *t=new TextItemSource(getGUID());
-    CString type=CString(L"keyword/")+text;
+    // text of keyword is used as type, so that a keyword get a appropriate boost any search
+    // but some characters can't be a type, so replace them with _
+    CString type=CString(L"KW_")+text;
+    for(int i=0;i<type.GetLength();i++) {        
+        if((type[i]>=L'a' && type[i]<=L'z') || (type[i]>=L'A' && type[i]<=L'Z') || type[i]==L'_' || (type[i]>=L'0' && type[i]<=L'9')) continue;
+        type.SetAt(i,L'_');
+    }
+
     TextItemSource *t=0;
     for(std::vector<Source*>::iterator it=m_sources.begin(); it!=m_sources.end(); it++) {
         if((*it)->m_name == type) {
@@ -541,7 +547,7 @@ Type Qatapult::Keyword(const TCHAR *text, const TCHAR *icon, bool def) {
         }
     }
 
-    t=new TextItemSource(CString(L"keyword/")+text);
+    t=new TextItemSource(type);
     addSource(t);
     t->addItem(text,icon);
 

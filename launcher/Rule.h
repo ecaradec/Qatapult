@@ -3,20 +3,6 @@
 //#include <atlrx.h>
 
 struct Type {
-    // only equality first
-    struct Predicat {
-        Predicat(const CString &n, const CString &op, const CString &v):m_name(n), m_value(v) {
-            if(op==L"=")
-                m_operator=0;
-            else if(op==L"~=") {
-                m_operator=1;
-            }
-        }
-        int             m_operator;
-        CString         m_name;
-        CString         m_value;
-    };
-
     Type(const CString &type, bool multi=false) : m_predicate(type) {
         m_type=type;
         m_multi=multi;

@@ -51,7 +51,7 @@ bool PredicateParser::isChar(TCHAR *str, TCHAR c) {
 
 CString PredicateParser::readIdentifier(TCHAR **str) {
     CString tmp;
-    while((**str>=L'a' && **str<=L'z') || (**str>=L'A' && **str<=L'Z') || **str==L'_' || (**str>=L'0' && **str<=L'9')) {
+    while((**str>=L'a' && **str<=L'z') || (**str>=L'A' && **str<=L'Z') || **str==L'/' || **str==L'_' || (**str>=L'0' && **str<=L'9')) {
         tmp+=**str;
         (*str)++;
     }
