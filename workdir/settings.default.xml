@@ -13,7 +13,7 @@
 			<arg>FILE</arg>
 			<arg>
                 <lbl>Explore here</lbl>
-                <ico>icons\defaultverb.png</ico>
+                <ico>icons\opencontaining.png</ico>
 			</arg>
 			<cmd>explorer.exe</cmd>
 			<args>/e,/root,"$0.rdirectory"</args>
