@@ -123,4 +123,35 @@ SUITE(KVPack)
         CHECK(CString(L"<value>b</value><value2>2</value2>") == pack.root().toXML());
     }
 
+    void loadJSON(KVPack &pack, char *json) {
+        
+        char *errorPos = 0;
+	    char *errorDesc = 0;
+	    int errorLine = 0;
+	    block_allocator allocator(1 << 10);
+	            
+        json_value *root = json_parse(json, &errorPos, &errorDesc, &errorLine, &allocator);
+        if( root->type != JSON_ARRAY ) return;
+        pack.begin(KV_Array);
+        for (json_value *it = root->first_child; it; it = it->next_sibling) {
+            if(it->type!=JSON_OBJECT) continue;
+            pack.begin(KV_Map);
+            for (json_value *it2 = it->first_child; it2; it2 = it2->next_sibling) {
+                if(it2->type!=JSON_STRING) continue;                
+                pack.writePairString(UTF8toUTF16(it2->name),UTF8toUTF16(it2->string_value));
+            }
+            pack.end();
+        }
+        pack.end();
+    }
+
+    TEST(jsonToObject)
+    {        
+        char json[]="[{\"value1\":\"a\",\"value2\":\"b\"}]";
+        
+        KVPack pack;
+        loadJSON(pack,json);
+
+        CHECK(pack.root().first().getString(L"value1") == CString(L"a"));
+    }
 }

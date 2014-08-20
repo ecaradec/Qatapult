@@ -1,0 +1,344 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="ContactSource.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="CurrentSelectionSource.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="JScriptSource.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="NetworkSource.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="Collecter.cpp">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="DYNACALL.C">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="DYNWRAP.CPP">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="json\json.cpp">
+      <Filter>serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="Http.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="GetItemVerbs.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="json\block_allocator.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="Layout.cpp">
+      <Filter>dialog</Filter>
+    </ClCompile>
+    <ClCompile Include="levenshtein_distance.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="pugixml.cpp">
+      <Filter>serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="makeObject.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="Object.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="PredicateParser.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="Qatapult.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="WebsitePlugin.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="StartMenuSource.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="qatapult_i.c">
+      <Filter>script</Filter>
+    </ClCompile>
+    <ClCompile Include="Md5.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="Source.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="Record.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="SendEmail.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\external_lib\sqlite3\sqlite3.c">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="unzip.cpp">
+      <Filter>helpers</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemTraySDK.cpp">
+      <Filter>dialog</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="ContactSource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="CurrentSelectionSource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="DBSource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="DllSource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="HistorySource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="JScriptSource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkSource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="SourceOfSources.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="TextSource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowSource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="ActionsDlg.h">
+      <Filter>dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="EmailDlg.h">
+      <Filter>dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="FileSource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="EmailFileVerbRule.h">
+      <Filter>rule</Filter>
+    </ClInclude>
+    <ClInclude Include="EmailVerbRule.h">
+      <Filter>rule</Filter>
+    </ClInclude>
+    <ClInclude Include="FileVerbRule.h">
+      <Filter>rule</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneralDlg.h">
+      <Filter>dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="ActiveScriptHost.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="activscp.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="activscp_plus.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="Collecter.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="DYNACALL.H">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="HotKeyEditProc.h">
+      <Filter>dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="json\json.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="http.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="getItemVerbs.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="geticon.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="FindFileRecursively.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="ArrayHelper.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="json\block_allocator.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="CriticalSection.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Layout.h">
+      <Filter>dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="LevhensteinDistance.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="PainterScript.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="pugixml.hpp">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="PluginDlg.h">
+      <Filter>dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="PluginList.h">
+      <Filter>dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="ShortcutDlg.h">
+      <Filter>dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="SettingsDlg.h">
+      <Filter>dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="IWindowlessGUI.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="KVPack.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="makeObject.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="Object.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="PredicateParser.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="Qatapult.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="WebsitePlugin.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="StartMenuSource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="QatapultScript.h">
+      <Filter>script</Filter>
+    </ClInclude>
+    <ClInclude Include="QatapultPlugin.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="Source.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="SourceResult.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="SourceRule.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptRule.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="Rule.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="Record.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="WindowlessInput.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="SimpleOptDialog.h">
+      <Filter>dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="WebsiteSearchDlg.h">
+      <Filter>dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="premultAlpha.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="SendEmail.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="ShellLink.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="ShellExecuteRule.h">
+      <Filter>rule</Filter>
+    </ClInclude>
+    <ClInclude Include="pugiconfig.hpp">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="simpleini.h">
+      <Filter>serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="unzip.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="TextItemSource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="Upgrade.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="utf8.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemTraySDK.h">
+      <Filter>dialog</Filter>
+    </ClInclude>
+    <ClInclude Include="UserSource.h">
+      <Filter>source</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\workdir\settings.xml" />
+    <None Include="ReadMe.txt" />
+    <None Include="res\launcher.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="dialog">
+      <UniqueIdentifier>{1ca9b24d-a38e-4130-a116-85bd75e5d8ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="script">
+      <UniqueIdentifier>{2a3f0db1-be08-4536-ad36-a6aaa2748028}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rule">
+      <UniqueIdentifier>{b99a9a90-dfb0-4541-9ccd-4c8e42cd5231}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source">
+      <UniqueIdentifier>{f3c452e7-6b5b-4912-b37f-2e5488ad6af2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core">
+      <UniqueIdentifier>{82e924cc-7499-4d5a-9ed7-0d0c420f1d5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="network">
+      <UniqueIdentifier>{addab2fe-1809-4c06-8103-348b2d44205e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="serialization">
+      <UniqueIdentifier>{8b34ec89-2fdd-48d8-9533-b3c69ef6063c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="helpers">
+      <UniqueIdentifier>{01755036-db49-44ff-ad4d-bed714184ac0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="qatapult.idl">
+      <Filter>script</Filter>
+    </Midl>
+  </ItemGroup>
+</Project>

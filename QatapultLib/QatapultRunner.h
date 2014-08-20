@@ -1,0 +1,3 @@
+struct QatapultRunner {
+    void Run();
+};
